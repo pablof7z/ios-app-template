@@ -53,6 +53,7 @@ req.httpBody = try JSONEncoder().encode(["title": "Feedback", "body": workflow.d
 ```
 user utterance
     → build messages[] with system prompt + user message
+    → read OpenRouter credential from Keychain
     → call OpenRouter /chat/completions with tools schema
     → parse response
     → if toolCalls present:
@@ -67,6 +68,8 @@ The agent receives a rich system prompt built from live `AppState`:
 - Current pending items (with IDs for targeting)
 - Friends list (with IDs for peer attribution)
 - Agent memories (persisted facts about the user)
+
+OpenRouter credentials are connected in Settings through BYOK (`key:openrouter`) or saved manually. Raw provider keys are stored in Keychain, not in the JSON app-state blob.
 
 ### Tool dispatch
 

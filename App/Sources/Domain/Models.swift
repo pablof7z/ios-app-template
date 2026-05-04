@@ -127,12 +127,86 @@ struct AgentMemory: Codable, Identifiable, Hashable, Sendable {
 
 // MARK: - Settings
 
+enum OpenRouterCredentialSource: String, Codable, Hashable, Sendable {
+    case none
+    case manual
+    case byok
+}
+
 struct Settings: Codable, Hashable, Sendable {
     var llmModel: String = "openai/gpt-4o-mini"
-    var openRouterAPIKey: String = ""
     var agentMaxTurns: Int = 12
+    var openRouterCredentialSource: OpenRouterCredentialSource = .none
+    var openRouterBYOKKeyID: String?
+    var openRouterBYOKKeyLabel: String?
+    var openRouterConnectedAt: Date?
+    var legacyOpenRouterAPIKey: String?
 
     init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case llmModel
+        case openRouterAPIKey
+        case agentMaxTurns
+        case openRouterCredentialSource
+        case openRouterBYOKKeyID
+        case openRouterBYOKKeyLabel
+        case openRouterConnectedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        llmModel = try container.decodeIfPresent(String.self, forKey: .llmModel) ?? "openai/gpt-4o-mini"
+        agentMaxTurns = try container.decodeIfPresent(Int.self, forKey: .agentMaxTurns) ?? 12
+        openRouterCredentialSource = try container.decodeIfPresent(
+            OpenRouterCredentialSource.self,
+            forKey: .openRouterCredentialSource
+        ) ?? .none
+        openRouterBYOKKeyID = try container.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
+        openRouterBYOKKeyLabel = try container.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
+        openRouterConnectedAt = try container.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
+        legacyOpenRouterAPIKey = try container.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
+
+        if openRouterCredentialSource == .none,
+           let legacyOpenRouterAPIKey,
+           !legacyOpenRouterAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            openRouterCredentialSource = .manual
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(llmModel, forKey: .llmModel)
+        try container.encode(agentMaxTurns, forKey: .agentMaxTurns)
+        try container.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
+        try container.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
+        try container.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
+        try container.encodeIfPresent(openRouterConnectedAt, forKey: .openRouterConnectedAt)
+    }
+
+    mutating func markOpenRouterManual(connectedAt: Date = Date()) {
+        openRouterCredentialSource = .manual
+        openRouterBYOKKeyID = nil
+        openRouterBYOKKeyLabel = nil
+        openRouterConnectedAt = connectedAt
+        legacyOpenRouterAPIKey = nil
+    }
+
+    mutating func markOpenRouterBYOK(keyID: String?, keyLabel: String?, connectedAt: Date = Date()) {
+        openRouterCredentialSource = .byok
+        openRouterBYOKKeyID = keyID
+        openRouterBYOKKeyLabel = keyLabel
+        openRouterConnectedAt = connectedAt
+        legacyOpenRouterAPIKey = nil
+    }
+
+    mutating func clearOpenRouterCredential() {
+        openRouterCredentialSource = .none
+        openRouterBYOKKeyID = nil
+        openRouterBYOKKeyLabel = nil
+        openRouterConnectedAt = nil
+        legacyOpenRouterAPIKey = nil
+    }
 }
 
 // MARK: - AppState

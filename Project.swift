@@ -40,7 +40,6 @@ let project = Project(
             deploymentTargets: deploymentTarget,
             infoPlist: .file(path: "App/Resources/Info.plist"),
             sources: ["App/Sources/**"],
-            resources: ["App/Resources/**"],
             entitlements: .file(path: "App/Resources/AppTemplate.entitlements"),
             settings: .settings(
                 base: [

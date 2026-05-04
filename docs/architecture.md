@@ -58,6 +58,8 @@ JSON blob to UserDefaults (app group) is:
 - Easy to backup, inspect, and debug
 - Fully compatible with CloudKit KVS sync
 
+Secrets do not go in this blob. OpenRouter keys from BYOK or manual entry are stored in Keychain via `OpenRouterCredentialStore`; `Settings` stores only non-secret connection metadata.
+
 For large datasets (thousands of items, time-series data), use SwiftData like cut-tracker does. The `Persistence` module is the only change needed.
 
 ### Why @Observable over ObservableObject?

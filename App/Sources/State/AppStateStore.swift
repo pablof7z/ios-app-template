@@ -12,7 +12,25 @@ final class AppStateStore {
     }
 
     init() {
-        self.state = (try? Persistence.load()) ?? AppState()
+        var loadedState = (try? Persistence.load()) ?? AppState()
+        Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState)
+        self.state = loadedState
+    }
+
+    private static func migrateLegacyOpenRouterSecretIfNeeded(in state: inout AppState) {
+        let legacyKey = state.settings.legacyOpenRouterAPIKey?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !legacyKey.isEmpty else {
+            state.settings.legacyOpenRouterAPIKey = nil
+            return
+        }
+
+        if (try? OpenRouterCredentialStore.saveAPIKey(legacyKey)) != nil {
+            state.settings.markOpenRouterManual()
+        } else {
+            state.settings.clearOpenRouterCredential()
+        }
+        Persistence.save(state)
     }
 
     // MARK: - Items
@@ -98,6 +116,14 @@ final class AppStateStore {
 
     func updateSettings(_ settings: Settings) {
         state.settings = settings
+    }
+
+    /// Wipes all user data while preserving API credentials.
+    func clearAllData() {
+        let preserved = state.settings
+        state = AppState()
+        state.settings = preserved
+        Persistence.save(state)
     }
 
     // MARK: - Derived views

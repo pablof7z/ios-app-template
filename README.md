@@ -46,7 +46,7 @@ Architecture mirrors win-the-day-app's `AgentSession`:
 
 Add new tools in `AgentTools.schema` and `AgentTools.dispatch`.
 
-Configure via **Settings → AI Agent**: OpenRouter API key, model ID (default `openai/gpt-4o-mini`), max turns.
+Configure via **Settings → AI Agent**: connect OpenRouter with BYOK, optionally save a manual key, choose the model ID (default `openai/gpt-4o-mini`), and set max turns. Provider keys are stored in Keychain; app state stores only non-secret connection metadata.
 
 ### Friends & Collaborators
 A `Friend` model representing trusted contacts whose agents can create/modify items in your app. When a friend's agent acts, items are tagged with `requestedByFriendID` and `requestedByDisplayName` for provenance display.
@@ -89,7 +89,7 @@ Haptics.error()      // failure
 `App/Sources/Design/PressableStyle.swift` — `.pressable()` for scale-on-press interactions.
 
 ### Design Tokens
-`App/Sources/App/AppTheme.swift` — centralized `AppTheme.Color`, `AppTheme.Spacing`, `AppTheme.Corner` enums.
+`App/Sources/Design/AppTheme.swift` — centralized `AppTheme.Color`, `AppTheme.Spacing`, `AppTheme.Corner`, typography, motion, and shadow tokens.
 
 ---
 
@@ -100,13 +100,17 @@ App/Sources/
 ├── AppMain.swift              @main entry point
 ├── App/
 │   ├── RootView.swift         TabView + shake handler + feedback orchestration
-│   └── AppTheme.swift         Design tokens (colors, spacing, corner radii)
 ├── Domain/
 │   └── Models.swift           Item, Note, Friend, AgentMemory, Anchor, AppState
 ├── State/
 │   ├── AppStateStore.swift    @Observable store — all mutations route here
 │   └── Persistence.swift      JSON encode/decode to App Group UserDefaults
+├── Services/
+│   ├── BYOKConnectService.swift OAuth-style BYOK flow with PKCE
+│   ├── OpenRouterCredentialStore.swift Keychain-backed OpenRouter key access
+│   └── KeychainStore.swift    Thin Keychain wrapper
 ├── Design/
+│   ├── AppTheme.swift         Design tokens (colors, spacing, type, motion)
 │   ├── ShakeDetector.swift    .onShake() view modifier
 │   ├── Haptics.swift          UIImpact/UINotification feedback
 │   ├── PressableStyle.swift   ButtonStyle with scale on press
@@ -167,7 +171,7 @@ App/Sources/
 
    Replace `group.com.yourcompany.apptemplate` in `Persistence.swift` and `AppTemplate.entitlements` with your actual App Group ID.
 
-4. **Add OpenRouter key in Settings** to enable the agent.
+4. **Connect OpenRouter in Settings** with BYOK, or save a manual key, to enable the agent.
 
 ### Running
 

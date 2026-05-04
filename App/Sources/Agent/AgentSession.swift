@@ -30,9 +30,15 @@ final class AgentSession {
     }
 
     func run(transcript: String) async {
-        let key = store.state.settings.openRouterAPIKey
-        guard !key.isEmpty else {
-            phase = .failed(message: "OpenRouter API key not configured. Add it in Settings.")
+        let key: String
+        do {
+            guard let storedKey = try OpenRouterCredentialStore.apiKey() else {
+                phase = .failed(message: "OpenRouter is not connected. Connect with BYOK or save a key in Settings.")
+                return
+            }
+            key = storedKey
+        } catch {
+            phase = .failed(message: "OpenRouter credential could not be read. Reconnect in Settings.")
             return
         }
 

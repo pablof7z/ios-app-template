@@ -1,35 +1,59 @@
 import SwiftUI
 
+// MARK: - FeedbackCategory
+
+enum FeedbackCategory: String, CaseIterable, Identifiable {
+    case bug = "Bug"
+    case featureRequest = "Feature Request"
+    case question = "Question"
+    case praise = "Praise"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .bug: "ant.fill"
+        case .featureRequest: "lightbulb.fill"
+        case .question: "questionmark.circle.fill"
+        case .praise: "heart.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .bug: .red
+        case .featureRequest: .blue
+        case .question: .purple
+        case .praise: .pink
+        }
+    }
+}
+
+// MARK: - FeedbackView
+
 struct FeedbackView: View {
     @Bindable var workflow: FeedbackWorkflow
     @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedCategory: FeedbackCategory = .bug
     @State private var isSubmitting = false
+    @State private var submitSuccess = false
     @State private var errorMessage: String?
+    @State private var charCount = 0
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-                    // Text input on a Liquid Glass surface
-                    ZStack(alignment: .topLeading) {
-                        if workflow.draft.isEmpty {
-                            Text("What's on your mind?")
-                                .foregroundStyle(.tertiary)
-                                .padding(AppTheme.Spacing.md)
-                        }
-                        TextEditor(text: $workflow.draft)
-                            .frame(minHeight: 140)
-                            .scrollContentBackground(.hidden)
-                            .padding(AppTheme.Spacing.sm)
-                    }
-                    .glassSurface(cornerRadius: AppTheme.Corner.md)
-
+                    categoryPicker
+                    textEditorSection
                     screenshotSection
 
                     if let error = errorMessage {
                         Text(error)
-                            .font(.caption)
+                            .font(AppTheme.Typography.caption)
                             .foregroundStyle(.red)
+                            .transition(.opacity)
                     }
                 }
                 .padding(AppTheme.Spacing.md)
@@ -43,6 +67,10 @@ struct FeedbackView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     if isSubmitting {
                         ProgressView()
+                    } else if submitSuccess {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .symbolEffect(.bounce, value: submitSuccess)
                     } else {
                         Button("Send") { submit() }
                             .disabled(workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -52,6 +80,69 @@ struct FeedbackView: View {
             }
         }
     }
+
+    // MARK: - Category picker
+
+    @ViewBuilder
+    private var categoryPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                ForEach(FeedbackCategory.allCases) { cat in
+                    Button {
+                        selectedCategory = cat
+                        Haptics.selection()
+                    } label: {
+                        Label(cat.rawValue, systemImage: cat.icon)
+                            .font(AppTheme.Typography.caption)
+                            .padding(.horizontal, AppTheme.Spacing.md)
+                            .padding(.vertical, AppTheme.Spacing.sm)
+                    }
+                    .glassEffect(
+                        selectedCategory == cat
+                            ? .regular.tint(cat.tint).interactive()
+                            : .regular.interactive(),
+                        in: .capsule
+                    )
+                    .animation(AppTheme.Animation.springFast, value: selectedCategory)
+                }
+            }
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, 2)
+        }
+        .padding(.horizontal, -AppTheme.Spacing.md)
+    }
+
+    // MARK: - Text editor
+
+    @ViewBuilder
+    private var textEditorSection: some View {
+        ZStack(alignment: .topLeading) {
+            if workflow.draft.isEmpty {
+                Text("What's on your mind?")
+                    .foregroundStyle(.tertiary)
+                    .padding(AppTheme.Spacing.md)
+            }
+
+            VStack(alignment: .trailing, spacing: 0) {
+                TextEditor(text: $workflow.draft)
+                    .frame(minHeight: 130)
+                    .scrollContentBackground(.hidden)
+                    .padding(AppTheme.Spacing.sm)
+                    .onChange(of: workflow.draft) { _, new in
+                        charCount = new.count
+                    }
+
+                Text("\(charCount)")
+                    .font(AppTheme.Typography.mono)
+                    .foregroundStyle(.tertiary)
+                    .padding(.trailing, AppTheme.Spacing.sm)
+                    .padding(.bottom, AppTheme.Spacing.xs)
+            }
+        }
+        .glassSurface(cornerRadius: AppTheme.Corner.md)
+    }
+
+    // MARK: - Screenshot section
 
     @ViewBuilder
     private var screenshotSection: some View {
@@ -67,6 +158,7 @@ struct FeedbackView: View {
                         RoundedRectangle(cornerRadius: AppTheme.Corner.md)
                             .strokeBorder(.separator, lineWidth: 0.5)
                     )
+                    .appShadow(AppTheme.Shadow.subtle)
 
                 GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
                     HStack(spacing: AppTheme.Spacing.sm) {
@@ -100,11 +192,13 @@ struct FeedbackView: View {
                 .buttonStyle(.glass)
 
                 Text("Dismiss this sheet, then shake to capture the screen.")
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             }
         }
     }
+
+    // MARK: - Actions
 
     private func cancel() {
         workflow.phase = .idle
@@ -115,10 +209,6 @@ struct FeedbackView: View {
     }
 
     private func submit() {
-        // TODO: Implement your feedback submission here.
-        // Options: email via MFMailComposeViewController, Nostr kind:1 event,
-        // GitHub issue via API, custom webhook, etc.
-        // See docs/features.md → Feedback for implementation options.
         isSubmitting = true
         errorMessage = nil
 
@@ -126,6 +216,8 @@ struct FeedbackView: View {
             do {
                 try await performSubmission()
                 Haptics.success()
+                withAnimation(AppTheme.Animation.spring) { submitSuccess = true }
+                try? await Task.sleep(for: .milliseconds(800))
                 workflow.phase = .idle
                 workflow.draft = ""
                 workflow.screenshot = nil
@@ -140,7 +232,8 @@ struct FeedbackView: View {
     }
 
     private func performSubmission() async throws {
-        // Placeholder — replace with real submission logic
-        try await Task.sleep(for: .milliseconds(500))
+        // TODO: Replace with real submission — email, Nostr kind:1, GitHub issue, webhook.
+        // See docs/features.md → Feedback for implementation options.
+        try await Task.sleep(for: .milliseconds(600))
     }
 }

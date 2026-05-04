@@ -5,21 +5,36 @@ struct FriendDetailView: View {
     let friend: Friend
     @State private var showRenameAlert = false
     @State private var newName = ""
+    @State private var showCopiedFeedback = false
     @Environment(\.dismiss) private var dismiss
+    @Namespace private var glassNS
 
     private var currentFriend: Friend {
         store.state.friends.first { $0.id == friend.id } ?? friend
     }
 
     private var friendItems: [Item] {
-        store.state.items.filter { !$0.deleted && $0.requestedByFriendID == friend.id }
+        store.state.items
+            .filter { !$0.deleted && $0.requestedByFriendID == friend.id }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private var friendNotes: [Note] {
+        let itemIDs = Set(friendItems.map(\.id))
+        return store.activeNotes.filter {
+            if case .item(let id) = $0.target { return itemIDs.contains(id) }
+            return false
+        }
+    }
+
+    private var addedDateString: String {
+        "Friends since " + currentFriend.addedAt.formatted(.dateTime.month(.wide).year())
     }
 
     var body: some View {
         NavigationStack {
             List {
-                // Glass profile header — glass surfaces render best outside List rows,
-                // so we pin it as the first row with a clear background.
+                // Glass profile header — clear listRowBackground so glass renders properly
                 Section {
                     profileHeader
                         .listRowBackground(Color.clear)
@@ -29,14 +44,31 @@ struct FriendDetailView: View {
                 if !friendItems.isEmpty {
                     Section("Tasks from \(currentFriend.displayName)") {
                         ForEach(friendItems) { item in
-                            HStack {
+                            HStack(spacing: AppTheme.Spacing.sm) {
                                 Image(systemName: item.status == .done ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(item.status == .done ? .green : .secondary)
+                                    .contentTransition(.symbolEffect(.replace))
                                 Text(item.title)
                                     .strikethrough(item.status == .done)
                                     .foregroundStyle(item.status == .done ? .secondary : .primary)
                             }
                             .font(.callout)
+                            .opacity(item.status == .done ? 0.55 : 1)
+                        }
+                    }
+                }
+
+                if !friendNotes.isEmpty {
+                    Section("Notes") {
+                        ForEach(friendNotes) { note in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(note.text)
+                                    .font(AppTheme.Typography.callout)
+                                    .lineLimit(3)
+                                Text(note.createdAt.formatted(date: .abbreviated, time: .omitted))
+                                    .font(AppTheme.Typography.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
                     }
                 }
@@ -51,6 +83,7 @@ struct FriendDetailView: View {
                 Section {
                     Button("Remove Friend", role: .destructive) {
                         store.removeFriend(friend.id)
+                        Haptics.medium()
                         dismiss()
                     }
                 }
@@ -61,32 +94,59 @@ struct FriendDetailView: View {
         .alert("Rename Friend", isPresented: $showRenameAlert) {
             TextField("Display Name", text: $newName)
             Button("Save") {
-                let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                store.updateFriendDisplayName(friend.id, newName: trimmed)
+                let t = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !t.isEmpty else { return }
+                store.updateFriendDisplayName(friend.id, newName: t)
+                Haptics.success()
             }
             Button("Cancel", role: .cancel) {}
         }
     }
 
+    // MARK: - Profile header
+
     @ViewBuilder
     private var profileHeader: some View {
         HStack(spacing: AppTheme.Spacing.lg) {
-            FriendAvatar(friend: currentFriend, size: 64)
+            FriendAvatar(friend: currentFriend, size: 68)
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text(currentFriend.displayName)
-                    .font(.title2.bold())
+                    .font(AppTheme.Typography.title)
 
-                Text(currentFriend.identifier)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                Button {
+                    UIPasteboard.general.string = currentFriend.identifier
+                    Haptics.selection()
+                    withAnimation(AppTheme.Animation.springFast) { showCopiedFeedback = true }
+                    Task {
+                        try? await Task.sleep(for: .seconds(1.8))
+                        withAnimation(AppTheme.Animation.easeOut) { showCopiedFeedback = false }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        if showCopiedFeedback {
+                            Label("Copied!", systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                        } else {
+                            Label(currentFriend.identifier, systemImage: "doc.on.doc")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .font(AppTheme.Typography.mono)
+                    .lineLimit(1)
                     .truncationMode(.middle)
+                    .contentTransition(.identity)
+                }
+                .buttonStyle(.plain)
+                .animation(AppTheme.Animation.springFast, value: showCopiedFeedback)
+
+                Text(addedDateString)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.tertiary)
 
                 if let about = currentFriend.about {
                     Text(about)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -95,5 +155,6 @@ struct FriendDetailView: View {
         }
         .padding(AppTheme.Spacing.md)
         .glassSurface(cornerRadius: AppTheme.Corner.xl)
+        .glassEffectID("profile-\(friend.id)", in: glassNS)
     }
 }
