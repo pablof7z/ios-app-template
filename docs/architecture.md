@@ -72,6 +72,22 @@ TCA (The Composable Architecture) is excellent for large teams and complex side 
 
 All models are `Sendable`. `AppStateStore` and `AgentSession` are `@MainActor`. `AgentTools.dispatch` is `@MainActor`. This satisfies Swift 6's strict concurrency without data races.
 
+## Liquid Glass design system (iOS 26)
+
+The template targets iOS 26 and uses Apple's native Liquid Glass material throughout:
+
+- **`GlassSurface.swift`** — `.glassSurface(cornerRadius:)` modifier backed by `.glassEffect()`. Tinted variant for status banners.
+- **`HomeView`** — Glass FAB row (Add + Ask Agent) at the bottom, glass agent-status banner with tint keyed to session state.
+- **`FeedbackView`** — TextEditor rendered on a glass surface; screenshot action buttons use `.buttonStyle(.glass)`.
+- **`FriendDetailView`** — Profile header card uses `.glassSurface()` pinned above the List.
+- Toolbar and tab bar glass are handled automatically by iOS 26; no additional code required.
+
+Key patterns:
+- Always wrap sibling glass elements in `GlassEffectContainer(spacing:)` for performance and morphing.
+- Use `glassEffectID(_:in:)` + `@Namespace` for smooth morphing transitions.
+- Use `.interactive()` only on controls that respond to touch (buttons, toggles).
+- Avoid stacking too many nested glass layers — reserve for key chrome and interactive elements.
+
 ## Extension points
 
 | What | Where | How |
@@ -85,3 +101,4 @@ All models are `Sendable`. `AppStateStore` and `AgentSession` are `@MainActor`. 
 | SwiftData | Replace `Persistence.swift` | Use `ModelContainer` + `@Model` classes |
 | Watch extension | Add target to `Project.swift` | Communicate via `WCSession` + App Group |
 | Widget | Add target to `Project.swift` | Share state via App Group UserDefaults |
+| Glass tint for new status | `GlassSurface.swift` extension | Use `.glassSurface(cornerRadius:tint:)` overload |

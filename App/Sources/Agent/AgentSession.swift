@@ -144,7 +144,7 @@ struct AgentToolCall: Sendable {
     let arguments: String
 }
 
-struct AgentResult: Sendable {
+struct AgentResult: @unchecked Sendable {
     let assistantMessage: [String: Any]
     let toolCalls: [AgentToolCall]
 }

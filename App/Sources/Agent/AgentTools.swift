@@ -8,7 +8,7 @@ enum AgentTools {
 
     // MARK: - JSON Schema (OpenAI tool format)
 
-    static let schema: [[String: Any]] = [
+    nonisolated(unsafe) static let schema: [[String: Any]] = [
         tool(
             name: "create_item",
             description: "Create a new task or to-do item for the user.",

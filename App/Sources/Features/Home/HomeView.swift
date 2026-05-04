@@ -3,44 +3,74 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
     @State private var showAddItem = false
-    @State private var agentInput = ""
     @State private var showAgentCompose = false
     @State private var agentSession: AgentSession?
+    @Namespace private var glassNamespace
 
     private var activeItems: [Item] {
         store.activeItems.sorted { $0.createdAt > $1.createdAt }
     }
 
     var body: some View {
-        List {
-            if let session = agentSession {
-                agentStatusRow(session: session)
+        ZStack(alignment: .bottom) {
+            List {
+                if activeItems.isEmpty {
+                    ContentUnavailableView(
+                        "Nothing here yet",
+                        systemImage: "checkmark.circle",
+                        description: Text("Add your first item or ask the agent.")
+                    )
+                    .listRowBackground(Color.clear)
+                } else {
+                    ForEach(activeItems) { item in
+                        ItemRow(item: item)
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                // Spacing so list content scrolls above the FAB
+                Color.clear.frame(height: 80)
             }
 
-            if activeItems.isEmpty {
-                ContentUnavailableView(
-                    "Nothing here yet",
-                    systemImage: "checkmark.circle",
-                    description: Text("Add your first item or ask the agent.")
-                )
-                .listRowBackground(Color.clear)
-            } else {
-                ForEach(activeItems) { item in
-                    ItemRow(item: item)
+            // Agent status glass banner — floats above list when agent is running
+            VStack(spacing: 0) {
+                if let session = agentSession {
+                    agentBanner(session: session)
+                        .padding(.horizontal, AppTheme.Spacing.md)
+                        .padding(.bottom, AppTheme.Spacing.sm)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                // Glass FAB row
+                GlassEffectContainer(spacing: AppTheme.Spacing.md) {
+                    HStack(spacing: AppTheme.Spacing.md) {
+                        Button {
+                            showAgentCompose = true
+                        } label: {
+                            Label("Ask Agent", systemImage: "sparkles")
+                                .padding(.horizontal, AppTheme.Spacing.md)
+                                .padding(.vertical, AppTheme.Spacing.sm)
+                        }
+                        .buttonStyle(.glass)
+                        .glassEffectID("agent-btn", in: glassNamespace)
+
+                        Button {
+                            showAddItem = true
+                        } label: {
+                            Label("Add", systemImage: "plus")
+                                .padding(.horizontal, AppTheme.Spacing.md)
+                                .padding(.vertical, AppTheme.Spacing.sm)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .glassEffectID("add-btn", in: glassNamespace)
+                    }
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                    .padding(.bottom, AppTheme.Spacing.md)
                 }
             }
         }
         .navigationTitle("Home")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button("Add Item") { showAddItem = true }
-                    Button("Ask Agent") { showAgentCompose = true }
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
-        }
+        .animation(.spring(duration: 0.35), value: agentSession?.phase.isActive)
         .sheet(isPresented: $showAddItem) {
             AddItemSheet(isPresented: $showAddItem)
         }
@@ -53,37 +83,43 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func agentStatusRow(session: AgentSession) -> some View {
+    private func agentBanner(session: AgentSession) -> some View {
         HStack(spacing: AppTheme.Spacing.sm) {
             switch session.phase {
             case .running(let turn):
                 ProgressView()
-                Text("Agent working (turn \(turn + 1))…")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .tint(.blue)
+                Text("Agent working · turn \(turn + 1)")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.primary)
             case .completed(let exhausted):
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                Text(exhausted ? "Agent finished (turn limit reached)" : "Agent done")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(exhausted ? "Agent done (turn limit)" : "Agent finished")
+                    .font(.caption.weight(.medium))
                 Spacer()
-                Button("Dismiss") { agentSession = nil }
+                Button("Dismiss") { withAnimation { agentSession = nil } }
                     .font(.caption)
+                    .buttonStyle(.glass)
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption.weight(.medium))
+                    .lineLimit(1)
                 Spacer()
-                Button("Dismiss") { agentSession = nil }
+                Button("Dismiss") { withAnimation { agentSession = nil } }
                     .font(.caption)
+                    .buttonStyle(.glass)
             case .idle:
                 EmptyView()
             }
         }
-        .padding(.vertical, AppTheme.Spacing.xs)
+        .padding(AppTheme.Spacing.sm)
+        .glassSurface(
+            cornerRadius: AppTheme.Corner.lg,
+            tint: session.phase.bannerTint
+        )
     }
 }
 
@@ -139,7 +175,10 @@ struct ItemRow: View {
                 store.setItemStatus(item.id, status: item.status == .done ? .pending : .done)
                 Haptics.selection()
             } label: {
-                Label(item.status == .done ? "Reopen" : "Done", systemImage: item.status == .done ? "arrow.uturn.left" : "checkmark")
+                Label(
+                    item.status == .done ? "Reopen" : "Done",
+                    systemImage: item.status == .done ? "arrow.uturn.left" : "checkmark"
+                )
             }
             .tint(.green)
         }
@@ -239,6 +278,26 @@ private struct AgentComposeSheet: View {
 
         Task {
             await session.run(transcript: transcript)
+        }
+    }
+}
+
+// MARK: - AgentSession.Phase helpers
+
+private extension AgentSession.Phase {
+    var isActive: Bool {
+        switch self {
+        case .idle: false
+        default: true
+        }
+    }
+
+    var bannerTint: Color {
+        switch self {
+        case .running: .blue
+        case .completed: .green
+        case .failed: .orange
+        case .idle: .clear
         }
     }
 }

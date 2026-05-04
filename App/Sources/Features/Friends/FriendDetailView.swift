@@ -18,28 +18,12 @@ struct FriendDetailView: View {
     var body: some View {
         NavigationStack {
             List {
+                // Glass profile header — glass surfaces render best outside List rows,
+                // so we pin it as the first row with a clear background.
                 Section {
-                    HStack(spacing: AppTheme.Spacing.md) {
-                        FriendAvatar(friend: currentFriend, size: 56)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(currentFriend.displayName)
-                                .font(.title3.bold())
-
-                            Text(currentFriend.identifier)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .monospaced()
-                                .lineLimit(2)
-
-                            if let about = currentFriend.about {
-                                Text(about)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    profileHeader
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 }
 
                 if !friendItems.isEmpty {
@@ -83,5 +67,33 @@ struct FriendDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    @ViewBuilder
+    private var profileHeader: some View {
+        HStack(spacing: AppTheme.Spacing.lg) {
+            FriendAvatar(friend: currentFriend, size: 64)
+
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text(currentFriend.displayName)
+                    .font(.title2.bold())
+
+                Text(currentFriend.identifier)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+
+                if let about = currentFriend.about {
+                    Text(about)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 }

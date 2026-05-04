@@ -10,21 +10,19 @@ struct FeedbackView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-                    TextEditor(text: $workflow.draft)
-                        .frame(minHeight: 140)
-                        .scrollContentBackground(.hidden)
-                        .padding(AppTheme.Spacing.sm)
-                        .background(AppTheme.Color.secondaryBackground, in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
-                        .overlay(
-                            Group {
-                                if workflow.draft.isEmpty {
-                                    Text("What's on your mind?")
-                                        .foregroundStyle(.tertiary)
-                                        .padding(AppTheme.Spacing.md)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                }
-                            }
-                        )
+                    // Text input on a Liquid Glass surface
+                    ZStack(alignment: .topLeading) {
+                        if workflow.draft.isEmpty {
+                            Text("What's on your mind?")
+                                .foregroundStyle(.tertiary)
+                                .padding(AppTheme.Spacing.md)
+                        }
+                        TextEditor(text: $workflow.draft)
+                            .frame(minHeight: 140)
+                            .scrollContentBackground(.hidden)
+                            .padding(AppTheme.Spacing.sm)
+                    }
+                    .glassSurface(cornerRadius: AppTheme.Corner.md)
 
                     screenshotSection
 
@@ -70,20 +68,23 @@ struct FeedbackView: View {
                             .strokeBorder(.separator, lineWidth: 0.5)
                     )
 
-                HStack {
-                    Button("Re-annotate") {
-                        workflow.phase = .annotating
-                        dismiss()
-                    }
-                    .font(.caption)
+                GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
+                    HStack(spacing: AppTheme.Spacing.sm) {
+                        Button("Re-annotate") {
+                            workflow.phase = .annotating
+                            dismiss()
+                        }
+                        .buttonStyle(.glass)
 
-                    Spacer()
+                        Spacer()
 
-                    Button("Remove", role: .destructive) {
-                        workflow.screenshot = nil
-                        workflow.annotatedImage = nil
+                        Button("Remove") {
+                            workflow.screenshot = nil
+                            workflow.annotatedImage = nil
+                        }
+                        .tint(.red)
+                        .buttonStyle(.glass)
                     }
-                    .font(.caption)
                 }
             }
         } else {
@@ -93,10 +94,12 @@ struct FeedbackView: View {
                     dismiss()
                 } label: {
                     Label("Attach Screenshot", systemImage: "camera.viewfinder")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppTheme.Spacing.xs)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
 
-                Text("After dismissing, shake to capture the screen.")
+                Text("Dismiss this sheet, then shake to capture the screen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

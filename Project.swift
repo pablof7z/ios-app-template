@@ -6,7 +6,7 @@ let appName = "AppTemplate"
 let appDisplayName = "App Template"
 let bundleIdPrefix = "com.yourcompany"
 let appleTeamID = "XXXXXXXXXX"           // Replace with your Apple Team ID
-let deploymentTarget: DeploymentTargets = .iOS("17.0")
+let deploymentTarget: DeploymentTargets = .iOS("26.0")
 
 // MARK: - Derived identifiers
 
