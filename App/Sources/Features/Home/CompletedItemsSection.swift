@@ -39,23 +39,33 @@ struct CompletedItemsSection: View {
                     trailing: AppTheme.Spacing.md
                 ))
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    Button {
-                        store.setItemStatus(item.id, status: .pending)
-                        Haptics.success()
-                    } label: {
-                        Label("Restore", systemImage: "arrow.uturn.left.circle.fill")
-                    }
-                    .tint(.blue)
+                    restoreAction(for: item)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        store.deleteItem(item.id)
-                        Haptics.medium()
-                    } label: {
-                        Label("Delete", systemImage: "trash.fill")
-                    }
+                    deleteAction(for: item)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    @ViewBuilder
+    private func restoreAction(for item: Item) -> some View {
+        Button {
+            store.setItemStatus(item.id, status: .pending)
+            Haptics.success()
+        } label: {
+            Label("Restore", systemImage: "arrow.uturn.left.circle.fill")
+        }
+        .tint(.blue)
+    }
+
+    @ViewBuilder
+    private func deleteAction(for item: Item) -> some View {
+        Button(role: .destructive) {
+            store.deleteItem(item.id)
+            Haptics.medium()
+        } label: {
+            Label("Delete", systemImage: "trash.fill")
         }
     }
 
