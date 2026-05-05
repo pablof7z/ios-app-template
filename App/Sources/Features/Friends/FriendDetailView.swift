@@ -139,6 +139,8 @@ struct FriendDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .animation(AppTheme.Animation.springFast, value: showCopiedFeedback)
+                .accessibilityLabel(showCopiedFeedback ? "Identifier copied" : "Copy identifier")
+                .accessibilityHint("Copies the friend's identifier to the clipboard")
 
                 Text(addedDateString)
                     .font(AppTheme.Typography.caption)

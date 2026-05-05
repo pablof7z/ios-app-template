@@ -16,6 +16,8 @@ struct FriendAvatar: View {
                 .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
         }
+        .accessibilityLabel(friend.displayName)
+        .accessibilityAddTraits(.isImage)
     }
 
     private var avatarBaseColor: Color {

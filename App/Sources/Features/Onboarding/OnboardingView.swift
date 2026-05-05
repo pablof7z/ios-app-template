@@ -14,6 +14,12 @@ struct OnboardingView: View {
 
     private let pageCount: Int = 4
 
+    private enum Page {
+        static let welcome = 0
+        static let aiSetup = 1
+        static let identity = 2
+    }
+
     var body: some View {
         ZStack {
             backgroundGradient.ignoresSafeArea()
@@ -137,23 +143,23 @@ struct OnboardingView: View {
     // MARK: - Logic
 
     private var shouldShowSkip: Bool {
-        pageIndex == 2
+        pageIndex == Page.identity
     }
 
     private var primaryButtonTitle: String {
         switch pageIndex {
-        case 0: "Get Started"
-        case 1: apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Skip for Now" : "Save Key"
-        case 2: agentNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Skip for Now" : "Save"
+        case Page.welcome: "Get Started"
+        case Page.aiSetup: apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Skip for Now" : "Save Key"
+        case Page.identity: agentNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Skip for Now" : "Save"
         default: "Enter App"
         }
     }
 
     private func primaryAction() {
         switch pageIndex {
-        case 1:
+        case Page.aiSetup:
             handleAISetupContinue()
-        case 2:
+        case Page.identity:
             handleIdentityContinue()
         case pageCount - 1:
             finishOnboarding()
