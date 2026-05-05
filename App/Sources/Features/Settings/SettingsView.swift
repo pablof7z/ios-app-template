@@ -12,8 +12,8 @@ struct SettingsView: View {
             List {
                 configurationSection
                 dataSection
-                aboutSection
                 destructiveSection
+                versionFooterSection
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -78,13 +78,6 @@ struct SettingsView: View {
         }
     }
 
-    private var aboutSection: some View {
-        Section("About") {
-            SettingsRow(icon: "info.circle", tint: .gray, title: "Version", value: versionString)
-            SettingsRow(icon: "hammer", tint: .gray, title: "Build", value: buildString)
-        }
-    }
-
     private var destructiveSection: some View {
         Section {
             Button("Clear All Data", role: .destructive) {
@@ -92,6 +85,16 @@ struct SettingsView: View {
             }
         } footer: {
             Text("Permanently deletes all items, notes, friends, and memories. API credentials and Nostr identity are preserved.")
+        }
+    }
+
+    private var versionFooterSection: some View {
+        Section {
+        } footer: {
+            Text(appVersionFooter)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 
@@ -111,11 +114,9 @@ struct SettingsView: View {
         return model
     }
 
-    private var versionString: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
-    }
-
-    private var buildString: String {
-        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "-"
+    private var appVersionFooter: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "App Template  \(version)  (build \(build))"
     }
 }
