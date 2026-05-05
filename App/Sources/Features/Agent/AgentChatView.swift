@@ -8,6 +8,9 @@ struct AgentChatView: View {
     @State private var draft: String = ""
     @State private var presentedBatch: UUID?
     @State private var showSettingsHint = false
+    @State private var bannerDismissed = false
+    @State private var didSendInSession = false
+    @State private var showClearConfirm = false
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -22,6 +25,30 @@ struct AgentChatView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    if let session, !session.messages.isEmpty {
+                        Button {
+                            Haptics.selection()
+                            showClearConfirm = true
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                        .accessibilityLabel("Clear conversation")
+                    }
+                }
+            }
+            .alert("Clear conversation?", isPresented: $showClearConfirm) {
+                Button("Clear", role: .destructive) {
+                    session?.clearHistory()
+                    bannerDismissed = false
+                    didSendInSession = false
+                    Haptics.success()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently deletes the chat history on this device.")
             }
         }
         .presentationDetents([.large])
@@ -43,6 +70,10 @@ struct AgentChatView: View {
     private var content: some View {
         if let session {
             VStack(spacing: 0) {
+                if shouldShowResumeBanner(session: session) {
+                    resumeBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 if session.messages.isEmpty {
                     emptyState
                 } else {
@@ -50,9 +81,41 @@ struct AgentChatView: View {
                 }
                 composer(session: session)
             }
+            .animation(AppTheme.Animation.spring, value: shouldShowResumeBanner(session: session))
         } else {
             ProgressView()
         }
+    }
+
+    private func shouldShowResumeBanner(session: AgentChatSession) -> Bool {
+        session.loadedFromHistory && !bannerDismissed && !didSendInSession
+    }
+
+    private var resumeBanner: some View {
+        HStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.indigo)
+            Text("Continuing from your previous session")
+                .font(AppTheme.Typography.caption)
+                .foregroundStyle(.primary)
+            Spacer(minLength: 0)
+            Button {
+                withAnimation(AppTheme.Animation.spring) { bannerDismissed = true }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss banner")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .glassEffect(.regular.tint(.indigo.opacity(0.10)), in: .rect(cornerRadius: 12))
+        .padding(.horizontal, AppTheme.Spacing.md)
+        .padding(.top, AppTheme.Spacing.sm)
     }
 
     private func transcript(session: AgentChatSession) -> some View {
@@ -245,6 +308,7 @@ struct AgentChatView: View {
         guard let session, canSend(session: session) else { return }
         let text = draft
         draft = ""
+        didSendInSession = true
         Haptics.light()
         Task {
             await session.send(text)

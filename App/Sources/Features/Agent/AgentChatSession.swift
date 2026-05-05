@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-struct ChatMessage: Identifiable, Equatable {
+struct ChatMessage: Identifiable, Equatable, Codable {
     enum Role: Equatable {
         case user
         case assistant
@@ -9,15 +9,71 @@ struct ChatMessage: Identifiable, Equatable {
         case error
     }
 
-    let id = UUID()
+    let id: UUID
     let role: Role
     let text: String
     let timestamp: Date
 
-    init(role: Role, text: String, timestamp: Date = Date()) {
+    init(id: UUID = UUID(), role: Role, text: String, timestamp: Date = Date()) {
+        self.id = id
         self.role = role
         self.text = text
         self.timestamp = timestamp
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case roleType
+        case batchID
+        case batchCount
+        case text
+        case timestamp
+    }
+
+    private enum RoleType: String, Codable {
+        case user
+        case assistant
+        case toolBatch
+        case error
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(UUID.self, forKey: .id)
+        self.text = try c.decode(String.self, forKey: .text)
+        self.timestamp = try c.decode(Date.self, forKey: .timestamp)
+        let type = try c.decode(RoleType.self, forKey: .roleType)
+        switch type {
+        case .user:
+            self.role = .user
+        case .assistant:
+            self.role = .assistant
+        case .error:
+            self.role = .error
+        case .toolBatch:
+            let batchID = try c.decode(UUID.self, forKey: .batchID)
+            let count = try c.decode(Int.self, forKey: .batchCount)
+            self.role = .toolBatch(batchID: batchID, count: count)
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(text, forKey: .text)
+        try c.encode(timestamp, forKey: .timestamp)
+        switch role {
+        case .user:
+            try c.encode(RoleType.user, forKey: .roleType)
+        case .assistant:
+            try c.encode(RoleType.assistant, forKey: .roleType)
+        case .error:
+            try c.encode(RoleType.error, forKey: .roleType)
+        case .toolBatch(let batchID, let count):
+            try c.encode(RoleType.toolBatch, forKey: .roleType)
+            try c.encode(batchID, forKey: .batchID)
+            try c.encode(count, forKey: .batchCount)
+        }
     }
 }
 
@@ -32,22 +88,33 @@ final class AgentChatSession {
 
     private(set) var messages: [ChatMessage] = []
     private(set) var phase: Phase = .idle
+    private(set) var loadedFromHistory: Bool = false
 
     private let store: AppStateStore
+    private let history: ChatHistoryStore
     private var rawMessages: [[String: Any]] = []
 
-    /// Read live from settings each turn so a user changing the slider
-    /// mid-session takes effect immediately and there's no value duplicated
-    /// between this class and `Settings.agentMaxTurns`.
     private var maxTurns: Int { max(1, store.state.settings.agentMaxTurns) }
 
-    init(store: AppStateStore) {
+    init(store: AppStateStore, history: ChatHistoryStore = .shared) {
         self.store = store
+        self.history = history
+        let loaded = history.load()
+        self.messages = loaded
+        self.loadedFromHistory = !loaded.isEmpty
     }
 
     var canSend: Bool {
         if case .sending = phase { return false }
         return true
+    }
+
+    func clearHistory() {
+        history.clear()
+        messages = []
+        rawMessages = []
+        loadedFromHistory = false
+        phase = .idle
     }
 
     func send(_ text: String) async {
@@ -71,11 +138,13 @@ final class AgentChatSession {
                 "role": "system",
                 "content": AgentPrompt.build(for: store.state),
             ])
+            seedRawMessagesFromHistory()
         }
 
         rawMessages.append(["role": "user", "content": trimmed])
         messages.append(ChatMessage(role: .user, text: trimmed))
         phase = .sending
+        history.save(messages)
 
         let batchID = UUID()
         var batchActionCount = 0
@@ -93,6 +162,7 @@ final class AgentChatSession {
                 let msg = "Couldn't reach the agent. \(error.localizedDescription)"
                 messages.append(ChatMessage(role: .error, text: msg))
                 phase = .failed(msg)
+                history.save(messages)
                 return
             }
 
@@ -105,6 +175,7 @@ final class AgentChatSession {
 
             if result.toolCalls.isEmpty {
                 phase = .idle
+                history.save(messages)
                 return
             }
 
@@ -137,13 +208,26 @@ final class AgentChatSession {
                     text: ""
                 ))
             }
+            history.save(messages)
         }
 
-        // Loop exhausted without the model giving up tool calls — let the
-        // user know rather than silently going idle.
         let limitMsg = "Reached the \(maxTurns)-turn limit. Adjust max turns in Agent settings if you need longer runs."
         messages.append(ChatMessage(role: .error, text: limitMsg))
         phase = .failed(limitMsg)
+        history.save(messages)
+    }
+
+    private func seedRawMessagesFromHistory() {
+        for msg in messages {
+            switch msg.role {
+            case .user:
+                rawMessages.append(["role": "user", "content": msg.text])
+            case .assistant:
+                rawMessages.append(["role": "assistant", "content": msg.text])
+            case .toolBatch, .error:
+                continue
+            }
+        }
     }
 
     private func callOpenRouter(
