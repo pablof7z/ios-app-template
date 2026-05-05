@@ -8,11 +8,10 @@ struct FeedbackComposeView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(UserIdentityStore.self) private var userIdentity
 
-    @State private var isSending = false
     @State private var errorMessage: String?
 
     private var canSend: Bool {
-        !workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSending
+        !workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
@@ -47,15 +46,17 @@ struct FeedbackComposeView: View {
                     screenshotToolbarButton
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSending {
-                        ProgressView()
-                    } else {
-                        Button("Send") {
-                            Task { await send() }
+                    AsyncButton(
+                        action: { try await send() },
+                        onError: { error in
+                            errorMessage = error.localizedDescription
+                            Haptics.error()
                         }
-                        .fontWeight(.semibold)
-                        .disabled(!canSend)
+                    ) {
+                        Text("Send")
                     }
+                    .fontWeight(.semibold)
+                    .disabled(!canSend)
                 }
             }
         }
@@ -176,29 +177,21 @@ struct FeedbackComposeView: View {
         dismiss()
     }
 
-    private func send() async {
+    private func send() async throws {
         Haptics.light()
-        isSending = true
         errorMessage = nil
 
-        do {
-            let image = workflow.annotatedImage ?? workflow.screenshot
-            try await store.publishThread(
-                category: workflow.selectedCategory,
-                content: workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines),
-                image: image
-            )
-            Haptics.success()
-            workflow.phase = .idle
-            workflow.draft = ""
-            workflow.screenshot = nil
-            workflow.annotatedImage = nil
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
-            Haptics.error()
-        }
-
-        isSending = false
+        let image = workflow.annotatedImage ?? workflow.screenshot
+        try await store.publishThread(
+            category: workflow.selectedCategory,
+            content: workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines),
+            image: image
+        )
+        Haptics.success()
+        workflow.phase = .idle
+        workflow.draft = ""
+        workflow.screenshot = nil
+        workflow.annotatedImage = nil
+        dismiss()
     }
 }
