@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "Persistence")
 
 /// Persists AppState as a JSON blob in the shared App Group UserDefaults.
 /// The App Group allows widgets and extensions to read the same state.
@@ -25,18 +28,28 @@ enum Persistence {
 
     private static let stateKey = "apptemplate.state.v1"
 
+    /// Encodes `state` to JSON and writes it to the shared App Group UserDefaults.
+    ///
+    /// This method is intentionally non-throwing: encode failures are logged
+    /// via `os.Logger` and the existing persisted data is left untouched.
     static func save(_ state: AppState) {
         let data: Data
         do {
             data = try encoder.encode(state)
         } catch {
-            FileHandle.standardError.write(Data("Persistence.save: encode failed: \(error)\n".utf8))
-            assertionFailure("Persistence.save: encode failed: \(error)")
+            logger.error("Persistence.save: encode failed: \(error, privacy: .public)")
             return
         }
         defaults.set(data, forKey: stateKey)
     }
 
+    /// Loads and decodes `AppState` from the shared App Group UserDefaults.
+    ///
+    /// - Returns: The previously saved `AppState`, or a fresh `AppState()` when
+    ///   no persisted data exists yet.
+    /// - Throws: Any `DecodingError` produced by `JSONDecoder` when the stored
+    ///   data cannot be decoded. Callers should handle this by falling back to a
+    ///   default state.
     static func load() throws -> AppState {
         guard let data = defaults.data(forKey: stateKey) else { return AppState() }
         return try decoder.decode(AppState.self, from: data)
