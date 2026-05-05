@@ -90,8 +90,27 @@ struct AgentSettingsView: View {
     }
 
     private var nostrSection: some View {
-        Section("Nostr") {
+        Section {
             Toggle("Enabled", isOn: $settings.nostrEnabled)
+                .disabled(!hasNostrKey)
+
+            if !hasNostrKey {
+                NavigationLink {
+                    AgentIdentityView()
+                } label: {
+                    Label("Set up identity first", systemImage: "person.crop.circle.badge.exclamationmark")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                }
+            }
+        } header: {
+            Text("Nostr")
+        } footer: {
+            if hasNostrKey {
+                Text("When enabled, this agent can receive and respond to messages over the Nostr network.")
+            } else {
+                Text("Generate a Nostr key pair in Identity before enabling this feature.")
+            }
         }
     }
 
