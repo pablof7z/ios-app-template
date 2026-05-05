@@ -7,6 +7,8 @@ struct OnboardingView: View {
     @State private var apiKeyDraft: String = ""
     @State private var apiKeyError: String?
     @State private var apiKeySaving: Bool = false
+    @State private var isConnectingBYOK: Bool = false
+    @State private var byokConnect = BYOKConnectService()
     @State private var agentNameDraft: String = ""
     @State private var profilePictureDraft: String = ""
 
@@ -37,7 +39,9 @@ struct OnboardingView: View {
             OnboardingAISetupPage(
                 apiKey: $apiKeyDraft,
                 errorMessage: apiKeyError,
-                isSaving: apiKeySaving
+                isSaving: apiKeySaving || isConnectingBYOK,
+                isConnectingBYOK: isConnectingBYOK,
+                onConnectBYOK: { Task { await handleBYOKConnect() } }
             )
             .tag(1)
             .padding(.horizontal, AppTheme.Spacing.lg)
@@ -133,14 +137,14 @@ struct OnboardingView: View {
     // MARK: - Logic
 
     private var shouldShowSkip: Bool {
-        pageIndex == 1 || pageIndex == 2
+        pageIndex == 2
     }
 
     private var primaryButtonTitle: String {
         switch pageIndex {
         case 0: "Get Started"
-        case 1: apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Continue" : "Save Key"
-        case 2: agentNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Continue" : "Save"
+        case 1: apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Skip for Now" : "Save Key"
+        case 2: agentNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Skip for Now" : "Save"
         default: "Enter App"
         }
     }
@@ -187,6 +191,27 @@ struct OnboardingView: View {
         } catch {
             apiKeySaving = false
             apiKeyError = "Could not save key. Tap Skip or try again."
+            Haptics.error()
+        }
+    }
+
+    private func handleBYOKConnect() async {
+        isConnectingBYOK = true
+        apiKeyError = nil
+        defer { isConnectingBYOK = false }
+        do {
+            let token = try await byokConnect.connectOpenRouter()
+            try OpenRouterCredentialStore.saveAPIKey(token.apiKey)
+            var s = store.state.settings
+            s.markOpenRouterBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
+            store.updateSettings(s)
+            apiKeyDraft = ""
+            Haptics.success()
+            advanceOrFinish()
+        } catch BYOKConnectError.cancelled {
+            // user cancelled — no error shown
+        } catch {
+            apiKeyError = error.localizedDescription
             Haptics.error()
         }
     }
