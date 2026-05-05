@@ -9,12 +9,15 @@ final class NostrRelayService {
     private var receiveLoop: Task<Void, Never>?
     private var connectedRelayURL: String?
 
+    /// Creates a new service backed by the given state store.
     init(store: AppStateStore) {
         self.store = store
     }
 
     // MARK: - Lifecycle
 
+    /// Reads the current Nostr settings and connects to the configured relay,
+    /// or stops the service if Nostr is disabled or misconfigured.
     func start() {
         let settings = store.state.settings
         guard settings.nostrEnabled,
@@ -28,6 +31,7 @@ final class NostrRelayService {
         connect(urlString: settings.nostrRelayURL, agentPubkey: pubkeyHex)
     }
 
+    /// Cancels the receive loop and closes the WebSocket connection.
     func stop() {
         receiveLoop?.cancel()
         receiveLoop = nil
