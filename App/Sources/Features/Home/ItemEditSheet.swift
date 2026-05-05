@@ -5,6 +5,8 @@ struct ItemEditSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let item: Item
+    var sourceID: UUID? = nil
+    var namespace: Namespace.ID? = nil
 
     @State private var title: String = ""
     @FocusState private var isFocused: Bool
@@ -28,6 +30,7 @@ struct ItemEditSheet: View {
                         .fontWeight(.semibold)
                 }
             }
+            .applyZoomTransition(sourceID: sourceID, namespace: namespace)
         }
         .presentationDetents([.height(180), .medium])
         .presentationDragIndicator(.visible)
@@ -91,5 +94,18 @@ struct ItemEditSheet: View {
             startPoint: .top,
             endPoint: .bottom
         )
+    }
+}
+
+// MARK: - Zoom Transition Helper
+
+private extension View {
+    @ViewBuilder
+    func applyZoomTransition(sourceID: UUID?, namespace: Namespace.ID?) -> some View {
+        if let sourceID, let namespace {
+            self.navigationTransition(.zoom(sourceID: sourceID, in: namespace))
+        } else {
+            self
+        }
     }
 }

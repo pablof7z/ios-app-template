@@ -56,6 +56,7 @@ struct HomeView: View {
     @State private var editingItem: Item?
     @State private var searchText: String = ""
     @State private var completingIDs: Set<UUID> = []
+    @Namespace private var rowNamespace
     @AppStorage("home.itemSort")     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
     @AppStorage("home.sourceFilter") private var sourceFilterRaw: String = SourceFilter.all.rawValue
 
@@ -121,7 +122,7 @@ struct HomeView: View {
             ItemComposeSheet(initialTitle: composeInitialTitle)
         }
         .sheet(item: $editingItem) { item in
-            ItemEditSheet(item: item)
+            ItemEditSheet(item: item, sourceID: item.id, namespace: rowNamespace)
         }
         .onAppear { consumePendingTitle() }
         .onChange(of: pendingNewItemTitle) { consumePendingTitle() }
@@ -240,6 +241,7 @@ struct HomeView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(item.title)
         .accessibilityHint("Double-tap to edit")
+        .matchedTransitionSource(id: item.id, in: rowNamespace)
         .listRowInsets(listRowInsets)
         .scaleEffect(isCompleting ? 0.92 : 1.0)
         .opacity(isCompleting ? 0 : 1)
