@@ -61,6 +61,9 @@ final class AppStateStore {
             NotificationService.cancel(for: id)
             state.items[idx].reminderAt = nil
         }
+        if status == .done {
+            ReviewPrompt.recordMeaningfulAction()
+        }
     }
 
     func itemStatus(_ id: UUID) -> ItemStatus? {
