@@ -100,6 +100,14 @@ struct FeedbackView: View {
                 } label: {
                     FeedbackThreadRow(thread: thread)
                 }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        Haptics.warning()
+                        store.deleteThread(id: thread.id)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
         }
         .listStyle(.plain)

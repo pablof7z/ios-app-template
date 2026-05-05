@@ -45,6 +45,11 @@ final class FeedbackStore {
         do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishReply: \(error)") }
     }
 
+    func deleteThread(id: UUID) {
+        threads.removeAll { $0.id == id }
+        do { try saveToDisk() } catch { Self.logger.error("Failed to save after deleteThread: \(error)") }
+    }
+
     // MARK: - Private persistence helpers
 
     private func saveToDisk() throws {
