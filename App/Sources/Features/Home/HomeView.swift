@@ -1,5 +1,31 @@
 import SwiftUI
 
+// MARK: - Sort Order
+
+private enum ItemSort: String, CaseIterable, Identifiable {
+    case dateAddedDesc = "dateAddedDesc"
+    case dateAddedAsc  = "dateAddedAsc"
+    case titleAZ       = "titleAZ"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .dateAddedDesc: return "Newest First"
+        case .dateAddedAsc:  return "Oldest First"
+        case .titleAZ:       return "Title A–Z"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .dateAddedDesc: return "arrow.down.circle"
+        case .dateAddedAsc:  return "arrow.up.circle"
+        case .titleAZ:       return "textformat.abc"
+        }
+    }
+}
+
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
     @Binding var pendingNewItemTitle: String?
@@ -9,12 +35,28 @@ struct HomeView: View {
     @State private var completedExpanded: Bool = false
     @State private var editingItem: Item?
     @State private var searchText: String = ""
+    @AppStorage("home.itemSort") private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
+
+    private var currentSort: ItemSort {
+        ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
+    }
 
     private var isSearching: Bool { !searchText.isEmpty }
 
+    private var sortedActiveItems: [Item] {
+        switch currentSort {
+        case .dateAddedDesc:
+            return store.activeItems.sorted { $0.createdAt > $1.createdAt }
+        case .dateAddedAsc:
+            return store.activeItems.sorted { $0.createdAt < $1.createdAt }
+        case .titleAZ:
+            return store.activeItems.sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
+        }
+    }
+
     private var filteredActiveItems: [Item] {
-        guard isSearching else { return store.activeItems }
-        return store.activeItems.filter {
+        guard isSearching else { return sortedActiveItems }
+        return sortedActiveItems.filter {
             $0.title.localizedCaseInsensitiveContains(searchText)
         }
     }
@@ -44,6 +86,19 @@ struct HomeView: View {
                 }
                 .keyboardShortcut("n", modifiers: .command)
                 .accessibilityLabel("Add Item")
+            }
+            ToolbarItem(placement: .topBarLeading) {
+                Menu {
+                    Picker("Sort by", selection: $sortOrder) {
+                        ForEach(ItemSort.allCases) { sort in
+                            Label(sort.label, systemImage: sort.systemImage)
+                                .tag(sort.rawValue)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .accessibilityLabel("Sort Items")
+                }
             }
         }
         .sheet(isPresented: $showCompose) {
