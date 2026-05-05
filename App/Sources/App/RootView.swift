@@ -65,7 +65,7 @@ struct RootView: View {
     private func tabContent(for tab: RootTab) -> some View {
         switch tab {
         case .home:
-            NavigationStack { HomeView() }
+            NavigationStack { HomeView(pendingNewItemTitle: $pendingNewItemTitle) }
         case .settings:
             NavigationStack { SettingsView() }
         }

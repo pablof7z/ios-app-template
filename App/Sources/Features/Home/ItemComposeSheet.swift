@@ -4,6 +4,8 @@ struct ItemComposeSheet: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
+    var initialTitle: String = ""
+
     @State private var title: String = ""
     @State private var reminderDate: Date = Date().addingTimeInterval(3600)
     @State private var reminderEnabled: Bool = false
@@ -32,7 +34,10 @@ struct ItemComposeSheet: View {
         }
         .presentationDetents([.height(reminderEnabled ? 320 : 220), .medium])
         .presentationDragIndicator(.visible)
-        .onAppear { isFocused = true }
+        .onAppear {
+            if !initialTitle.isEmpty { title = initialTitle }
+            isFocused = true
+        }
     }
 
     // MARK: - Editor
