@@ -67,6 +67,14 @@ struct AgentChatBubble: View {
                         .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
                 )
                 .appShadow(AppTheme.Shadow.subtle)
+                .contextMenu {
+                    Button {
+                        UIPasteboard.general.string = message.text
+                        Haptics.success()
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                    }
+                }
         }
     }
 
@@ -80,6 +88,14 @@ struct AgentChatBubble: View {
                 .padding(.vertical, Layout.bubblePaddingV)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .glassEffect(.regular, in: .rect(cornerRadius: Layout.bubbleCornerRadius))
+                .contextMenu {
+                    Button {
+                        UIPasteboard.general.string = message.text
+                        Haptics.success()
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                    }
+                }
             Spacer(minLength: 0)
         }
     }
@@ -128,6 +144,14 @@ struct AgentChatBubble: View {
                 .padding(.vertical, Layout.bubblePaddingV)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .glassEffect(.regular.tint(.orange.opacity(0.12)), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
+                .contextMenu {
+                    Button {
+                        UIPasteboard.general.string = message.text
+                        Haptics.success()
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                    }
+                }
             Spacer(minLength: 0)
         }
     }
