@@ -34,12 +34,15 @@ final class AgentChatSession {
     private(set) var phase: Phase = .idle
 
     private let store: AppStateStore
-    private let maxTurns: Int
     private var rawMessages: [[String: Any]] = []
 
-    init(store: AppStateStore, maxTurns: Int = 12) {
+    /// Read live from settings each turn so a user changing the slider
+    /// mid-session takes effect immediately and there's no value duplicated
+    /// between this class and `Settings.agentMaxTurns`.
+    private var maxTurns: Int { max(1, store.state.settings.agentMaxTurns) }
+
+    init(store: AppStateStore) {
         self.store = store
-        self.maxTurns = maxTurns
     }
 
     var canSend: Bool {
@@ -136,7 +139,11 @@ final class AgentChatSession {
             }
         }
 
-        phase = .idle
+        // Loop exhausted without the model giving up tool calls — let the
+        // user know rather than silently going idle.
+        let limitMsg = "Reached the \(maxTurns)-turn limit. Adjust max turns in Agent settings if you need longer runs."
+        messages.append(ChatMessage(role: .error, text: limitMsg))
+        phase = .failed(limitMsg)
     }
 
     private func callOpenRouter(
