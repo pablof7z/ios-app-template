@@ -10,10 +10,20 @@ struct FeedbackView: View {
     @State private var composerPresented = false
     @State private var showMine = true
     @State private var identityPresented = false
+    @State private var searchText = ""
 
     private var visibleThreads: [FeedbackThread] {
         // Both segments return all threads until identity / multi-user is wired up.
-        store.threads
+        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return store.threads
+        }
+        let query = searchText.lowercased()
+        return store.threads.filter { thread in
+            (thread.title ?? "").lowercased().contains(query)
+            || thread.content.lowercased().contains(query)
+            || (thread.summary ?? "").lowercased().contains(query)
+            || thread.category.rawValue.lowercased().contains(query)
+        }
     }
 
     var body: some View {
@@ -21,6 +31,7 @@ struct FeedbackView: View {
             content
                 .navigationTitle("Feedback")
                 .navigationBarTitleDisplayMode(.inline)
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search feedback")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Done") { dismiss() }
@@ -79,6 +90,8 @@ struct FeedbackView: View {
             loadingSkeleton
         } else if store.threads.isEmpty {
             emptyState
+        } else if visibleThreads.isEmpty {
+            noSearchResults
         } else {
             threadList
         }
@@ -149,6 +162,13 @@ struct FeedbackView: View {
         } description: {
             Text("Tap the pencil to share your thoughts.")
         }
+    }
+
+    // MARK: - No search results
+
+    @ViewBuilder
+    private var noSearchResults: some View {
+        ContentUnavailableView.search(text: searchText)
     }
 
 }
