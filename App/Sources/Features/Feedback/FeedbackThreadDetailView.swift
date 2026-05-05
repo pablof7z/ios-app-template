@@ -35,6 +35,7 @@ struct FeedbackThreadDetailView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .accessibilityLabel("Thread options")
                 }
             }
         }
@@ -130,6 +131,7 @@ struct FeedbackThreadDetailView: View {
                         .frame(width: 36, height: 36)
                         .background(Color.accentColor.opacity(canSend ? 1 : 0.4), in: .circle)
                 }
+                .accessibilityLabel("Send reply")
                 .disabled(!canSend)
             }
             .padding(.horizontal, 12)

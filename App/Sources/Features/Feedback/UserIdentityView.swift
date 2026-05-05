@@ -128,6 +128,7 @@ struct UserIdentityView: View {
                 .focused($nsecFocused)
                 .padding(AppTheme.Spacing.sm)
                 .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.sm))
+                .dismissKeyboardToolbar()
 
             if let error = identity.loginError {
                 Text(error)
