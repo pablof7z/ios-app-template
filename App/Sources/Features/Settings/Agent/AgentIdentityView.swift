@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+// Sits a few lines over the 300-line soft limit. Cleanly extractable parts
+// already live in `AgentIdentityCards.swift` and `AgentIdentityQRView.swift`.
+// What's left (hero + cards section) shares `@FocusState`, the `settings`
+// binding source, and key-management state — splitting further would force
+// 6+ bindings across files and fragment focus state, which is worse than the
+// extra ~60 lines. Leave as-is.
 struct AgentIdentityView: View {
     @Environment(AppStateStore.self) private var store
 
