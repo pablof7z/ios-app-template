@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Full-screen chat interface for the AI agent, presented as a sheet.
 struct AgentChatView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -21,35 +22,8 @@ struct AgentChatView: View {
             }
             .navigationTitle("Agent")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    if let session, !session.messages.isEmpty {
-                        Button {
-                            Haptics.selection()
-                            showClearConfirm = true
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.glass)
-                        .buttonBorderShape(.circle)
-                        .accessibilityLabel("Clear conversation")
-                    }
-                }
-            }
-            .alert("Clear conversation?", isPresented: $showClearConfirm) {
-                Button("Clear", role: .destructive) {
-                    session?.clearHistory()
-                    bannerDismissed = false
-                    didSendInSession = false
-                    Haptics.success()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This permanently deletes the chat history on this device.")
-            }
+            .toolbar { toolbarItems }
+            .alert("Clear conversation?", isPresented: $showClearConfirm, actions: clearAlertActions, message: clearAlertMessage)
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
@@ -64,6 +38,41 @@ struct AgentChatView: View {
         )) { batch in
             AgentActivitySheet(batchID: batch.id)
         }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarItems: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Done") { dismiss() }
+        }
+        ToolbarItem(placement: .primaryAction) {
+            if let session, !session.messages.isEmpty {
+                Button {
+                    Haptics.selection()
+                    showClearConfirm = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .accessibilityLabel("Clear conversation")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func clearAlertActions() -> some View {
+        Button("Clear", role: .destructive) {
+            session?.clearHistory()
+            bannerDismissed = false
+            didSendInSession = false
+            Haptics.success()
+        }
+        Button("Cancel", role: .cancel) {}
+    }
+
+    private func clearAlertMessage() -> some View {
+        Text("This permanently deletes the chat history on this device.")
     }
 
     @ViewBuilder
@@ -122,25 +131,7 @@ struct AgentChatView: View {
     private func transcript(session: AgentChatSession) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-                    ForEach(session.messages) { msg in
-                        AgentChatBubble(message: msg) { batchID in
-                            presentedBatch = batchID
-                        }
-                        .id(msg.id)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
-                    if case .sending = session.phase {
-                        AgentTypingIndicator()
-                            .id("typing-indicator")
-                            .transition(.opacity)
-                    }
-                }
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.top, AppTheme.Spacing.md)
-                .padding(.bottom, AppTheme.Spacing.sm)
-                .animation(AppTheme.Animation.spring, value: session.messages.count)
-                .animation(AppTheme.Animation.spring, value: session.phase)
+                messageList(session: session)
             }
             .onChange(of: session.messages.count) {
                 guard let last = session.messages.last else { return }
@@ -156,6 +147,28 @@ struct AgentChatView: View {
                 }
             }
         }
+    }
+
+    private func messageList(session: AgentChatSession) -> some View {
+        LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            ForEach(session.messages) { msg in
+                AgentChatBubble(message: msg) { batchID in
+                    presentedBatch = batchID
+                }
+                .id(msg.id)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+            if case .sending = session.phase {
+                AgentTypingIndicator()
+                    .id("typing-indicator")
+                    .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, AppTheme.Spacing.md)
+        .padding(.top, AppTheme.Spacing.md)
+        .padding(.bottom, AppTheme.Spacing.sm)
+        .animation(AppTheme.Animation.spring, value: session.messages.count)
+        .animation(AppTheme.Animation.spring, value: session.phase)
     }
 
     @ViewBuilder
@@ -256,49 +269,58 @@ struct AgentChatView: View {
 
     private func composer(session: AgentChatSession) -> some View {
         VStack(spacing: AppTheme.Spacing.xs) {
-            if case .failed(let msg) = session.phase {
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.caption)
-                        .accessibilityHidden(true)
-                    Text(msg)
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, AppTheme.Spacing.md)
-            }
-            HStack(alignment: .bottom, spacing: AppTheme.Spacing.sm) {
-                TextField("Message your agent…", text: $draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .focused($inputFocused)
-                    .lineLimit(1...5)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 22))
-                    .disabled(showSettingsHint)
-
-                Button {
-                    sendCurrentDraft()
-                } label: {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 38, height: 38)
-                        .background(AppTheme.Gradients.agentAccent, in: .circle)
-                        .opacity(canSend(session: session) ? 1.0 : 0.4)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Send message")
-                .disabled(!canSend(session: session))
-                .animation(AppTheme.Animation.springFast, value: canSend(session: session))
-            }
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, AppTheme.Spacing.sm)
+            errorBanner(for: session.phase)
+            inputRow(session: session)
         }
         .background(.ultraThinMaterial)
+    }
+
+    @ViewBuilder
+    private func errorBanner(for phase: AgentChatSession.Phase) -> some View {
+        if case .failed(let msg) = phase {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .font(.caption)
+                    .accessibilityHidden(true)
+                Text(msg)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, AppTheme.Spacing.md)
+        }
+    }
+
+    private func inputRow(session: AgentChatSession) -> some View {
+        HStack(alignment: .bottom, spacing: AppTheme.Spacing.sm) {
+            TextField("Message your agent…", text: $draft, axis: .vertical)
+                .textFieldStyle(.plain)
+                .focused($inputFocused)
+                .lineLimit(1...5)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .glassEffect(.regular, in: .rect(cornerRadius: 22))
+                .disabled(showSettingsHint)
+
+            Button {
+                sendCurrentDraft()
+            } label: {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(AppTheme.Gradients.agentAccent, in: .circle)
+                    .opacity(canSend(session: session) ? 1.0 : 0.4)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Send message")
+            .disabled(!canSend(session: session))
+            .animation(AppTheme.Animation.springFast, value: canSend(session: session))
+        }
+        .padding(.horizontal, AppTheme.Spacing.md)
+        .padding(.vertical, AppTheme.Spacing.sm)
     }
 
     private func canSend(session: AgentChatSession) -> Bool {

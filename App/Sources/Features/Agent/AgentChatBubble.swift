@@ -34,6 +34,8 @@ private struct AgentAvatarView: View {
 
 // MARK: - Chat Bubble
 
+/// Renders a single chat message in the agent conversation, adapting its
+/// appearance based on the message role (user, assistant, tool batch, or error).
 struct AgentChatBubble: View {
     let message: ChatMessage
     var onOpenBatch: (UUID) -> Void = { _ in }
@@ -132,6 +134,7 @@ struct AgentChatBubble: View {
 
 }
 
+/// Animated three-dot indicator shown while the agent is generating a response.
 struct AgentTypingIndicator: View {
     @State private var phase: Int = 0
 
