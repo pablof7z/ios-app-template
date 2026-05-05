@@ -4,7 +4,6 @@ import UIKit
 // MARK: - ShareSheet
 
 /// UIKit wrapper that presents a system share sheet via UIActivityViewController.
-@MainActor
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
@@ -25,7 +24,6 @@ struct ShareSheet: UIViewControllerRepresentable {
 ///     Image(systemName: "square.and.arrow.up")
 /// }
 /// ```
-@MainActor
 struct ShareButton<Label: View>: View {
     let items: [Any]
     let label: () -> Label

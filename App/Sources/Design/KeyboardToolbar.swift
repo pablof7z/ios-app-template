@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - View extension
 
 extension View {
+    /// Adds a keyboard toolbar with a "Done" button that dismisses the first responder.
     func dismissKeyboardToolbar() -> some View {
         modifier(DismissKeyboardToolbar())
     }
@@ -10,6 +11,8 @@ extension View {
 
 // MARK: - ViewModifier
 
+/// A `ViewModifier` that injects a keyboard toolbar containing a semibold "Done" button
+/// that resigns the first responder when tapped.
 struct DismissKeyboardToolbar: ViewModifier {
     func body(content: Content) -> some View {
         content.toolbar {

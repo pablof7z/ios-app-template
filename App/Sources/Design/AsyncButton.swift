@@ -17,7 +17,6 @@ import SwiftUI
 ///     Label("Send", systemImage: "paperplane.fill")
 /// }
 /// ```
-@MainActor
 struct AsyncButton<Label: View>: View {
 
     let action: () async throws -> Void
