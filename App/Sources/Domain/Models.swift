@@ -1,5 +1,10 @@
 import Foundation
 
+// MARK: - Constants
+
+/// Number of characters shown at each end of a truncated identifier/pubkey.
+private let identifierTruncationHalfLength = 8
+
 // MARK: - Anchor
 // Polymorphic reference target — links notes/items to their context.
 // Discriminated union serialized as { "kind": "...", "id": "..." } for JSON round-trip.
@@ -146,8 +151,9 @@ struct Friend: Codable, Identifiable, Hashable, Sendable {
 
     /// Returns a truncated display of the identifier (first 8 + last 8 chars).
     var shortIdentifier: String {
-        guard identifier.count > 16 else { return identifier }
-        return "\(identifier.prefix(8))…\(identifier.suffix(8))"
+        let half = identifierTruncationHalfLength
+        guard identifier.count > half * 2 else { return identifier }
+        return "\(identifier.prefix(half))…\(identifier.suffix(half))"
     }
 }
 
@@ -188,8 +194,9 @@ struct NostrPendingApproval: Codable, Identifiable, Hashable, Sendable {
     }
 
     var shortPubkey: String {
-        guard pubkeyHex.count > 16 else { return pubkeyHex }
-        return "\(pubkeyHex.prefix(8))…\(pubkeyHex.suffix(8))"
+        let half = identifierTruncationHalfLength
+        guard pubkeyHex.count > half * 2 else { return pubkeyHex }
+        return "\(pubkeyHex.prefix(half))…\(pubkeyHex.suffix(half))"
     }
 }
 

@@ -11,9 +11,18 @@ enum ElevenLabsCredentialSource: String, Codable, Hashable, Sendable {
 }
 
 struct Settings: Codable, Hashable, Sendable {
+
+    // MARK: - Defaults
+    private enum Defaults {
+        static let llmModel = "openai/gpt-4o-mini"
+        static let elevenLabsSTTModel = "scribe_v1"
+        static let elevenLabsTTSModel = "eleven_turbo_v2_5"
+        static let nostrRelayURL = "wss://relay.tenex.chat"
+    }
+
     // AI / LLM
-    var llmModel: String = "openai/gpt-4o-mini"
-    var memoryCompilationModel: String = "openai/gpt-4o-mini"
+    var llmModel: String = Defaults.llmModel
+    var memoryCompilationModel: String = Defaults.llmModel
 
     // OpenRouter credentials (secret stored in Keychain; only metadata here)
     var openRouterCredentialSource: OpenRouterCredentialSource = .none
@@ -29,13 +38,13 @@ struct Settings: Codable, Hashable, Sendable {
     var elevenLabsConnectedAt: Date?
 
     // ElevenLabs configuration
-    var elevenLabsSTTModel: String = "scribe_v1"
-    var elevenLabsTTSModel: String = "eleven_turbo_v2_5"
+    var elevenLabsSTTModel: String = Defaults.elevenLabsSTTModel
+    var elevenLabsTTSModel: String = Defaults.elevenLabsTTSModel
     var elevenLabsVoiceID: String = ""
 
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
-    var nostrRelayURL: String = "wss://relay.tenex.chat"
+    var nostrRelayURL: String = Defaults.nostrRelayURL
     var nostrProfileName: String = ""
     var nostrProfileAbout: String = ""
     var nostrProfilePicture: String = ""
@@ -62,8 +71,8 @@ struct Settings: Codable, Hashable, Sendable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        llmModel = try c.decodeIfPresent(String.self, forKey: .llmModel) ?? "openai/gpt-4o-mini"
-        memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? "openai/gpt-4o-mini"
+        llmModel = try c.decodeIfPresent(String.self, forKey: .llmModel) ?? Defaults.llmModel
+        memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? Defaults.llmModel
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
@@ -73,11 +82,11 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
         elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
         elevenLabsConnectedAt = try c.decodeIfPresent(Date.self, forKey: .elevenLabsConnectedAt)
-        elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? "scribe_v1"
-        elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? "eleven_turbo_v2_5"
+        elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? Defaults.elevenLabsSTTModel
+        elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? Defaults.elevenLabsTTSModel
         elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
         nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
-        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? "wss://relay.tenex.chat"
+        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? Defaults.nostrRelayURL
         nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
         nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
         nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
