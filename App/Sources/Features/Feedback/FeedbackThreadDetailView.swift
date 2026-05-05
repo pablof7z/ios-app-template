@@ -168,25 +168,20 @@ struct FeedbackBubble: View {
     let isFromMe: Bool
     let createdAt: Date
 
+    private enum Layout {
+        static let spacerMinLength: CGFloat = 60
+        static let bubbleCornerRadius: CGFloat = 18
+    }
+
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if isFromMe { Spacer(minLength: 60) }
+            if isFromMe { Spacer(minLength: Layout.spacerMinLength) }
 
             VStack(alignment: isFromMe ? .trailing : .leading, spacing: 4) {
                 if isFromMe {
-                    Text(content)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .glassEffect(.regular.tint(.accentColor), in: .rect(cornerRadius: 18))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.leading)
+                    myBubble
                 } else {
-                    Text(content)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 18))
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.leading)
+                    theirBubble
                 }
 
                 Text(createdAt, style: .time)
@@ -194,9 +189,27 @@ struct FeedbackBubble: View {
                     .foregroundStyle(.secondary)
             }
 
-            if !isFromMe { Spacer(minLength: 60) }
+            if !isFromMe { Spacer(minLength: Layout.spacerMinLength) }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 2)
+    }
+
+    private var myBubble: some View {
+        Text(content)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .glassEffect(.regular.tint(.accentColor), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.leading)
+    }
+
+    private var theirBubble: some View {
+        Text(content)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
+            .foregroundStyle(.primary)
+            .multilineTextAlignment(.leading)
     }
 }
