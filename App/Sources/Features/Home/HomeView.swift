@@ -55,6 +55,7 @@ struct HomeView: View {
     @State private var completedExpanded: Bool = false
     @State private var editingItem: Item?
     @State private var searchText: String = ""
+    @State private var completingIDs: Set<UUID> = []
     @AppStorage("home.itemSort")     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
     @AppStorage("home.sourceFilter") private var sourceFilterRaw: String = SourceFilter.all.rawValue
 
@@ -229,7 +230,8 @@ struct HomeView: View {
     }
 
     private func itemRow(for item: Item) -> some View {
-        Button {
+        let isCompleting = completingIDs.contains(item.id)
+        return Button {
             Haptics.selection()
             editingItem = item
         } label: {
@@ -239,6 +241,9 @@ struct HomeView: View {
         .accessibilityLabel(item.title)
         .accessibilityHint("Double-tap to edit")
         .listRowInsets(listRowInsets)
+        .scaleEffect(isCompleting ? 0.92 : 1.0)
+        .opacity(isCompleting ? 0 : 1)
+        .animation(AppTheme.Animation.spring, value: isCompleting)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             leadingSwipeActions(for: item)
         }
@@ -253,8 +258,7 @@ struct HomeView: View {
     @ViewBuilder
     private func leadingSwipeActions(for item: Item) -> some View {
         Button {
-            store.setItemStatus(item.id, status: .done)
-            Haptics.success()
+            completeItem(item)
         } label: {
             Label("Done", systemImage: "checkmark.circle.fill")
         }
@@ -280,8 +284,7 @@ struct HomeView: View {
             Label("Edit", systemImage: "pencil")
         }
         Button {
-            store.setItemStatus(item.id, status: .done)
-            Haptics.success()
+            completeItem(item)
         } label: {
             Label("Complete", systemImage: "checkmark.circle")
         }
@@ -313,6 +316,19 @@ struct HomeView: View {
             Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
         } label: {
             Label("Snooze Reminder", systemImage: "bell.badge.slash")
+        }
+    }
+
+    // MARK: - Complete with animation
+
+    private func completeItem(_ item: Item) {
+        guard !completingIDs.contains(item.id) else { return }
+        completingIDs.insert(item.id)
+        Haptics.success()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(220))
+            store.setItemStatus(item.id, status: .done)
+            completingIDs.remove(item.id)
         }
     }
 
