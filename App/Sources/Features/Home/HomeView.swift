@@ -21,6 +21,7 @@ struct HomeView: View {
     @State private var showCompleted = false
     @State private var quickAddText = ""
     @State private var isQuickAdding = false
+    @State private var highlightedItemID: UUID?
     @FocusState private var quickAddFocused: Bool
     @Namespace private var glassNS
 
@@ -48,22 +49,31 @@ struct HomeView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            List {
-                filterPicker
+            ScrollViewReader { proxy in
+                List {
+                    filterPicker
 
-                if filteredActive.isEmpty && completedItems.isEmpty {
-                    emptyStateRow
-                } else {
-                    activeSection
-                    if !completedItems.isEmpty {
-                        completedSection
+                    if filteredActive.isEmpty && completedItems.isEmpty {
+                        emptyStateRow
+                    } else {
+                        activeSection
+                        if !completedItems.isEmpty {
+                            completedSection
+                        }
                     }
                 }
+                .listStyle(.insetGrouped)
+                .animation(AppTheme.Animation.spring, value: filteredActive.map(\.id))
+                .animation(AppTheme.Animation.spring, value: filter)
+                .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 88) }
+                .onChange(of: store.pendingSpotlightLink) { _, link in
+                    handleSpotlightLink(link, scrollProxy: proxy)
+                }
+                .task {
+                    // Drain any link delivered before this view was on screen.
+                    handleSpotlightLink(store.pendingSpotlightLink, scrollProxy: proxy)
+                }
             }
-            .listStyle(.insetGrouped)
-            .animation(AppTheme.Animation.spring, value: filteredActive.map(\.id))
-            .animation(AppTheme.Animation.spring, value: filter)
-            .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 88) }
 
             bottomBar
         }
@@ -120,7 +130,8 @@ struct HomeView: View {
                 .padding(.vertical, AppTheme.Spacing.lg)
         } else {
             ForEach(filteredActive) { item in
-                ItemRow(item: item)
+                ItemRow(item: item, isHighlighted: highlightedItemID == item.id)
+                    .id(item.id)
                     .transition(
                         .asymmetric(
                             insertion: .scale(scale: 0.9).combined(with: .opacity),
@@ -138,7 +149,8 @@ struct HomeView: View {
         Section {
             if showCompleted {
                 ForEach(completedItems.prefix(20)) { item in
-                    ItemRow(item: item)
+                    ItemRow(item: item, isHighlighted: highlightedItemID == item.id)
+                        .id(item.id)
                 }
                 if completedItems.count > 20 {
                     Text("+ \(completedItems.count - 20) more")
@@ -341,6 +353,45 @@ struct HomeView: View {
     }
 
     // MARK: - Actions
+
+    private func handleSpotlightLink(_ link: SpotlightIndexer.DeepLink?, scrollProxy: ScrollViewProxy) {
+        guard let link else { return }
+        let targetID: UUID
+        switch link {
+        case .item(let id): targetID = id
+        case .note(let id):
+            // Notes target their parent item if anchored, otherwise leave it
+            // for whichever screen owns notes to handle.
+            if let parent = store.activeNotes.first(where: { $0.id == id })?.target,
+               case .item(let parentID) = parent {
+                targetID = parentID
+            } else {
+                store.pendingSpotlightLink = nil
+                return
+            }
+        }
+        // Make sure the item is visible under the current filter.
+        if !filteredActive.contains(where: { $0.id == targetID }) {
+            filter = .all
+            // Item may still be in the completed section — expand it so the
+            // scroll-to has something to anchor on.
+            if completedItems.contains(where: { $0.id == targetID }) {
+                showCompleted = true
+            }
+        }
+        // The list may not have laid out the row yet immediately after a tab
+        // switch; one runloop tick is enough.
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(50))
+            withAnimation(AppTheme.Animation.spring) {
+                scrollProxy.scrollTo(targetID, anchor: .center)
+                highlightedItemID = targetID
+            }
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut) { highlightedItemID = nil }
+        }
+        store.pendingSpotlightLink = nil
+    }
 
     private func commitQuickAdd() {
         let text = quickAddText.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -31,30 +31,3 @@ extension View {
     }
 }
 
-// MARK: - GlassCard container view
-
-/// Padded glass card that wraps any content in a Liquid Glass surface.
-/// For multiple sibling cards wrap them in GlassEffectContainer.
-struct GlassCard<Content: View>: View {
-    var cornerRadius: CGFloat = AppTheme.Corner.lg
-    var padding: CGFloat = AppTheme.Spacing.md
-    var interactive: Bool = false
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        content()
-            .padding(padding)
-            .glassSurface(cornerRadius: cornerRadius, interactive: interactive)
-    }
-}
-
-// MARK: - Prominent glass card extension
-
-extension View {
-    /// Glass surface with a shadow — for floating cards that need extra lift.
-    func glassCard(cornerRadius: CGFloat = AppTheme.Corner.lg) -> some View {
-        self
-            .glassSurface(cornerRadius: cornerRadius)
-            .appShadow(AppTheme.Shadow.card)
-    }
-}

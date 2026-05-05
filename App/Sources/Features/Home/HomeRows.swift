@@ -5,6 +5,7 @@ import SwiftUI
 struct ItemRow: View {
     @Environment(AppStateStore.self) private var store
     let item: Item
+    var isHighlighted: Bool = false
     @State private var showNoteInput = false
     @State private var noteText = ""
 
@@ -77,6 +78,12 @@ struct ItemRow: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .listRowBackground(
+            isHighlighted
+                ? Color.accentColor.opacity(0.18)
+                : Color.clear
+        )
+        .animation(AppTheme.Animation.spring, value: isHighlighted)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) { store.deleteItem(item.id) } label: {
                 Label("Delete", systemImage: "trash")

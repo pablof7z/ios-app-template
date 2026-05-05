@@ -8,13 +8,25 @@ import Observation
 final class AppStateStore {
 
     var state: AppState {
-        didSet { Persistence.save(state) }
+        didSet {
+            Persistence.save(state)
+            SpotlightIndexer.reindex(state: state)
+        }
     }
+
+    /// Most recent Spotlight deep-link the user opened. Views observe this to
+    /// scroll-to or highlight the matching record, then clear it. `nil` once
+    /// consumed.
+    var pendingSpotlightLink: SpotlightIndexer.DeepLink?
 
     init() {
         var loadedState = (try? Persistence.load()) ?? AppState()
         Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState)
         self.state = loadedState
+        // Seed Spotlight with whatever was persisted before this launch — the
+        // index can be wiped out independently of our app data (device reset,
+        // reinstall, user clearing system search).
+        SpotlightIndexer.reindex(state: loadedState)
     }
 
     private static func migrateLegacyOpenRouterSecretIfNeeded(in state: inout AppState) {
@@ -223,6 +235,7 @@ final class AppStateStore {
         state = AppState()
         state.settings = preserved
         Persistence.save(state)
+        SpotlightIndexer.clearAll()
     }
 
     // MARK: - Derived views

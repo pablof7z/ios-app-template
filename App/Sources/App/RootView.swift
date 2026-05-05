@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 
 enum RootTab: String, CaseIterable {
@@ -39,6 +40,9 @@ struct RootView: View {
         ) {
             ScreenshotAnnotationView(workflow: feedbackWorkflow)
         }
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            handleSpotlightContinuation(activity)
+        }
     }
 
     @ViewBuilder
@@ -67,6 +71,15 @@ struct RootView: View {
             feedbackWorkflow.phase = .composing
             showFeedback = true
         }
+    }
+
+    private func handleSpotlightContinuation(_ activity: NSUserActivity) {
+        guard let link = SpotlightIndexer.deepLink(from: activity) else { return }
+        // Both items and notes live on Home today; if the template grows a
+        // dedicated Notes tab, route by `link` here.
+        selectedTab = .home
+        store.pendingSpotlightLink = link
+        Haptics.selection()
     }
 
     private func captureScreenshot() -> UIImage? {

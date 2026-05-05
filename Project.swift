@@ -4,8 +4,8 @@ import ProjectDescription
 
 let appName = "AppTemplate"
 let appDisplayName = "App Template"
-let bundleIdPrefix = "com.yourcompany"
-let appleTeamID = "XXXXXXXXXX"           // Replace with your Apple Team ID
+let bundleIdPrefix = "com.pablofernandez"
+let appleTeamID = "456SHKPP26"
 let deploymentTarget: DeploymentTargets = .iOS("26.0")
 
 // MARK: - Derived identifiers

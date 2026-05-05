@@ -2,17 +2,6 @@ import SwiftUI
 
 enum AppTheme {
 
-    // MARK: - Color
-
-    enum Color {
-        static let accent = SwiftUI.Color.accentColor
-        static let background = SwiftUI.Color(uiColor: .systemBackground)
-        static let secondaryBackground = SwiftUI.Color(uiColor: .secondarySystemBackground)
-        static let label = SwiftUI.Color(uiColor: .label)
-        static let secondaryLabel = SwiftUI.Color(uiColor: .secondaryLabel)
-        static let separator = SwiftUI.Color(uiColor: .separator)
-    }
-
     // MARK: - Spacing
 
     enum Spacing {
