@@ -4,10 +4,10 @@ import SwiftUI
 //
 // Settings → Data → Export. Generates a JSON document of the live `AppState`
 // (items, notes, friends, agent memories, agent activity, non-secret settings)
-// and surfaces it through a SwiftUI `ShareLink` so the user can save it to
+// and surfaces it through a system share sheet so the user can save it to
 // Files, AirDrop it, or send it through any share extension.
 //
-// Inspired by cut-tracker's `ExportCSVSheet` (sheet shape + ShareLink) and
+// Inspired by cut-tracker's `ExportCSVSheet` (sheet shape + share) and
 // win-the-day-app's `FullBackupManager` (versioned JSON envelope).
 //
 // Secrets are never exported — see `DataExport.redactedState(from:)`.
@@ -19,6 +19,7 @@ struct DataExportView: View {
     @State private var fileSize: Int?
     @State private var errorMessage: String?
     @State private var generatedAt: Date?
+    @State private var showShareSheet = false
 
     var body: some View {
         ZStack {
@@ -35,6 +36,11 @@ struct DataExportView: View {
         }
         .navigationTitle("Export Data")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showShareSheet) {
+            if let fileURL {
+                ShareSheet(items: [fileURL])
+            }
+        }
     }
 
     // MARK: - Sections
@@ -51,33 +57,7 @@ struct DataExportView: View {
 
     @ViewBuilder
     private var actionSection: some View {
-        if let fileURL {
-            Section {
-                ShareLink(item: fileURL) {
-                    SettingsRow(
-                        icon: "square.and.arrow.up",
-                        tint: .indigo,
-                        title: "Share JSON",
-                        subtitle: fileURL.lastPathComponent
-                    )
-                }
-                .foregroundStyle(.primary)
-
-                Button {
-                    generate()
-                } label: {
-                    SettingsRow(
-                        icon: "arrow.clockwise",
-                        tint: .gray,
-                        title: "Regenerate",
-                        subtitle: regenerateSubtitle
-                    )
-                }
-                .foregroundStyle(.primary)
-            } footer: {
-                Text(footerText)
-            }
-        } else if let errorMessage {
+        if let errorMessage {
             Section {
                 Text(errorMessage)
                     .foregroundStyle(.red)
@@ -89,15 +69,15 @@ struct DataExportView: View {
                     generate()
                 } label: {
                     SettingsRow(
-                        icon: "doc.badge.gearshape",
+                        icon: "square.and.arrow.up",
                         tint: .indigo,
-                        title: "Generate Export",
-                        subtitle: "Creates a JSON file in temporary storage"
+                        title: "Export & Share",
+                        subtitle: "Generates a JSON file and opens the share sheet"
                     )
                 }
                 .foregroundStyle(.primary)
             } footer: {
-                Text("Bundles all items, notes, friends, agent memories, and agent activity into a single JSON file. API keys and the Nostr private key are never included.")
+                Text(actionFooterText)
             }
         }
     }
@@ -136,20 +116,16 @@ struct DataExportView: View {
         DataExport.stats(for: store.state)
     }
 
-    private var footerText: String {
-        if let size = fileSize {
-            return "\(stats.totalRecords) record\(stats.totalRecords == 1 ? "" : "s") · \(formatBytes(size))"
-        } else {
-            return "\(stats.totalRecords) record\(stats.totalRecords == 1 ? "" : "s")"
+    private var actionFooterText: String {
+        let records = stats.totalRecords
+        let base = "\(records) record\(records == 1 ? "" : "s")"
+        if let size = fileSize, let generatedAt {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .none
+            formatter.timeStyle = .medium
+            return "\(base) · \(formatBytes(size)) · Last exported \(formatter.string(from: generatedAt))"
         }
-    }
-
-    private var regenerateSubtitle: String {
-        guard let generatedAt else { return "Refresh with current data" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .medium
-        return "Last generated \(formatter.string(from: generatedAt))"
+        return "\(base) · Bundles items, notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
     }
 
     // MARK: - Actions
@@ -159,12 +135,12 @@ struct DataExportView: View {
             let now = Date()
             let url = try DataExport.writeExport(of: store.state, now: now)
             let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
-            let size = (attrs?[.size] as? NSNumber)?.intValue
             fileURL = url
-            fileSize = size
+            fileSize = (attrs?[.size] as? NSNumber)?.intValue
             generatedAt = now
             errorMessage = nil
             Haptics.success()
+            showShareSheet = true
         } catch {
             errorMessage = "Could not generate export: \(error.localizedDescription)"
             fileURL = nil
