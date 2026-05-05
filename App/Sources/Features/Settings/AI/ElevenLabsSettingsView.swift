@@ -137,17 +137,20 @@ struct ElevenLabsSettingsView: View {
 
     private var voiceSection: some View {
         Section {
-            LabeledContent("Voice ID") {
-                TextField("21m00Tcm4TlvDq8ikWAM", text: $settings.elevenLabsVoiceID)
-                    .multilineTextAlignment(.trailing)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .font(.callout.monospaced())
+            NavigationLink {
+                ElevenLabsVoiceBrowserView()
+            } label: {
+                SettingsRow(
+                    icon: "waveform.and.mic",
+                    tint: elevenLabsTint,
+                    title: "Voice",
+                    value: store.state.settings.elevenLabsVoiceID.isEmpty ? "Not set" : "Selected"
+                )
             }
         } header: {
             Text("Voice")
         } footer: {
-            Text("Find voice IDs in your ElevenLabs voice library.")
+            Text("Browse the ElevenLabs voice library and preview samples.")
         }
     }
 
