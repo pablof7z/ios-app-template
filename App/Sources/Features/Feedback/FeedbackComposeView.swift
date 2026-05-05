@@ -45,27 +45,7 @@ struct FeedbackComposeView: View {
             }
             .navigationTitle("New Feedback")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { cancel() }
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    screenshotToolbarButton
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    AsyncButton(
-                        action: { try await send() },
-                        onError: { error in
-                            errorMessage = error.localizedDescription
-                            Haptics.error()
-                        }
-                    ) {
-                        Text("Send")
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(!canSend)
-                }
-            }
+            .toolbar { composeToolbar }
         }
     }
 
@@ -98,7 +78,30 @@ struct FeedbackComposeView: View {
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
     }
 
-    // MARK: - Toolbar screenshot button
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var composeToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button("Cancel") { cancel() }
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            screenshotToolbarButton
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            AsyncButton(
+                action: { try await send() },
+                onError: { error in
+                    errorMessage = error.localizedDescription
+                    Haptics.error()
+                }
+            ) {
+                Text("Send")
+            }
+            .fontWeight(.semibold)
+            .disabled(!canSend)
+        }
+    }
 
     @ViewBuilder
     private var screenshotToolbarButton: some View {
@@ -166,24 +169,28 @@ struct FeedbackComposeView: View {
                             .strokeBorder(Color(.separator), lineWidth: 0.5)
                     )
 
-                HStack {
-                    Button("Re-annotate") {
-                        workflow.phase = .annotating
-                        dismiss()
-                    }
-                    .foregroundStyle(.blue)
-
-                    Spacer()
-
-                    Button("Remove") {
-                        workflow.screenshot = nil
-                        workflow.annotatedImage = nil
-                    }
-                    .foregroundStyle(.red)
-                }
-                .font(AppTheme.Typography.caption)
+                screenshotActionRow
             }
         }
+    }
+
+    private var screenshotActionRow: some View {
+        HStack {
+            Button("Re-annotate") {
+                workflow.phase = .annotating
+                dismiss()
+            }
+            .foregroundStyle(.blue)
+
+            Spacer()
+
+            Button("Remove") {
+                workflow.screenshot = nil
+                workflow.annotatedImage = nil
+            }
+            .foregroundStyle(.red)
+        }
+        .font(AppTheme.Typography.caption)
     }
 
     // MARK: - Actions
