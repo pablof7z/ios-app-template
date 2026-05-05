@@ -1,7 +1,3 @@
 import ProjectDescription
 
-let config = Config(
-    generationOptions: .options(
-        resolveDependenciesWithSystemScm: true
-    )
-)
+let config = Config()

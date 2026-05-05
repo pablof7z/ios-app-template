@@ -22,6 +22,12 @@ let project = Project(
         automaticSchemesOptions: .disabled,
         developmentRegion: "en"
     ),
+    packages: [
+        .remote(
+            url: "https://github.com/GigaBitcoin/secp256k1.swift",
+            requirement: .upToNextMajor(from: "0.23.1")
+        ),
+    ],
     settings: .settings(
         base: [
             "SWIFT_VERSION": "6.0",
@@ -40,7 +46,11 @@ let project = Project(
             deploymentTargets: deploymentTarget,
             infoPlist: .file(path: "App/Resources/Info.plist"),
             sources: ["App/Sources/**"],
+            resources: [],
             entitlements: .file(path: "App/Resources/AppTemplate.entitlements"),
+            dependencies: [
+                .package(product: "P256K"),
+            ],
             settings: .settings(
                 base: [
                     "APP_BUNDLE_IDENTIFIER": "\(appBundleID)",

@@ -311,48 +311,52 @@ struct AgentIdentityView: View {
     }
 
     private var formattedNpubShort: String {
-        guard let hex = settings.nostrPublicKeyHex, !hex.isEmpty else { return "" }
-        let npub = "npub1" + hex
-        guard npub.count > 14 else { return npub }
-        return "\(npub.prefix(10))…\(npub.suffix(6))"
+        let full = npubFull
+        guard full.count > 14 else { return full }
+        return "\(full.prefix(10))…\(full.suffix(6))"
     }
 
     private var npubFull: String {
-        guard let hex = settings.nostrPublicKeyHex, !hex.isEmpty else { return "" }
-        return "npub1" + hex
+        guard let hex = settings.nostrPublicKeyHex, !hex.isEmpty,
+              let data = Data(hexString: hex)
+        else { return "" }
+        return Bech32.encode(hrp: "npub", data: data)
     }
 
     // MARK: - Actions
 
     private func generateKeyPair() {
-        let privkeyBytes = (0..<32).map { _ in UInt8.random(in: 0...255) }
-        let privkeyHex = privkeyBytes.map { String(format: "%02x", $0) }.joined()
-        let pubkeyHex = privkeyBytes.reversed().map { String(format: "%02x", $0) }.joined()
         do {
-            try NostrCredentialStore.savePrivateKey(privkeyHex)
+            let pair = try NostrKeyPair.generate()
+            try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
+            settings.nostrPublicKeyHex = pair.publicKeyHex
+            refreshKeyState()
         } catch {
-            keychainErrorMessage = "Keychain refused to store the private key. \(error.localizedDescription)"
+            keychainErrorMessage = "Could not generate key pair: \(error.localizedDescription)"
             Haptics.error()
-            return
         }
-        settings.nostrPublicKeyHex = pubkeyHex
-        refreshKeyState()
     }
 
     private func importPrivateKey() {
         let trimmed = importKeyInput.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmed.isEmpty else { return }
         do {
-            try NostrCredentialStore.savePrivateKey(trimmed)
+            // Accept both raw hex (64 chars) and nsec bech32
+            let pair: NostrKeyPair
+            if trimmed.hasPrefix("nsec") {
+                pair = try NostrKeyPair(nsec: trimmed)
+            } else {
+                pair = try NostrKeyPair(privateKeyHex: trimmed)
+            }
+            try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
+            settings.nostrPublicKeyHex = pair.publicKeyHex
+            importKeyInput = ""
+            refreshKeyState()
+            Haptics.success()
         } catch {
-            keychainErrorMessage = "Keychain refused to store the imported key. \(error.localizedDescription)"
+            keychainErrorMessage = "Invalid private key — paste the raw hex or nsec bech32."
             Haptics.error()
-            return
         }
-        settings.nostrPublicKeyHex = String(trimmed.reversed())
-        importKeyInput = ""
-        refreshKeyState()
-        Haptics.success()
     }
 
     private func copyPublicKey() {

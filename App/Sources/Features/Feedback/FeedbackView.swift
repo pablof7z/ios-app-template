@@ -53,7 +53,7 @@ struct FeedbackView: View {
             FeedbackComposeView(store: store, workflow: workflow)
         }
         .sheet(isPresented: $identityPresented) {
-            NavigationStack { AgentIdentityView() }
+            UserIdentityView()
         }
         .onAppear {
             if workflow.screenshot != nil || workflow.annotatedImage != nil {

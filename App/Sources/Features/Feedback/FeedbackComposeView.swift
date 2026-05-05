@@ -6,7 +6,7 @@ struct FeedbackComposeView: View {
     let store: FeedbackStore
     @Bindable var workflow: FeedbackWorkflow
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppStateStore.self) private var appStore
+    @Environment(UserIdentityStore.self) private var userIdentity
 
     @State private var isSending = false
     @State private var errorMessage: String?
@@ -65,32 +65,19 @@ struct FeedbackComposeView: View {
 
     @ViewBuilder
     private var identityRow: some View {
-        let settings = appStore.state.settings
-        let name = settings.nostrProfileName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let pubkey = settings.nostrPublicKeyHex
-
         HStack(spacing: AppTheme.Spacing.sm) {
-            Image(systemName: name.isEmpty ? "person.crop.circle" : "person.crop.circle.fill")
+            Image(systemName: userIdentity.hasIdentity ? "person.crop.circle.fill" : "person.crop.circle")
                 .font(.system(size: 20))
-                .foregroundStyle(name.isEmpty ? Color(.tertiaryLabel) : Color(.label))
+                .foregroundStyle(userIdentity.hasIdentity ? Color(.label) : Color(.tertiaryLabel))
 
-            if name.isEmpty && pubkey == nil {
-                Text("Anonymous")
-                    .font(AppTheme.Typography.caption)
+            if let short = userIdentity.npubShort {
+                Text(short)
+                    .font(AppTheme.Typography.mono)
                     .foregroundStyle(.secondary)
             } else {
-                VStack(alignment: .leading, spacing: 1) {
-                    if !name.isEmpty {
-                        Text(name)
-                            .font(AppTheme.Typography.caption.weight(.medium))
-                            .foregroundStyle(.primary)
-                    }
-                    if let hex = pubkey {
-                        Text(String(hex.prefix(8)) + "…")
-                            .font(AppTheme.Typography.mono)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                Text("Anonymous — tap to set identity")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
