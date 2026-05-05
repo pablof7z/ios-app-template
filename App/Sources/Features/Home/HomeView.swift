@@ -46,7 +46,10 @@ struct HomeView: View {
     private var sortedActiveItems: [Item] {
         switch currentSort {
         case .dateAddedDesc:
-            return store.activeItems.sorted { $0.createdAt > $1.createdAt }
+            return store.activeItems.sorted {
+                if $0.isPriority != $1.isPriority { return $0.isPriority }
+                return $0.createdAt > $1.createdAt
+            }
         case .dateAddedAsc:
             return store.activeItems.sorted { $0.createdAt < $1.createdAt }
         case .titleAZ:
@@ -201,6 +204,15 @@ struct HomeView: View {
                     } label: {
                         Label("Complete", systemImage: "checkmark.circle")
                     }
+                    Button {
+                        store.toggleItemPriority(item.id)
+                        Haptics.selection()
+                    } label: {
+                        Label(
+                            item.isPriority ? "Unstar" : "Star",
+                            systemImage: item.isPriority ? "star.slash" : "star"
+                        )
+                    }
                     Divider()
                     Button(role: .destructive) {
                         store.deleteItem(item.id)
@@ -253,6 +265,11 @@ private struct ItemRow: View {
 
     @ViewBuilder
     private var sourceIcon: some View {
+        if item.isPriority {
+            Image(systemName: "star.fill")
+                .font(AppTheme.Typography.caption)
+                .foregroundStyle(.yellow)
+        }
         switch item.source {
         case .agent:
             Image(systemName: "sparkle")

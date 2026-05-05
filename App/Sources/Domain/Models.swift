@@ -54,6 +54,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     var requestedByFriendID: UUID?
     var requestedByDisplayName: String?
     var reminderAt: Date?
+    var isPriority: Bool
 
     init(title: String, source: ItemSource = .manual) {
         self.id = UUID()
@@ -63,17 +64,17 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         self.createdAt = Date()
         self.updatedAt = Date()
         self.deleted = false
+        self.isPriority = false
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, title, status, source, createdAt, updatedAt, deleted
         case requestedByFriendID, requestedByDisplayName
-        case reminderAt
+        case reminderAt, isPriority
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding
-    // new fields (e.g. due dates, priority) never breaks decode of older
-    // persisted state.
+    // new fields never breaks decode of older persisted state.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
@@ -86,6 +87,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         requestedByFriendID = try c.decodeIfPresent(UUID.self, forKey: .requestedByFriendID)
         requestedByDisplayName = try c.decodeIfPresent(String.self, forKey: .requestedByDisplayName)
         reminderAt = try c.decodeIfPresent(Date.self, forKey: .reminderAt)
+        isPriority = try c.decodeIfPresent(Bool.self, forKey: .isPriority) ?? false
     }
 }
 

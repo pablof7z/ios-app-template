@@ -100,6 +100,12 @@ final class AppStateStore {
         NotificationService.cancel(for: id)
     }
 
+    func toggleItemPriority(_ id: UUID) {
+        guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
+        state.items[idx].isPriority.toggle()
+        state.items[idx].updatedAt = Date()
+    }
+
     // MARK: - Notes
 
     @discardableResult
