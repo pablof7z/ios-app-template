@@ -183,6 +183,19 @@ struct HomeView: View {
 
     private var itemList: some View {
         List {
+            if !isSearching, let top = sortedActiveItems.first {
+                Section {
+                    NextActionHero(
+                        item: top,
+                        itemCount: sortedActiveItems.count,
+                        namespace: rowNamespace,
+                        onTap: { editingItem = top }
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(listRowInsets)
+                }
+            }
             sourceFilterPicker
             if isSearching && filteredActiveItems.isEmpty {
                 ContentUnavailableView.search(text: searchText)
