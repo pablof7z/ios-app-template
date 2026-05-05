@@ -109,6 +109,10 @@ struct HomeView: View {
         }
         .onAppear { consumePendingTitle() }
         .onChange(of: pendingNewItemTitle) { consumePendingTitle() }
+        .onChange(of: sortOrder) { Haptics.selection() }
+        .onChange(of: searchText) { _, new in
+            if new.isEmpty { Haptics.light() }
+        }
     }
 
     // MARK: - Empty State

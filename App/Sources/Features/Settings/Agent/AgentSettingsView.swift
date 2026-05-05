@@ -26,6 +26,7 @@ struct AgentSettingsView: View {
         .onChange(of: settings) { _, new in
             store.updateSettings(new)
         }
+        .onChange(of: settings.nostrEnabled) { Haptics.selection() }
     }
 
     // MARK: - Sections
