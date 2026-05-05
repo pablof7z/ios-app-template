@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
     @State private var showAgentChat = false
+    @State private var noteSheet: NoteSheetMode?
 
     var body: some View {
         ScrollView {
@@ -14,6 +15,10 @@ struct HomeView: View {
                 HomeQuickActions(
                     onTalkToAgent: { showAgentChat = true },
                     onFeedback: { presentFeedback() }
+                )
+                HomeNotesSection(
+                    onCompose: { noteSheet = .compose },
+                    onEdit: { noteSheet = .edit($0) }
                 )
                 HomeActivityFeed(entries: recentActivity)
             }
@@ -29,6 +34,14 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showAgentChat) {
             AgentChatView()
+        }
+        .sheet(item: $noteSheet) { mode in
+            switch mode {
+            case .compose:
+                NoteComposeSheet(editing: nil)
+            case .edit(let note):
+                NoteComposeSheet(editing: note)
+            }
         }
     }
 
@@ -127,5 +140,17 @@ struct HomeView: View {
         feedbackWorkflow.phase = .composing
         Haptics.medium()
         showFeedback = true
+    }
+}
+
+enum NoteSheetMode: Identifiable {
+    case compose
+    case edit(Note)
+
+    var id: String {
+        switch self {
+        case .compose: return "compose"
+        case .edit(let note): return "edit-\(note.id.uuidString)"
+        }
     }
 }

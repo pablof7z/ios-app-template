@@ -104,6 +104,11 @@ final class AppStateStore {
         state.notes[idx].deleted = false
     }
 
+    func updateNote(_ note: Note) {
+        guard let idx = state.notes.firstIndex(where: { $0.id == note.id }) else { return }
+        state.notes[idx] = note
+    }
+
     // MARK: - Friends
 
     @discardableResult
