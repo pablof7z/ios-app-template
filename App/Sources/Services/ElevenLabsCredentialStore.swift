@@ -10,7 +10,7 @@ enum ElevenLabsCredentialStore {
         try KeychainStore.saveString(trimmed, service: service, account: account)
     }
 
-    static func loadAPIKey() throws -> String? {
+    static func apiKey() throws -> String? {
         guard let value = try KeychainStore.readString(service: service, account: account) else {
             return nil
         }
@@ -19,7 +19,7 @@ enum ElevenLabsCredentialStore {
     }
 
     static func hasAPIKey() -> Bool {
-        ((try? loadAPIKey()) ?? nil) != nil
+        ((try? apiKey()) ?? nil) != nil
     }
 
     static func deleteAPIKey() throws {

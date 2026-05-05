@@ -220,7 +220,7 @@ final class ElevenLabsVoiceBrowserViewModel {
     func reload() async {
         let apiKey: String?
         do {
-            apiKey = try ElevenLabsCredentialStore.loadAPIKey()
+            apiKey = try ElevenLabsCredentialStore.apiKey()
         } catch {
             apiKey = nil
         }
