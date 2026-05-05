@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "ChatHistoryStore")
 
 @MainActor
 @Observable
@@ -39,6 +42,7 @@ final class ChatHistoryStore {
             let data = try Data(contentsOf: fileURL)
             return try Self.decoder.decode([ChatMessage].self, from: data)
         } catch {
+            logger.error("ChatHistoryStore.load failed: \(error, privacy: .public) — starting with empty history")
             return []
         }
     }
@@ -50,13 +54,17 @@ final class ChatHistoryStore {
             let data = try Self.encoder.encode(trimmed)
             try data.write(to: fileURL, options: [.atomic])
         } catch {
-            FileHandle.standardError.write(Data("ChatHistoryStore.save failed: \(error)\n".utf8))
+            logger.error("ChatHistoryStore.save failed: \(error, privacy: .public)")
         }
     }
 
     func clear() {
         guard let fileURL else { return }
-        try? FileManager.default.removeItem(at: fileURL)
+        do {
+            try FileManager.default.removeItem(at: fileURL)
+        } catch {
+            logger.error("ChatHistoryStore.clear failed: \(error, privacy: .public)")
+        }
     }
 
     private static func truncate(_ messages: [ChatMessage]) -> [ChatMessage] {

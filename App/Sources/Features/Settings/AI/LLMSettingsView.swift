@@ -80,33 +80,12 @@ struct LLMSettingsView: View {
 
     private func modelRow(icon: String, tint: Color, role: String, modelID: String, onTap: @escaping () -> Void) -> some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(tint)
-                        .frame(width: 29, height: 29)
-                    Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(role)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                    Text(shortName(modelID))
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.vertical, 2)
+            SettingsRow(
+                icon: icon,
+                tint: tint,
+                title: role,
+                subtitle: shortName(modelID)
+            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(role), \(shortName(modelID))")

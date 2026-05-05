@@ -1,5 +1,8 @@
 import Foundation
 import UserNotifications
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "NotificationService")
 
 /// Schedules and cancels local reminder notifications for Items.
 ///
@@ -11,10 +14,21 @@ import UserNotifications
 @MainActor
 enum NotificationService {
 
+    // MARK: - Constants
+
+    private enum Content {
+        static let reminderTitle = "Reminder"
+        static let reminderDefaultBody = "You have a task due."
+        static let approvalTitle = "New contact request"
+        static let approvalBody = "Someone wants to reach your agent. Open the app to review."
+        static let reminderIDPrefix = "reminder:"
+        static let approvalIDPrefix = "nostr-approval:"
+    }
+
     // MARK: - Identifier
 
     private static func identifier(for itemID: UUID) -> String {
-        "reminder:\(itemID.uuidString)"
+        "\(Content.reminderIDPrefix)\(itemID.uuidString)"
     }
 
     // MARK: - Authorization
@@ -35,6 +49,7 @@ enum NotificationService {
             do {
                 return try await center.requestAuthorization(options: [.alert, .sound, .badge])
             } catch {
+                logger.error("requestAuthorization failed: \(error, privacy: .public)")
                 return false
             }
         @unknown default:
@@ -61,8 +76,8 @@ enum NotificationService {
         cancel(for: itemID)
 
         let content = UNMutableNotificationContent()
-        content.title = "Reminder"
-        content.body = title.isEmpty ? "You have a task due." : title
+        content.title = Content.reminderTitle
+        content.body = title.isEmpty ? Content.reminderDefaultBody : title
         content.sound = .default
 
         let components = Calendar.current.dateComponents(
@@ -80,6 +95,7 @@ enum NotificationService {
             try await UNUserNotificationCenter.current().add(request)
             return true
         } catch {
+            logger.error("scheduleReminder failed for item \(itemID, privacy: .public): \(error, privacy: .public)")
             return false
         }
     }
@@ -107,18 +123,22 @@ enum NotificationService {
     static func notifyPendingApproval(pubkeyHex: String) async {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
-        let id = "nostr-approval:\(pubkeyHex)"
+        let id = "\(Content.approvalIDPrefix)\(pubkeyHex)"
         guard !pending.contains(where: { $0.identifier == id }) else { return }
 
         let granted = await requestAuthorization()
         guard granted else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "New contact request"
-        content.body = "Someone wants to reach your agent. Open the app to review."
+        content.title = Content.approvalTitle
+        content.body = Content.approvalBody
         content.sound = .default
 
         let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
-        try? await center.add(request)
+        do {
+            try await center.add(request)
+        } catch {
+            logger.error("notifyPendingApproval failed for pubkey \(pubkeyHex, privacy: .public): \(error, privacy: .public)")
+        }
     }
 }

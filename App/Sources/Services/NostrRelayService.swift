@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "NostrRelayService")
 
 /// Connects to a configured Nostr relay and gates incoming kind:1 messages
 /// through the access-control layer, queuing unknown senders for user approval.
@@ -43,8 +46,12 @@ final class NostrRelayService {
     // MARK: - Connection
 
     private func connect(urlString: String, agentPubkey: String) {
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: urlString) else {
+            logger.error("NostrRelayService: invalid relay URL '\(urlString, privacy: .public)'")
+            return
+        }
         connectedRelayURL = urlString
+        logger.info("NostrRelayService: connecting to \(urlString, privacy: .public)")
         let task = URLSession.shared.webSocketTask(with: url)
         webSocketTask = task
         task.resume()
@@ -70,6 +77,7 @@ final class NostrRelayService {
                     if case .string(let text) = msg { self.handle(text: text) }
                 } catch {
                     guard !Task.isCancelled else { return }
+                    logger.warning("NostrRelayService: WebSocket error — \(error, privacy: .public); reconnecting in 5s")
                     try? await Task.sleep(for: .seconds(5))
                     guard !Task.isCancelled else { return }
                     self.start()
