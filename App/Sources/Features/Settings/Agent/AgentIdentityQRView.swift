@@ -3,6 +3,14 @@ import UIKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
+// MARK: - Constants
+
+private enum AgentIdentityQRConstants {
+    static let cardCornerRadius: CGFloat = 24
+    static let actionButtonHeight: CGFloat = 48
+    static let horizontalPadding: CGFloat = 24
+}
+
 // MARK: - QRCodeView
 
 struct QRCodeView: View {
@@ -46,103 +54,120 @@ struct AgentIdentityQRView: View {
                 .onTapGesture { dismiss() }
 
             VStack(spacing: 24) {
-                // Dismiss button
-                HStack {
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 30, height: 30)
-                    }
-                    .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .padding(.horizontal, 24)
-
-                // Name + subtitle
-                VStack(spacing: 6) {
-                    if !name.isEmpty {
-                        Text(name)
-                            .font(.system(.title2, design: .rounded, weight: .bold))
-                            .foregroundStyle(.primary)
-                    }
-                    Text("Scan to add as a contact")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                // QR card — tap to copy
-                ZStack(alignment: .topTrailing) {
-                    ZStack {
-                        Color.white
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
-
-                        QRCodeView(content: npub)
-                            .frame(width: 260, height: 260)
-                            .padding(20)
-
-                        // Copied overlay
-                        if copied {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(.black.opacity(0.55))
-                                VStack(spacing: 8) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 36))
-                                        .foregroundStyle(.white)
-                                    Text("Copied")
-                                        .font(.system(.headline, design: .rounded, weight: .semibold))
-                                        .foregroundStyle(.white)
-                                }
-                            }
-                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                        }
-                    }
-                    .frame(width: 300, height: 300)
-                }
-                .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
-                .onTapGesture {
-                    copyNpub()
-                }
-
-                // npub text
-                Text(npub)
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .padding(.horizontal, 32)
-
-                Text("Tap QR to copy")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-
-                // Action row
-                HStack(spacing: 12) {
-                    Button {
-                        copyNpub()
-                    } label: {
-                        Label("Copy npub", systemImage: "doc.on.doc")
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                    }
-                    .buttonStyle(.glass)
-
-                    ShareLink(item: npub) {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                    }
-                    .buttonStyle(.glass)
-                }
-                .padding(.horizontal, 24)
+                dismissRow
+                headerText
+                qrCard
+                    .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+                    .onTapGesture { copyNpub() }
+                npubCaption
+                actionRow
             }
         }
         .statusBarHidden(true)
         .animation(AppTheme.Animation.spring, value: copied)
     }
+
+    // MARK: - Subviews
+
+    private var dismissRow: some View {
+        HStack {
+            Spacer()
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 30, height: 30)
+            }
+            .accessibilityLabel("Close")
+            .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .padding(.horizontal, AgentIdentityQRConstants.horizontalPadding)
+    }
+
+    private var headerText: some View {
+        VStack(spacing: 6) {
+            if !name.isEmpty {
+                Text(name)
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
+            }
+            Text("Scan to add as a contact")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var qrCard: some View {
+        ZStack {
+            Color.white
+                .clipShape(RoundedRectangle(cornerRadius: AgentIdentityQRConstants.cardCornerRadius))
+
+            QRCodeView(content: npub)
+                .frame(width: 260, height: 260)
+                .padding(20)
+
+            if copied {
+                copiedOverlay
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+            }
+        }
+        .frame(width: 300, height: 300)
+    }
+
+    private var copiedOverlay: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AgentIdentityQRConstants.cardCornerRadius)
+                .fill(.black.opacity(0.55))
+            VStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(.white)
+                Text("Copied")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+        }
+    }
+
+    private var npubCaption: some View {
+        VStack(spacing: 4) {
+            Text(npub)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.horizontal, 32)
+
+            Text("Tap QR to copy")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 12) {
+            Button {
+                copyNpub()
+            } label: {
+                Label("Copy npub", systemImage: "doc.on.doc")
+                    .frame(maxWidth: .infinity)
+                    .frame(height: AgentIdentityQRConstants.actionButtonHeight)
+            }
+            .buttonStyle(.glass)
+
+            ShareLink(item: npub) {
+                Label("Share", systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity)
+                    .frame(height: AgentIdentityQRConstants.actionButtonHeight)
+            }
+            .buttonStyle(.glass)
+        }
+        .padding(.horizontal, AgentIdentityQRConstants.horizontalPadding)
+    }
+
+    // MARK: - Actions
 
     private func copyNpub() {
         UIPasteboard.general.string = npub

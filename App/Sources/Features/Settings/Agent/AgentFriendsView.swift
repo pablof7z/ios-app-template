@@ -1,5 +1,10 @@
 import SwiftUI
 
+private enum AgentFriendsConstants {
+    /// Diameter of the avatar circle used in friend list rows and initials placeholders.
+    static let avatarSize: CGFloat = 40
+}
+
 struct AgentFriendsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var showAddFriend = false
@@ -118,7 +123,7 @@ private struct FriendListRow: View {
                     initialsAvatar
                 }
             }
-            .frame(width: 40, height: 40)
+            .frame(width: AgentFriendsConstants.avatarSize, height: AgentFriendsConstants.avatarSize)
             .clipShape(Circle())
         } else {
             initialsAvatar
@@ -140,7 +145,7 @@ private struct FriendListRow: View {
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
         }
-        .frame(width: 40, height: 40)
+        .frame(width: AgentFriendsConstants.avatarSize, height: AgentFriendsConstants.avatarSize)
     }
 }
 
@@ -207,39 +212,47 @@ private struct AddFriendSheet: View {
     // MARK: - Camera panel
 
     private var cameraPanel: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                QRCodeScannerView { value in
-                    guard !scanned else { return }
-                    scanned = true
-                    Haptics.success()
-                    identifier = value
-                    mode = .paste
-                    nameFocused = true
-                }
-                .ignoresSafeArea()
-
-                VStack {
-                    Spacer()
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(.white.opacity(0.6), lineWidth: 2)
-                        .frame(width: 200, height: 200)
-                    Spacer()
-                }
-
-                VStack {
-                    Spacer()
-                    Text("Point at a Nostr QR code")
-                        .font(.caption)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .padding(.bottom, 32)
-                }
-            }
+        ZStack {
+            scannerLayer
+            viewfinderFrame
+            instructionPill
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var scannerLayer: some View {
+        QRCodeScannerView { value in
+            guard !scanned else { return }
+            scanned = true
+            Haptics.success()
+            identifier = value
+            mode = .paste
+            nameFocused = true
+        }
+        .ignoresSafeArea()
+    }
+
+    private var viewfinderFrame: some View {
+        VStack {
+            Spacer()
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(.white.opacity(0.6), lineWidth: 2)
+                .frame(width: 200, height: 200)
+            Spacer()
+        }
+    }
+
+    private var instructionPill: some View {
+        VStack {
+            Spacer()
+            Text("Point at a Nostr QR code")
+                .font(.caption)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+                .padding(.bottom, 32)
+        }
     }
 
     // MARK: - Paste panel
