@@ -115,32 +115,7 @@ struct HomeView: View {
         }
         .navigationTitle("Home")
         .searchable(text: $searchText, prompt: "Search items")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    composeInitialTitle = ""
-                    showCompose = true
-                } label: {
-                    Image(systemName: "plus")
-                        .fontWeight(.semibold)
-                }
-                .keyboardShortcut("n", modifiers: .command)
-                .accessibilityLabel("Add Item")
-            }
-            ToolbarItem(placement: .topBarLeading) {
-                Menu {
-                    Picker("Sort by", selection: $sortOrder) {
-                        ForEach(ItemSort.allCases) { sort in
-                            Label(sort.label, systemImage: sort.systemImage)
-                                .tag(sort.rawValue)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .accessibilityLabel("Sort Items")
-                }
-            }
-        }
+        .toolbar { homeToolbar }
         .sheet(isPresented: $showCompose) {
             ItemComposeSheet(initialTitle: composeInitialTitle)
         }
@@ -153,6 +128,34 @@ struct HomeView: View {
         .onChange(of: sourceFilterRaw)  { Haptics.selection() }
         .onChange(of: searchText) { _, new in
             if new.isEmpty { Haptics.light() }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var homeToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                composeInitialTitle = ""
+                showCompose = true
+            } label: {
+                Image(systemName: "plus")
+                    .fontWeight(.semibold)
+            }
+            .keyboardShortcut("n", modifiers: .command)
+            .accessibilityLabel("Add Item")
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            Menu {
+                Picker("Sort by", selection: $sortOrder) {
+                    ForEach(ItemSort.allCases) { sort in
+                        Label(sort.label, systemImage: sort.systemImage)
+                            .tag(sort.rawValue)
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.up.arrow.down")
+                    .accessibilityLabel("Sort Items")
+            }
         }
     }
 
@@ -194,6 +197,15 @@ struct HomeView: View {
         .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
     }
 
+    private var listRowInsets: EdgeInsets {
+        EdgeInsets(
+            top: AppTheme.Spacing.xs,
+            leading: AppTheme.Spacing.md,
+            bottom: AppTheme.Spacing.xs,
+            trailing: AppTheme.Spacing.md
+        )
+    }
+
     private var sourceFilterPicker: some View {
         Section {
             Picker("Source", selection: $sourceFilterRaw) {
@@ -203,12 +215,7 @@ struct HomeView: View {
             }
             .pickerStyle(.segmented)
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(
-                top: AppTheme.Spacing.xs,
-                leading: AppTheme.Spacing.md,
-                bottom: AppTheme.Spacing.xs,
-                trailing: AppTheme.Spacing.md
-            ))
+            .listRowInsets(listRowInsets)
         }
     }
 
@@ -216,78 +223,96 @@ struct HomeView: View {
     private var activeItemsSection: some View {
         Section {
             ForEach(filteredActiveItems) { item in
-                Button {
-                    Haptics.selection()
-                    editingItem = item
-                } label: {
-                    ItemRow(item: item)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(item.title)
-                .accessibilityHint("Double-tap to edit")
-                .listRowInsets(EdgeInsets(
-                    top: AppTheme.Spacing.xs,
-                    leading: AppTheme.Spacing.md,
-                    bottom: AppTheme.Spacing.xs,
-                    trailing: AppTheme.Spacing.md
-                ))
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    Button {
-                        store.setItemStatus(item.id, status: .done)
-                        Haptics.success()
-                    } label: {
-                        Label("Done", systemImage: "checkmark.circle.fill")
-                    }
-                    .tint(.green)
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        store.deleteItem(item.id)
-                        Haptics.medium()
-                    } label: {
-                        Label("Delete", systemImage: "trash.fill")
-                    }
-                }
-                .contextMenu {
-                    Button {
-                        Haptics.selection()
-                        editingItem = item
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                    }
-                    Button {
-                        store.setItemStatus(item.id, status: .done)
-                        Haptics.success()
-                    } label: {
-                        Label("Complete", systemImage: "checkmark.circle")
-                    }
-                    Button {
-                        store.toggleItemPriority(item.id)
-                        Haptics.selection()
-                    } label: {
-                        Label(
-                            item.isPriority ? "Unstar" : "Star",
-                            systemImage: item.isPriority ? "star.slash" : "star"
-                        )
-                    }
-                    if item.reminderAt != nil {
-                        Menu {
-                            Button("In 1 hour") { snoozeItem(item, by: 3600) }
-                            Button("In 3 hours") { snoozeItem(item, by: 10800) }
-                            Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
-                        } label: {
-                            Label("Snooze Reminder", systemImage: "bell.badge.slash")
-                        }
-                    }
-                    Divider()
-                    Button(role: .destructive) {
-                        store.deleteItem(item.id)
-                        Haptics.medium()
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
+                itemRow(for: item)
             }
+        }
+    }
+
+    private func itemRow(for item: Item) -> some View {
+        Button {
+            Haptics.selection()
+            editingItem = item
+        } label: {
+            ItemRow(item: item)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.title)
+        .accessibilityHint("Double-tap to edit")
+        .listRowInsets(listRowInsets)
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            leadingSwipeActions(for: item)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            trailingSwipeActions(for: item)
+        }
+        .contextMenu {
+            itemContextMenu(for: item)
+        }
+    }
+
+    @ViewBuilder
+    private func leadingSwipeActions(for item: Item) -> some View {
+        Button {
+            store.setItemStatus(item.id, status: .done)
+            Haptics.success()
+        } label: {
+            Label("Done", systemImage: "checkmark.circle.fill")
+        }
+        .tint(.green)
+    }
+
+    @ViewBuilder
+    private func trailingSwipeActions(for item: Item) -> some View {
+        Button(role: .destructive) {
+            store.deleteItem(item.id)
+            Haptics.medium()
+        } label: {
+            Label("Delete", systemImage: "trash.fill")
+        }
+    }
+
+    @ViewBuilder
+    private func itemContextMenu(for item: Item) -> some View {
+        Button {
+            Haptics.selection()
+            editingItem = item
+        } label: {
+            Label("Edit", systemImage: "pencil")
+        }
+        Button {
+            store.setItemStatus(item.id, status: .done)
+            Haptics.success()
+        } label: {
+            Label("Complete", systemImage: "checkmark.circle")
+        }
+        Button {
+            store.toggleItemPriority(item.id)
+            Haptics.selection()
+        } label: {
+            Label(
+                item.isPriority ? "Unstar" : "Star",
+                systemImage: item.isPriority ? "star.slash" : "star"
+            )
+        }
+        if item.reminderAt != nil {
+            snoozeMenu(for: item)
+        }
+        Divider()
+        Button(role: .destructive) {
+            store.deleteItem(item.id)
+            Haptics.medium()
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+
+    private func snoozeMenu(for item: Item) -> some View {
+        Menu {
+            Button("In 1 hour")     { snoozeItem(item, by: 3600) }
+            Button("In 3 hours")    { snoozeItem(item, by: 10800) }
+            Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
+        } label: {
+            Label("Snooze Reminder", systemImage: "bell.badge.slash")
         }
     }
 
