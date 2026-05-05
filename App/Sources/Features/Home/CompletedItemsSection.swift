@@ -10,33 +10,7 @@ struct CompletedItemsSection: View {
     var body: some View {
         Section {
             if isExpanded {
-                ForEach(store.completedItems) { item in
-                    CompletedItemRow(item: item)
-                        .listRowInsets(EdgeInsets(
-                            top: AppTheme.Spacing.xs,
-                            leading: AppTheme.Spacing.md,
-                            bottom: AppTheme.Spacing.xs,
-                            trailing: AppTheme.Spacing.md
-                        ))
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                store.setItemStatus(item.id, status: .pending)
-                                Haptics.success()
-                            } label: {
-                                Label("Restore", systemImage: "arrow.uturn.left.circle.fill")
-                            }
-                            .tint(.blue)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                store.deleteItem(item.id)
-                                Haptics.medium()
-                            } label: {
-                                Label("Delete", systemImage: "trash.fill")
-                            }
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                completedRows
             }
         } header: {
             completedHeader
@@ -54,43 +28,80 @@ struct CompletedItemsSection: View {
         }
     }
 
+    @ViewBuilder
+    private var completedRows: some View {
+        ForEach(store.completedItems) { item in
+            CompletedItemRow(item: item)
+                .listRowInsets(EdgeInsets(
+                    top: AppTheme.Spacing.xs,
+                    leading: AppTheme.Spacing.md,
+                    bottom: AppTheme.Spacing.xs,
+                    trailing: AppTheme.Spacing.md
+                ))
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button {
+                        store.setItemStatus(item.id, status: .pending)
+                        Haptics.success()
+                    } label: {
+                        Label("Restore", systemImage: "arrow.uturn.left.circle.fill")
+                    }
+                    .tint(.blue)
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        store.deleteItem(item.id)
+                        Haptics.medium()
+                    } label: {
+                        Label("Delete", systemImage: "trash.fill")
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
     // MARK: - Header
 
     private var completedHeader: some View {
         HStack(spacing: AppTheme.Spacing.xs) {
-            Button {
-                Haptics.selection()
-                withAnimation(AppTheme.Animation.spring) { isExpanded.toggle() }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(AppTheme.Animation.spring, value: isExpanded)
-                    Text("Completed")
-                        .font(AppTheme.Typography.caption.weight(.semibold))
-                    Text("(\(store.completedItems.count))")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-
+            disclosureButton
             Spacer(minLength: 0)
-
             if isExpanded && !store.completedItems.isEmpty {
-                Button {
-                    Haptics.selection()
-                    showClearConfirm = true
-                } label: {
-                    Text("Clear All")
-                        .font(AppTheme.Typography.caption.weight(.semibold))
-                        .foregroundStyle(.red.opacity(0.8))
-                }
-                .buttonStyle(.plain)
+                clearAllButton
             }
         }
+    }
+
+    private var disclosureButton: some View {
+        Button {
+            Haptics.selection()
+            withAnimation(AppTheme.Animation.spring) { isExpanded.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .animation(AppTheme.Animation.spring, value: isExpanded)
+                Text("Completed")
+                    .font(AppTheme.Typography.caption.weight(.semibold))
+                Text("(\(store.completedItems.count))")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var clearAllButton: some View {
+        Button {
+            Haptics.selection()
+            showClearConfirm = true
+        } label: {
+            Text("Clear All")
+                .font(AppTheme.Typography.caption.weight(.semibold))
+                .foregroundStyle(.red.opacity(0.8))
+        }
+        .buttonStyle(.plain)
     }
 }
 

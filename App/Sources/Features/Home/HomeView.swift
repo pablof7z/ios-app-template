@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var showCompose = false
     @State private var composeInitialTitle: String = ""
     @State private var completedExpanded: Bool = false
+    @State private var editingItem: Item?
 
     private var hasAnyItems: Bool {
         !store.activeItems.isEmpty || !store.completedItems.isEmpty
@@ -30,10 +31,14 @@ struct HomeView: View {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
                 }
+                .accessibilityLabel("Add Item")
             }
         }
         .sheet(isPresented: $showCompose) {
             ItemComposeSheet(initialTitle: composeInitialTitle)
+        }
+        .sheet(item: $editingItem) { item in
+            ItemEditSheet(item: item)
         }
         .onAppear { consumePendingTitle() }
         .onChange(of: pendingNewItemTitle) { consumePendingTitle() }
@@ -61,35 +66,7 @@ struct HomeView: View {
 
     private var itemList: some View {
         List {
-            Section {
-                ForEach(store.activeItems) { item in
-                    ItemRow(item: item)
-                        .listRowInsets(EdgeInsets(
-                            top: AppTheme.Spacing.xs,
-                            leading: AppTheme.Spacing.md,
-                            bottom: AppTheme.Spacing.xs,
-                            trailing: AppTheme.Spacing.md
-                        ))
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                store.setItemStatus(item.id, status: .done)
-                                Haptics.success()
-                            } label: {
-                                Label("Done", systemImage: "checkmark.circle.fill")
-                            }
-                            .tint(.green)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                store.deleteItem(item.id)
-                                Haptics.medium()
-                            } label: {
-                                Label("Delete", systemImage: "trash.fill")
-                            }
-                        }
-                }
-            }
-
+            activeItemsSection
             if !store.completedItems.isEmpty {
                 CompletedItemsSection(isExpanded: $completedExpanded)
             }
@@ -97,6 +74,46 @@ struct HomeView: View {
         .listStyle(.plain)
         .animation(AppTheme.Animation.spring, value: store.activeItems.count)
         .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
+    }
+
+    @ViewBuilder
+    private var activeItemsSection: some View {
+        Section {
+            ForEach(store.activeItems) { item in
+                Button {
+                    Haptics.selection()
+                    editingItem = item
+                } label: {
+                    ItemRow(item: item)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(item.title)
+                .accessibilityHint("Double-tap to edit")
+                .listRowInsets(EdgeInsets(
+                    top: AppTheme.Spacing.xs,
+                    leading: AppTheme.Spacing.md,
+                    bottom: AppTheme.Spacing.xs,
+                    trailing: AppTheme.Spacing.md
+                ))
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button {
+                        store.setItemStatus(item.id, status: .done)
+                        Haptics.success()
+                    } label: {
+                        Label("Done", systemImage: "checkmark.circle.fill")
+                    }
+                    .tint(.green)
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        store.deleteItem(item.id)
+                        Haptics.medium()
+                    } label: {
+                        Label("Delete", systemImage: "trash.fill")
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Deep-Link
