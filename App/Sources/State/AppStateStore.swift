@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "AppStateStore")
 
 /// Single source of truth. All mutations route through here so the `didSet`
 /// observer can persist automatically. UI and agent both call the same methods.
@@ -16,7 +19,13 @@ final class AppStateStore {
     }
 
     init() {
-        var loadedState = (try? Persistence.load()) ?? AppState()
+        var loadedState: AppState
+        do {
+            loadedState = try Persistence.load()
+        } catch {
+            logger.error("Persistence.load failed: \(error, privacy: .public) — starting with empty state")
+            loadedState = AppState()
+        }
         Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState)
         self.state = loadedState
         // Seed Spotlight with whatever was persisted before this launch — the
@@ -33,9 +42,11 @@ final class AppStateStore {
             return
         }
 
-        if (try? OpenRouterCredentialStore.saveAPIKey(legacyKey)) != nil {
+        do {
+            try OpenRouterCredentialStore.saveAPIKey(legacyKey)
             state.settings.markOpenRouterManual()
-        } else {
+        } catch {
+            logger.error("Failed to migrate legacy OpenRouter key to keychain: \(error, privacy: .public)")
             state.settings.clearOpenRouterCredential()
         }
         Persistence.save(state)
@@ -262,10 +273,9 @@ final class AppStateStore {
     }
 
     func clearCompletedItems() {
-        let ids = state.items
-            .filter { !$0.deleted && $0.status == .done }
-            .map(\.id)
-        for id in ids { state.items[state.items.firstIndex(where: { $0.id == id })!].deleted = true }
+        for idx in state.items.indices where !state.items[idx].deleted && state.items[idx].status == .done {
+            state.items[idx].deleted = true
+        }
     }
 
     var activeNotes: [Note] {
