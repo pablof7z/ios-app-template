@@ -255,6 +255,19 @@ final class AppStateStore {
         state.items.filter { !$0.deleted && $0.status == .pending }
     }
 
+    var completedItems: [Item] {
+        state.items
+            .filter { !$0.deleted && $0.status == .done }
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    func clearCompletedItems() {
+        let ids = state.items
+            .filter { !$0.deleted && $0.status == .done }
+            .map(\.id)
+        for id in ids { state.items[state.items.firstIndex(where: { $0.id == id })!].deleted = true }
+    }
+
     var activeNotes: [Note] {
         state.notes.filter { !$0.deleted }
     }

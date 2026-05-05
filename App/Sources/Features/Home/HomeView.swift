@@ -6,13 +6,18 @@ struct HomeView: View {
 
     @State private var showCompose = false
     @State private var composeInitialTitle: String = ""
+    @State private var completedExpanded: Bool = false
+
+    private var hasAnyItems: Bool {
+        !store.activeItems.isEmpty || !store.completedItems.isEmpty
+    }
 
     var body: some View {
         Group {
-            if store.activeItems.isEmpty {
-                emptyState
-            } else {
+            if hasAnyItems {
                 itemList
+            } else {
+                emptyState
             }
         }
         .navigationTitle("Home")
@@ -56,35 +61,42 @@ struct HomeView: View {
 
     private var itemList: some View {
         List {
-            ForEach(store.activeItems) { item in
-                ItemRow(item: item)
-                    .listRowInsets(EdgeInsets(
-                        top: AppTheme.Spacing.xs,
-                        leading: AppTheme.Spacing.md,
-                        bottom: AppTheme.Spacing.xs,
-                        trailing: AppTheme.Spacing.md
-                    ))
-                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                        Button {
-                            store.setItemStatus(item.id, status: .done)
-                            Haptics.success()
-                        } label: {
-                            Label("Done", systemImage: "checkmark.circle.fill")
+            Section {
+                ForEach(store.activeItems) { item in
+                    ItemRow(item: item)
+                        .listRowInsets(EdgeInsets(
+                            top: AppTheme.Spacing.xs,
+                            leading: AppTheme.Spacing.md,
+                            bottom: AppTheme.Spacing.xs,
+                            trailing: AppTheme.Spacing.md
+                        ))
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                store.setItemStatus(item.id, status: .done)
+                                Haptics.success()
+                            } label: {
+                                Label("Done", systemImage: "checkmark.circle.fill")
+                            }
+                            .tint(.green)
                         }
-                        .tint(.green)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            store.deleteItem(item.id)
-                            Haptics.medium()
-                        } label: {
-                            Label("Delete", systemImage: "trash.fill")
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                store.deleteItem(item.id)
+                                Haptics.medium()
+                            } label: {
+                                Label("Delete", systemImage: "trash.fill")
+                            }
                         }
-                    }
+                }
+            }
+
+            if !store.completedItems.isEmpty {
+                CompletedItemsSection(isExpanded: $completedExpanded)
             }
         }
         .listStyle(.plain)
         .animation(AppTheme.Animation.spring, value: store.activeItems.count)
+        .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
     }
 
     // MARK: - Deep-Link
