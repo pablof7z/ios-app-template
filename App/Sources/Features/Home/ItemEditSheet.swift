@@ -9,6 +9,10 @@ struct ItemEditSheet: View {
     var namespace: Namespace.ID? = nil
 
     @State private var title: String = ""
+    @State private var isPriority: Bool = false
+    @State private var reminderEnabled: Bool = false
+    @State private var reminderDate: Date = Date().addingTimeInterval(3600)
+    @State private var notificationDenied: Bool = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -24,7 +28,7 @@ struct ItemEditSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
+                    Button("Save") { Task { await save() } }
                         .buttonStyle(.glassProminent)
                         .disabled(!canSave)
                         .fontWeight(.semibold)
@@ -32,10 +36,13 @@ struct ItemEditSheet: View {
             }
             .applyZoomTransition(sourceID: sourceID, namespace: namespace)
         }
-        .presentationDetents([.height(180), .medium])
+        .presentationDetents([.height(reminderEnabled ? 360 : 260), .medium])
         .presentationDragIndicator(.visible)
         .onAppear {
             title = item.title
+            isPriority = item.isPriority
+            reminderEnabled = item.reminderAt != nil
+            reminderDate = item.reminderAt ?? Date().addingTimeInterval(3600)
             isFocused = true
         }
     }
@@ -45,9 +52,16 @@ struct ItemEditSheet: View {
     private var editor: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             titleField
+            priorityRow
+            reminderRow
+            if notificationDenied {
+                deniedBanner
+            }
             Spacer(minLength: 0)
         }
         .padding(AppTheme.Spacing.md)
+        .animation(AppTheme.Animation.spring, value: reminderEnabled)
+        .animation(AppTheme.Animation.spring, value: notificationDenied)
     }
 
     private var titleField: some View {
@@ -59,24 +73,106 @@ struct ItemEditSheet: View {
                 .font(AppTheme.Typography.body)
                 .focused($isFocused)
                 .submitLabel(.done)
-                .onSubmit { save() }
+                .onSubmit { Task { await save() } }
         }
         .padding(AppTheme.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var priorityRow: some View {
+        Toggle(isOn: $isPriority) {
+            Label("Priority", systemImage: isPriority ? "star.fill" : "star")
+                .font(AppTheme.Typography.body)
+                .foregroundStyle(isPriority ? .yellow : .secondary)
+        }
+        .tint(.yellow)
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var reminderRow: some View {
+        VStack(spacing: AppTheme.Spacing.sm) {
+            Toggle(isOn: $reminderEnabled) {
+                Label("Remind me", systemImage: "bell.fill")
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(reminderEnabled ? .orange : .secondary)
+            }
+            .tint(.orange)
+            .padding(AppTheme.Spacing.md)
+            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+
+            if reminderEnabled {
+                DatePicker(
+                    "Reminder time",
+                    selection: $reminderDate,
+                    in: Date()...,
+                    displayedComponents: [.date, .hourAndMinute]
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .padding(AppTheme.Spacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private var deniedBanner: some View {
+        HStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: "bell.slash.fill")
+                .foregroundStyle(.orange)
+            Text("Notifications are disabled. Enable them in Settings to receive reminders.")
+                .font(AppTheme.Typography.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular.tint(.orange.opacity(0.08)), in: .rect(cornerRadius: AppTheme.Corner.md))
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     // MARK: - Logic
 
     private var canSave: Bool {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmed.isEmpty && trimmed != item.title
+        guard !trimmed.isEmpty else { return false }
+        let titleChanged = trimmed != item.title
+        let priorityChanged = isPriority != item.isPriority
+        let reminderChanged = reminderEnabled != (item.reminderAt != nil)
+            || (reminderEnabled && reminderDate != item.reminderAt)
+        return titleChanged || priorityChanged || reminderChanged
     }
 
-    private func save() {
+    private func save() async {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+
         var updated = item
         updated.title = trimmed
+        updated.isPriority = isPriority
+
+        // Handle reminder transitions
+        let hadReminder = item.reminderAt != nil
+        if reminderEnabled {
+            let scheduled = await NotificationService.scheduleReminder(
+                for: item.id,
+                title: trimmed,
+                at: reminderDate
+            )
+            if scheduled {
+                updated.reminderAt = reminderDate
+            } else {
+                notificationDenied = true
+                Haptics.warning()
+                return
+            }
+        } else if hadReminder {
+            // Reminder was turned off — cancel the pending notification
+            NotificationService.cancel(for: item.id)
+            updated.reminderAt = nil
+        }
+
         store.updateItem(updated)
         Haptics.success()
         dismiss()
