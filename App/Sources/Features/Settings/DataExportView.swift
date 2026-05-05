@@ -20,6 +20,8 @@ struct DataExportView: View {
     @State private var errorMessage: String?
     @State private var generatedAt: Date?
     @State private var showShareSheet = false
+    @State private var showClearConfirmation = false
+    @State private var exportCompletedOnly = false
 
     var body: some View {
         ZStack {
@@ -29,6 +31,7 @@ struct DataExportView: View {
             List {
                 summarySection
                 actionSection
+                dangerSection
                 aboutSection
             }
             .listStyle(.insetGrouped)
@@ -40,6 +43,19 @@ struct DataExportView: View {
             if let fileURL {
                 ShareSheet(items: [fileURL])
             }
+        }
+        .confirmationDialog(
+            "Clear All Data",
+            isPresented: $showClearConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Clear All Data", role: .destructive) {
+                store.clearAllData()
+                Haptics.success()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete all items, notes, friends, memories, and agent activity. This action cannot be undone.")
         }
     }
 
@@ -65,6 +81,14 @@ struct DataExportView: View {
             }
         } else {
             Section {
+                Toggle(isOn: $exportCompletedOnly) {
+                    SettingsRow(
+                        icon: "checkmark.circle.fill",
+                        tint: .green,
+                        title: "Completed items only",
+                        subtitle: "Export only items marked as done"
+                    )
+                }
                 Button {
                     generate()
                 } label: {
@@ -79,6 +103,22 @@ struct DataExportView: View {
             } footer: {
                 Text(actionFooterText)
             }
+        }
+    }
+
+    private var dangerSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showClearConfirmation = true
+            } label: {
+                SettingsRow(
+                    icon: "trash.fill",
+                    tint: .red,
+                    title: "Clear All Data"
+                )
+            }
+        } footer: {
+            Text("Permanently deletes all items, notes, friends, memories, and agent activity.")
         }
     }
 
@@ -133,7 +173,11 @@ struct DataExportView: View {
     private func generate() {
         do {
             let now = Date()
-            let url = try DataExport.writeExport(of: store.state, now: now)
+            var exportState = store.state
+            if exportCompletedOnly {
+                exportState.items = exportState.items.filter { $0.status == .done }
+            }
+            let url = try DataExport.writeExport(of: exportState, now: now)
             let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
             fileURL = url
             fileSize = (attrs?[.size] as? NSNumber)?.intValue
