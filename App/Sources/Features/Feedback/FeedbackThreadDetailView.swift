@@ -9,6 +9,7 @@ struct FeedbackThreadDetailView: View {
     @State private var replyDraft = ""
     @State private var isSending = false
     @State private var errorMessage: String?
+    @FocusState private var composerFocused: Bool
 
     private var currentThread: FeedbackThread {
         store.threads.first(where: { $0.id == thread.id }) ?? thread
@@ -68,7 +69,10 @@ struct FeedbackThreadDetailView: View {
                         FeedbackBubble(
                             content: reply.content,
                             isFromMe: reply.isFromMe,
-                            createdAt: reply.createdAt
+                            createdAt: reply.createdAt,
+                            onQuoteReply: reply.isFromMe ? nil : {
+                                quoteReply(reply.content)
+                            }
                         )
                         .id(reply.id)
                     }
@@ -122,6 +126,7 @@ struct FeedbackThreadDetailView: View {
                 TextField("Reply\u{2026}", text: $replyDraft, axis: .vertical)
                     .lineLimit(1...4)
                     .padding(.horizontal, 4)
+                    .focused($composerFocused)
 
                 Button {
                     Task { await sendReply() }
@@ -141,6 +146,23 @@ struct FeedbackThreadDetailView: View {
             .padding(.bottom, 4)
         }
         .padding(.bottom, 8)
+    }
+
+    // MARK: - Quote reply
+
+    private func quoteReply(_ content: String) {
+        Haptics.selection()
+        let quoted = content
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { "> \($0)" }
+            .joined(separator: "\n")
+        let prefix = quoted + "\n\n"
+        if replyDraft.isEmpty {
+            replyDraft = prefix
+        } else {
+            replyDraft = prefix + replyDraft
+        }
+        composerFocused = true
     }
 
     // MARK: - Send reply
@@ -167,6 +189,7 @@ struct FeedbackBubble: View {
     let content: String
     let isFromMe: Bool
     let createdAt: Date
+    var onQuoteReply: (() -> Void)? = nil
 
     private enum Layout {
         static let spacerMinLength: CGFloat = 60
@@ -211,5 +234,14 @@ struct FeedbackBubble: View {
             .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
             .foregroundStyle(.primary)
             .multilineTextAlignment(.leading)
+            .contextMenu {
+                if let onQuoteReply {
+                    Button {
+                        onQuoteReply()
+                    } label: {
+                        Label("Reply", systemImage: "arrowshape.turn.up.left")
+                    }
+                }
+            }
     }
 }
