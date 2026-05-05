@@ -26,15 +26,7 @@ struct StatBadge: View {
 // MARK: - Convenience factory methods
 
 extension StatBadge {
-    static func tasks(_ count: Int, color: Color = .accentColor) -> StatBadge {
-        StatBadge(value: count, label: count == 1 ? "task" : "tasks", color: color)
-    }
-
     static func count(_ count: Int, color: Color = .secondary) -> StatBadge {
         StatBadge(value: count, color: color)
-    }
-
-    static func memories(_ count: Int) -> StatBadge {
-        StatBadge(value: count, label: count == 1 ? "memory" : "memories", color: .purple)
     }
 }

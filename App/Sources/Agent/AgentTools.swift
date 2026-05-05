@@ -8,41 +8,44 @@ enum AgentTools {
 
     // MARK: - JSON Schema (OpenAI tool format)
 
-    nonisolated(unsafe) static let schema: [[String: Any]] = [
-        tool(
-            name: "create_item",
-            description: "Create a new task or to-do item for the user.",
-            properties: ["title": ["type": "string", "description": "The task title"]],
-            required: ["title"]
-        ),
-        tool(
-            name: "mark_item_done",
-            description: "Mark a task as completed by its ID.",
-            properties: ["id": ["type": "string", "description": "UUID of the item"]],
-            required: ["id"]
-        ),
-        tool(
-            name: "delete_item",
-            description: "Delete a task by its ID.",
-            properties: ["id": ["type": "string", "description": "UUID of the item"]],
-            required: ["id"]
-        ),
-        tool(
-            name: "create_note",
-            description: "Save a note or reflection.",
-            properties: [
-                "text": ["type": "string", "description": "Note content"],
-                "kind": ["type": "string", "enum": ["free", "reflection", "systemEvent"], "description": "Note type"],
-            ],
-            required: ["text"]
-        ),
-        tool(
-            name: "record_memory",
-            description: "Save something important to remember about the user for future sessions.",
-            properties: ["content": ["type": "string", "description": "The fact to remember"]],
-            required: ["content"]
-        ),
-    ]
+    @MainActor
+    static var schema: [[String: Any]] {
+        [
+            tool(
+                name: "create_item",
+                description: "Create a new task or to-do item for the user.",
+                properties: ["title": ["type": "string", "description": "The task title"]],
+                required: ["title"]
+            ),
+            tool(
+                name: "mark_item_done",
+                description: "Mark a task as completed by its ID.",
+                properties: ["id": ["type": "string", "description": "UUID of the item"]],
+                required: ["id"]
+            ),
+            tool(
+                name: "delete_item",
+                description: "Delete a task by its ID.",
+                properties: ["id": ["type": "string", "description": "UUID of the item"]],
+                required: ["id"]
+            ),
+            tool(
+                name: "create_note",
+                description: "Save a note or reflection.",
+                properties: [
+                    "text": ["type": "string", "description": "Note content"],
+                    "kind": ["type": "string", "enum": ["free", "reflection", "systemEvent"], "description": "Note type"],
+                ],
+                required: ["text"]
+            ),
+            tool(
+                name: "record_memory",
+                description: "Save something important to remember about the user for future sessions.",
+                properties: ["content": ["type": "string", "description": "The fact to remember"]],
+                required: ["content"]
+            ),
+        ]
+    }
 
     // MARK: - Dispatcher
 

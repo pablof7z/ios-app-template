@@ -26,7 +26,14 @@ enum Persistence {
     private static let stateKey = "apptemplate.state.v1"
 
     static func save(_ state: AppState) {
-        guard let data = try? encoder.encode(state) else { return }
+        let data: Data
+        do {
+            data = try encoder.encode(state)
+        } catch {
+            FileHandle.standardError.write(Data("Persistence.save: encode failed: \(error)\n".utf8))
+            assertionFailure("Persistence.save: encode failed: \(error)")
+            return
+        }
         defaults.set(data, forKey: stateKey)
     }
 

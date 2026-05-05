@@ -18,51 +18,55 @@ struct ScreenshotAnnotationView: View {
     @State private var currentStroke: Stroke?
     @State private var strokeColor: Color = .red
     @State private var strokeWidth: CGFloat = 3.0
+    @State private var canvasWidth: CGFloat = 0
 
     private let palette: [Color] = [.red, .orange, .blue, .yellow, .white]
 
     var body: some View {
         NavigationStack {
-            GeometryReader { _ in
-                ZStack {
-                    Color.black.ignoresSafeArea()
+            ZStack {
+                Color.black.ignoresSafeArea()
 
-                    if let screenshot = workflow.screenshot {
-                        Image(uiImage: screenshot)
-                            .resizable()
-                            .scaledToFit()
-                    }
-
-                    Canvas { context, _ in
-                        for stroke in strokes {
-                            drawStroke(stroke, in: &context)
-                        }
-                        if let current = currentStroke {
-                            drawStroke(current, in: &context)
-                        }
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if currentStroke == nil {
-                                    currentStroke = Stroke(
-                                        points: [value.location],
-                                        color: strokeColor,
-                                        width: strokeWidth
-                                    )
-                                } else {
-                                    currentStroke?.points.append(value.location)
-                                }
-                            }
-                            .onEnded { _ in
-                                if let stroke = currentStroke, stroke.points.count > 1 {
-                                    strokes.append(stroke)
-                                    Haptics.light()
-                                }
-                                currentStroke = nil
-                            }
-                    )
+                if let screenshot = workflow.screenshot {
+                    Image(uiImage: screenshot)
+                        .resizable()
+                        .scaledToFit()
                 }
+
+                Canvas { context, _ in
+                    for stroke in strokes {
+                        drawStroke(stroke, in: &context)
+                    }
+                    if let current = currentStroke {
+                        drawStroke(current, in: &context)
+                    }
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if currentStroke == nil {
+                                currentStroke = Stroke(
+                                    points: [value.location],
+                                    color: strokeColor,
+                                    width: strokeWidth
+                                )
+                            } else {
+                                currentStroke?.points.append(value.location)
+                            }
+                        }
+                        .onEnded { _ in
+                            if let stroke = currentStroke, stroke.points.count > 1 {
+                                strokes.append(stroke)
+                                Haptics.light()
+                            }
+                            currentStroke = nil
+                        }
+                )
+            }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.width
+            } action: { newWidth in
+                canvasWidth = newWidth
             }
             .navigationTitle("Annotate")
             .navigationBarTitleDisplayMode(.inline)
@@ -185,10 +189,12 @@ struct ScreenshotAnnotationView: View {
             return
         }
 
-        let renderer = UIGraphicsImageRenderer(size: screenshot.size)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = screenshot.scale
+        let renderer = UIGraphicsImageRenderer(size: screenshot.size, format: format)
         let annotated = renderer.image { ctx in
             screenshot.draw(at: .zero)
-            let scale = screenshot.size.width / UIScreen.main.bounds.width
+            let scale = canvasWidth > 0 ? screenshot.size.width / canvasWidth : 1
             ctx.cgContext.scaleBy(x: scale, y: scale)
 
             for stroke in strokes {
