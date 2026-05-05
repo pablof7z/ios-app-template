@@ -108,7 +108,10 @@ final class AgentSession {
         apiKey: String,
         model: String
     ) async throws -> AgentResult {
-        var request = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/chat/completions")!)
+        guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
+            throw AgentError.invalidURL
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -165,11 +168,13 @@ struct AgentResult: @unchecked Sendable {
 enum AgentError: LocalizedError {
     case httpError(String)
     case malformedResponse
+    case invalidURL
 
     var errorDescription: String? {
         switch self {
         case .httpError(let body): "HTTP error: \(body)"
         case .malformedResponse: "Malformed response from API"
+        case .invalidURL: "Invalid API endpoint URL"
         }
     }
 }
