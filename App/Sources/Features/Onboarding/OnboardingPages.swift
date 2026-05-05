@@ -1,5 +1,14 @@
 import SwiftUI
 
+// MARK: - Shared constants
+
+private enum OnboardingLayout {
+    static let pageIconSize: CGFloat = 60
+    static let pageIconPadding: CGFloat = 28
+    static let pageIconStroke: CGFloat = 0.3
+    static let fieldVerticalPadding: CGFloat = 14
+}
+
 // MARK: - Welcome
 
 struct OnboardingWelcomePage: View {
@@ -8,43 +17,7 @@ struct OnboardingWelcomePage: View {
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Spacer()
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 36, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.35),
-                                Color.white.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 148, height: 148)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 36))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 36, style: .continuous)
-                            .strokeBorder(.white.opacity(0.35), lineWidth: 1)
-                    )
-                    .appShadow(AppTheme.Shadow.lifted)
-
-                Image(systemName: "sparkles")
-                    .font(.system(size: 76, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.white, Color(red: 0.85, green: 0.92, blue: 1.0)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .symbolEffect(.bounce, options: .repeat(3), value: sparkleTrigger)
-                    .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)
-            }
-            .onAppear {
-                sparkleTrigger += 1
-            }
-
+            sparkleMedallion
             VStack(spacing: AppTheme.Spacing.sm) {
                 Text("iOS App Template")
                     .font(AppTheme.Typography.largeTitle)
@@ -68,6 +41,44 @@ struct OnboardingWelcomePage: View {
             Spacer()
         }
     }
+
+    private var sparkleMedallion: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 36, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.35),
+                            Color.white.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 148, height: 148)
+                .glassEffect(.regular, in: .rect(cornerRadius: 36))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 36, style: .continuous)
+                        .strokeBorder(.white.opacity(0.35), lineWidth: 1)
+                )
+                .appShadow(AppTheme.Shadow.lifted)
+
+            Image(systemName: "sparkles")
+                .font(.system(size: 76, weight: .semibold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, Color(red: 0.85, green: 0.92, blue: 1.0)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .symbolEffect(.bounce, options: .repeat(3), value: sparkleTrigger)
+                .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)
+        }
+        .onAppear {
+            sparkleTrigger += 1
+        }
+    }
 }
 
 // MARK: - AI Setup
@@ -85,117 +96,132 @@ struct OnboardingAISetupPage: View {
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Spacer()
-
-            Image(systemName: "key.viewfinder")
-                .font(.system(size: 60, weight: .semibold))
-                .foregroundStyle(.white)
-                .symbolEffect(.pulse, options: .repeating)
-                .padding(28)
-                .glassEffect(.regular, in: .circle)
-                .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
-
-            VStack(spacing: AppTheme.Spacing.sm) {
-                Text("Connect your AI")
-                    .font(AppTheme.Typography.largeTitle)
-                    .foregroundStyle(.white)
-
-                Text("Connect OpenRouter to power your agent. Skip and add it later in Settings.")
-                    .font(AppTheme.Typography.body)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            VStack(spacing: AppTheme.Spacing.sm) {
-                Button {
-                    onConnectBYOK()
-                } label: {
-                    HStack(spacing: AppTheme.Spacing.sm) {
-                        if isConnectingBYOK {
-                            ProgressView()
-                                .tint(.black)
-                        } else {
-                            Image(systemName: "key.viewfinder")
-                        }
-                        Text(isConnectingBYOK ? "Connecting…" : "Connect with BYOK")
-                            .font(AppTheme.Typography.headline)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 28)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-                .tint(.white)
-                .foregroundStyle(.black)
-                .disabled(isSaving)
-
-                Button {
-                    withAnimation(AppTheme.Animation.springFast) { showManualEntry.toggle() }
-                } label: {
-                    Text(showManualEntry ? "Hide manual entry" : "Enter key manually")
-                        .font(AppTheme.Typography.callout)
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-                .buttonStyle(.plain)
-                .disabled(isSaving)
-
-                if showManualEntry {
-                    GlassEffectContainer {
-                        VStack(spacing: AppTheme.Spacing.sm) {
-                            HStack(spacing: AppTheme.Spacing.sm) {
-                                Image(systemName: "key.fill")
-                                    .foregroundStyle(.white.opacity(0.7))
-                                if revealKey {
-                                    TextField("sk-or-v1-…", text: $apiKey)
-                                        .textInputAutocapitalization(.never)
-                                        .autocorrectionDisabled()
-                                        .foregroundStyle(.white)
-                                } else {
-                                    SecureField("sk-or-v1-…", text: $apiKey)
-                                        .foregroundStyle(.white)
-                                }
-                                Button {
-                                    revealKey.toggle()
-                                } label: {
-                                    Image(systemName: revealKey ? "eye.slash.fill" : "eye.fill")
-                                        .foregroundStyle(.white.opacity(0.7))
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(isSaving)
-                                .accessibilityLabel(revealKey ? "Hide API key" : "Show API key")
-                            }
-                            .padding(.horizontal, AppTheme.Spacing.md)
-                            .padding(.vertical, 14)
-                            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                                    .strokeBorder(.white.opacity(0.25), lineWidth: 1)
-                            )
-
-                            Text("Stored securely in Keychain.")
-                                .font(AppTheme.Typography.caption2)
-                                .foregroundStyle(.white.opacity(0.6))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, AppTheme.Spacing.sm)
-                        }
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Color(red: 1.0, green: 0.7, blue: 0.7))
-                        .multilineTextAlignment(.center)
-                        .transition(.opacity)
-                }
-            }
-            .animation(AppTheme.Animation.springFast, value: showManualEntry)
-            .animation(AppTheme.Animation.springFast, value: errorMessage)
-
+            pageIcon
+            pageHeader
+            actionArea
             Spacer()
         }
+    }
+
+    private var pageIcon: some View {
+        Image(systemName: "key.viewfinder")
+            .font(.system(size: OnboardingLayout.pageIconSize, weight: .semibold))
+            .foregroundStyle(.white)
+            .symbolEffect(.pulse, options: .repeating)
+            .padding(OnboardingLayout.pageIconPadding)
+            .glassEffect(.regular, in: .circle)
+            .overlay(Circle().strokeBorder(.white.opacity(OnboardingLayout.pageIconStroke), lineWidth: 1))
+    }
+
+    private var pageHeader: some View {
+        VStack(spacing: AppTheme.Spacing.sm) {
+            Text("Connect your AI")
+                .font(AppTheme.Typography.largeTitle)
+                .foregroundStyle(.white)
+
+            Text("Connect OpenRouter to power your agent. Skip and add it later in Settings.")
+                .font(AppTheme.Typography.body)
+                .foregroundStyle(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var actionArea: some View {
+        VStack(spacing: AppTheme.Spacing.sm) {
+            byokButton
+            manualEntryToggle
+            if showManualEntry { manualEntryField }
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Color(red: 1.0, green: 0.7, blue: 0.7))
+                    .multilineTextAlignment(.center)
+                    .transition(.opacity)
+            }
+        }
+        .animation(AppTheme.Animation.springFast, value: showManualEntry)
+        .animation(AppTheme.Animation.springFast, value: errorMessage)
+    }
+
+    private var byokButton: some View {
+        Button {
+            onConnectBYOK()
+        } label: {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                if isConnectingBYOK {
+                    ProgressView()
+                        .tint(.black)
+                } else {
+                    Image(systemName: "key.viewfinder")
+                }
+                Text(isConnectingBYOK ? "Connecting…" : "Connect with BYOK")
+                    .font(AppTheme.Typography.headline)
+            }
+            .frame(maxWidth: .infinity, minHeight: 28)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.glassProminent)
+        .controlSize(.large)
+        .tint(.white)
+        .foregroundStyle(.black)
+        .disabled(isSaving)
+    }
+
+    private var manualEntryToggle: some View {
+        Button {
+            withAnimation(AppTheme.Animation.springFast) { showManualEntry.toggle() }
+        } label: {
+            Text(showManualEntry ? "Hide manual entry" : "Enter key manually")
+                .font(AppTheme.Typography.callout)
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .buttonStyle(.plain)
+        .disabled(isSaving)
+    }
+
+    private var manualEntryField: some View {
+        GlassEffectContainer {
+            VStack(spacing: AppTheme.Spacing.sm) {
+                HStack(spacing: AppTheme.Spacing.sm) {
+                    Image(systemName: "key.fill")
+                        .foregroundStyle(.white.opacity(0.7))
+                    if revealKey {
+                        TextField("sk-or-v1-…", text: $apiKey)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .foregroundStyle(.white)
+                    } else {
+                        SecureField("sk-or-v1-…", text: $apiKey)
+                            .foregroundStyle(.white)
+                    }
+                    Button {
+                        revealKey.toggle()
+                    } label: {
+                        Image(systemName: revealKey ? "eye.slash.fill" : "eye.fill")
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isSaving)
+                    .accessibilityLabel(revealKey ? "Hide API key" : "Show API key")
+                }
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.vertical, OnboardingLayout.fieldVerticalPadding)
+                .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
+                        .strokeBorder(.white.opacity(0.25), lineWidth: 1)
+                )
+
+                Text("Stored securely in Keychain.")
+                    .font(AppTheme.Typography.caption2)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, AppTheme.Spacing.sm)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 }
 
@@ -210,12 +236,12 @@ struct OnboardingIdentityPage: View {
             Spacer()
 
             Image(systemName: "person.crop.circle.badge.plus")
-                .font(.system(size: 60, weight: .semibold))
+                .font(.system(size: OnboardingLayout.pageIconSize, weight: .semibold))
                 .foregroundStyle(.white)
                 .symbolEffect(.bounce, options: .repeat(2))
-                .padding(28)
+                .padding(OnboardingLayout.pageIconPadding)
                 .glassEffect(.regular, in: .circle)
-                .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
+                .overlay(Circle().strokeBorder(.white.opacity(OnboardingLayout.pageIconStroke), lineWidth: 1))
 
             VStack(spacing: AppTheme.Spacing.sm) {
                 Text("Name your agent")
@@ -253,7 +279,7 @@ struct OnboardingIdentityPage: View {
                 .foregroundStyle(.white)
         }
         .padding(.horizontal, AppTheme.Spacing.md)
-        .padding(.vertical, 14)
+        .padding(.vertical, OnboardingLayout.fieldVerticalPadding)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
@@ -270,31 +296,7 @@ struct OnboardingReadyPage: View {
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(.white.opacity(0.15))
-                    .frame(width: 180, height: 180)
-                    .glassEffect(.regular, in: .circle)
-                    .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
-                    .appShadow(AppTheme.Shadow.lifted)
-
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 100, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.white, Color(red: 0.7, green: 1.0, blue: 0.85)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .symbolEffect(.bounce, options: .repeat(3), value: bounceTrigger)
-                    .shadow(color: .white.opacity(0.5), radius: 12, x: 0, y: 0)
-            }
-            .onAppear {
-                bounceTrigger += 1
-            }
-
+            checkmarkMedallion
             VStack(spacing: AppTheme.Spacing.sm) {
                 Text("You're all set")
                     .font(AppTheme.Typography.largeTitle)
@@ -310,6 +312,32 @@ struct OnboardingReadyPage: View {
 
             Spacer()
             Spacer()
+        }
+    }
+
+    private var checkmarkMedallion: some View {
+        ZStack {
+            Circle()
+                .fill(.white.opacity(0.15))
+                .frame(width: 180, height: 180)
+                .glassEffect(.regular, in: .circle)
+                .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                .appShadow(AppTheme.Shadow.lifted)
+
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 100, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, Color(red: 0.7, green: 1.0, blue: 0.85)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .symbolEffect(.bounce, options: .repeat(3), value: bounceTrigger)
+                .shadow(color: .white.opacity(0.5), radius: 12, x: 0, y: 0)
+        }
+        .onAppear {
+            bounceTrigger += 1
         }
     }
 }

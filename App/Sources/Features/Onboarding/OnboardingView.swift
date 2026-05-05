@@ -14,6 +14,11 @@ struct OnboardingView: View {
 
     private let pageCount: Int = 4
 
+    private enum Layout {
+        static let chipHorizontalPadding: CGFloat = 14
+        static let chipVerticalPadding: CGFloat = 8
+    }
+
     private enum Page {
         static let welcome = 0
         static let aiSetup = 1
@@ -72,39 +77,43 @@ struct OnboardingView: View {
 
     private var topBar: some View {
         HStack {
-            if pageIndex > 0 {
-                Button {
-                    Haptics.selection()
-                    withAnimation(AppTheme.Animation.spring) { pageIndex -= 1 }
-                } label: {
-                    Label("Back", systemImage: "chevron.left")
-                        .font(AppTheme.Typography.callout.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                }
-                .buttonStyle(.plain)
-            }
+            if pageIndex > 0 { backButton }
             Spacer()
-            if shouldShowSkip {
-                Button {
-                    Haptics.selection()
-                    advanceOrFinish()
-                } label: {
-                    Text("Skip")
-                        .font(AppTheme.Typography.callout.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                }
-                .buttonStyle(.plain)
-            }
+            if shouldShowSkip { skipButton }
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.md)
         .frame(height: 60)
+    }
+
+    private var backButton: some View {
+        Button {
+            Haptics.selection()
+            withAnimation(AppTheme.Animation.spring) { pageIndex -= 1 }
+        } label: {
+            Label("Back", systemImage: "chevron.left")
+                .font(AppTheme.Typography.callout.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, Layout.chipHorizontalPadding)
+                .padding(.vertical, Layout.chipVerticalPadding)
+                .glassEffect(.regular.interactive(), in: .capsule)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var skipButton: some View {
+        Button {
+            Haptics.selection()
+            advanceOrFinish()
+        } label: {
+            Text("Skip")
+                .font(AppTheme.Typography.callout.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.horizontal, Layout.chipHorizontalPadding)
+                .padding(.vertical, Layout.chipVerticalPadding)
+                .glassEffect(.regular.interactive(), in: .capsule)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Bottom bar
