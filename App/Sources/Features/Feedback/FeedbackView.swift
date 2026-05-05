@@ -26,25 +26,7 @@ struct FeedbackView: View {
                         Button("Done") { dismiss() }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
-                            HStack(spacing: AppTheme.Spacing.sm) {
-                                Button {
-                                    identityPresented = true
-                                } label: {
-                                    Image(systemName: "person.crop.circle")
-                                }
-                                .buttonStyle(.glass)
-                                .buttonBorderShape(.circle)
-
-                                Button {
-                                    composerPresented = true
-                                } label: {
-                                    Image(systemName: "square.and.pencil")
-                                }
-                                .buttonStyle(.glassProminent)
-                                .buttonBorderShape(.circle)
-                            }
-                        }
+                        trailingToolbarButtons
                     }
                 }
         }
@@ -58,6 +40,33 @@ struct FeedbackView: View {
         .onAppear {
             if workflow.screenshot != nil || workflow.annotatedImage != nil {
                 composerPresented = true
+            }
+        }
+    }
+
+    // MARK: - Trailing toolbar
+
+    @ViewBuilder
+    private var trailingToolbarButtons: some View {
+        GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Button {
+                    identityPresented = true
+                } label: {
+                    Image(systemName: "person.crop.circle")
+                }
+                .accessibilityLabel("Identity")
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+
+                Button {
+                    composerPresented = true
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                }
+                .accessibilityLabel("New feedback")
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.circle)
             }
         }
     }

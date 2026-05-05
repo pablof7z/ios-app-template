@@ -1,3 +1,4 @@
+import os
 import SwiftUI
 
 // MARK: - FeedbackStore
@@ -8,6 +9,8 @@ final class FeedbackStore {
     var threads: [FeedbackThread] = []
     var isLoading: Bool = false
 
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "FeedbackStore")
+
     private static var persistenceURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return docs.appendingPathComponent("feedback_threads.json")
@@ -15,7 +18,14 @@ final class FeedbackStore {
 
     func load() async {
         isLoading = true
-        threads = (try? loadFromDisk()) ?? []
+        do {
+            threads = try loadFromDisk()
+        } catch CocoaError.fileNoSuchFile {
+            threads = []
+        } catch {
+            Self.logger.error("Failed to load threads from disk: \(error)")
+            threads = []
+        }
         isLoading = false
     }
 
@@ -24,7 +34,7 @@ final class FeedbackStore {
         try await Task.sleep(for: .milliseconds(600))
         let thread = FeedbackThread(category: category, content: content, attachedImage: image)
         threads.insert(thread, at: 0)
-        try? saveToDisk()
+        do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishThread: \(error)") }
         return thread
     }
 
@@ -32,7 +42,7 @@ final class FeedbackStore {
         try await Task.sleep(for: .milliseconds(300))
         guard let idx = threads.firstIndex(where: { $0.id == threadID }) else { return }
         threads[idx].replies.append(FeedbackReply(content: content, isFromMe: true))
-        try? saveToDisk()
+        do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishReply: \(error)") }
     }
 
     // MARK: - Private persistence helpers
