@@ -3,6 +3,15 @@ import Foundation
 // MARK: - Catalog service
 
 struct OpenRouterModelCatalogService: Sendable {
+
+    private enum Constants {
+        static let openRouterModelsURL = "https://openrouter.ai/api/v1/models"
+        static let modelsDevURL = "https://models.dev/api.json"
+        static let xTitleHeader = "iOS App Template"
+        static let openRouterTimeout: TimeInterval = 30
+        static let modelsDevTimeout: TimeInterval = 15
+    }
+
     func fetchModels() async throws -> [OpenRouterModelOption] {
         async let openRouter = fetchOpenRouterModels()
         async let modelsDev = fetchModelsDevCatalogOptional()
@@ -20,9 +29,12 @@ struct OpenRouterModelCatalogService: Sendable {
     }
 
     private func fetchOpenRouterModels() async throws -> [ORModel] {
-        var request = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/models")!)
-        request.setValue("iOS App Template", forHTTPHeaderField: "X-Title")
-        request.timeoutInterval = 30
+        guard let url = URL(string: Constants.openRouterModelsURL) else {
+            throw CatalogError.decoding("Invalid OpenRouter URL")
+        }
+        var request = URLRequest(url: url)
+        request.setValue(Constants.xTitleHeader, forHTTPHeaderField: "X-Title")
+        request.timeoutInterval = Constants.openRouterTimeout
 
         let (data, _) = try await URLSession.shared.data(for: request)
         do {
@@ -34,9 +46,10 @@ struct OpenRouterModelCatalogService: Sendable {
 
     private func fetchModelsDevCatalogOptional() async -> ModelsDevCatalog? {
         do {
-            var request = URLRequest(url: URL(string: "https://models.dev/api.json")!)
+            guard let url = URL(string: Constants.modelsDevURL) else { return nil }
+            var request = URLRequest(url: url)
             request.cachePolicy = .reloadRevalidatingCacheData
-            request.timeoutInterval = 15
+            request.timeoutInterval = Constants.modelsDevTimeout
             let (data, _) = try await URLSession.shared.data(for: request)
             let providers = try JSONDecoder().decode([String: ModelsDevProvider].self, from: data)
             return ModelsDevCatalog(providers: providers)

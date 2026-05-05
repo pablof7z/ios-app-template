@@ -109,6 +109,8 @@ struct LLMSettingsView: View {
             .padding(.vertical, 2)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(role), \(shortName(modelID))")
+        .accessibilityHint("Opens model selector")
     }
 
     // MARK: - Bindings
