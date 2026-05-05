@@ -126,6 +126,7 @@ struct OnboardingAISetupPage: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(isSaving)
+                        .accessibilityLabel(revealKey ? "Hide API key" : "Show API key")
                     }
                     .padding(.horizontal, AppTheme.Spacing.md)
                     .padding(.vertical, 14)
