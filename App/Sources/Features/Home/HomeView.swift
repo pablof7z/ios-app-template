@@ -8,6 +8,16 @@ struct HomeView: View {
     @State private var composeInitialTitle: String = ""
     @State private var completedExpanded: Bool = false
     @State private var editingItem: Item?
+    @State private var searchText: String = ""
+
+    private var isSearching: Bool { !searchText.isEmpty }
+
+    private var filteredActiveItems: [Item] {
+        guard isSearching else { return store.activeItems }
+        return store.activeItems.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText)
+        }
+    }
 
     private var hasAnyItems: Bool {
         !store.activeItems.isEmpty || !store.completedItems.isEmpty
@@ -15,13 +25,14 @@ struct HomeView: View {
 
     var body: some View {
         Group {
-            if hasAnyItems {
-                itemList
-            } else {
+            if !hasAnyItems {
                 emptyState
+            } else {
+                itemList
             }
         }
         .navigationTitle("Home")
+        .searchable(text: $searchText, prompt: "Search items")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -66,20 +77,25 @@ struct HomeView: View {
 
     private var itemList: some View {
         List {
-            activeItemsSection
-            if !store.completedItems.isEmpty {
+            if isSearching && filteredActiveItems.isEmpty {
+                ContentUnavailableView.search(text: searchText)
+                    .listRowSeparator(.hidden)
+            } else {
+                activeItemsSection
+            }
+            if !isSearching && !store.completedItems.isEmpty {
                 CompletedItemsSection(isExpanded: $completedExpanded)
             }
         }
         .listStyle(.plain)
-        .animation(AppTheme.Animation.spring, value: store.activeItems.count)
+        .animation(AppTheme.Animation.spring, value: filteredActiveItems.count)
         .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
     }
 
     @ViewBuilder
     private var activeItemsSection: some View {
         Section {
-            ForEach(store.activeItems) { item in
+            ForEach(filteredActiveItems) { item in
                 Button {
                     Haptics.selection()
                     editingItem = item
