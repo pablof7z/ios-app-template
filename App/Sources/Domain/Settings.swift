@@ -41,6 +41,9 @@ struct Settings: Codable, Hashable, Sendable {
     var nostrProfilePicture: String = ""
     var nostrPublicKeyHex: String?
 
+    // Onboarding
+    var hasCompletedOnboarding: Bool = false
+
     init() {}
 
     private enum CodingKeys: String, CodingKey {
@@ -54,6 +57,7 @@ struct Settings: Codable, Hashable, Sendable {
         case nostrEnabled, nostrRelayURL
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
+        case hasCompletedOnboarding
     }
 
     init(from decoder: Decoder) throws {
@@ -78,6 +82,7 @@ struct Settings: Codable, Hashable, Sendable {
         nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
         nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
+        hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
 
         if openRouterCredentialSource == .none,
            let legacy = legacyOpenRouterAPIKey,
@@ -105,7 +110,9 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(nostrRelayURL, forKey: .nostrRelayURL)
         try c.encode(nostrProfileName, forKey: .nostrProfileName)
         try c.encode(nostrProfileAbout, forKey: .nostrProfileAbout)
+        try c.encode(nostrProfilePicture, forKey: .nostrProfilePicture)
         try c.encodeIfPresent(nostrPublicKeyHex, forKey: .nostrPublicKeyHex)
+        try c.encode(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
     }
 
     mutating func markOpenRouterManual(connectedAt: Date = Date()) {

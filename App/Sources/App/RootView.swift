@@ -43,6 +43,14 @@ struct RootView: View {
         .onContinueUserActivity(CSSearchableItemActionType) { activity in
             handleSpotlightContinuation(activity)
         }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { !store.state.settings.hasCompletedOnboarding },
+                set: { _ in }
+            )
+        ) {
+            OnboardingView()
+        }
     }
 
     @ViewBuilder
