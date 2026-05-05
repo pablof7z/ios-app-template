@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// The tabs available at the root navigation level.
 enum RootTab: String, CaseIterable {
     case home = "Home"
     case settings = "Settings"
@@ -12,6 +13,8 @@ enum RootTab: String, CaseIterable {
     }
 }
 
+/// The root view of the app. Hosts the main tab bar, the feedback shake gesture,
+/// onboarding gate, and deep-link routing.
 struct RootView: View {
     @Environment(AppStateStore.self) private var store
     @State private var selectedTab: RootTab = .home
@@ -21,42 +24,36 @@ struct RootView: View {
     @State private var pendingNewItemTitle: String?
 
     var body: some View {
+        tabBar
+            .onShake { handleShake() }
+            .sheet(isPresented: $showFeedback) {
+                FeedbackView(workflow: feedbackWorkflow)
+            }
+            .fullScreenCover(
+                isPresented: .init(
+                    get: { feedbackWorkflow.isAnnotationVisible },
+                    set: { if !$0 { feedbackWorkflow.phase = .composing } }
+                )
+            ) {
+                ScreenshotAnnotationView(workflow: feedbackWorkflow)
+            }
+            .fullScreenCover(
+                isPresented: Binding(
+                    get: { !store.state.settings.hasCompletedOnboarding },
+                    set: { _ in }
+                )
+            ) {
+                OnboardingView()
+            }
+            .onOpenURL { handleDeepLink($0) }
+    }
+
+    private var tabBar: some View {
         TabView(selection: $selectedTab) {
             ForEach(RootTab.allCases, id: \.self) { tab in
                 tabContent(for: tab)
                     .tabItem { Label(tab.rawValue, systemImage: tab.icon) }
                     .tag(tab)
-            }
-        }
-        .onShake { handleShake() }
-        .sheet(isPresented: $showFeedback) {
-            FeedbackView(workflow: feedbackWorkflow)
-        }
-        .fullScreenCover(
-            isPresented: .init(
-                get: { feedbackWorkflow.isAnnotationVisible },
-                set: { if !$0 { feedbackWorkflow.phase = .composing } }
-            )
-        ) {
-            ScreenshotAnnotationView(workflow: feedbackWorkflow)
-        }
-        .fullScreenCover(
-            isPresented: Binding(
-                get: { !store.state.settings.hasCompletedOnboarding },
-                set: { _ in }
-            )
-        ) {
-            OnboardingView()
-        }
-        .onOpenURL { url in
-            guard let link = DeepLinkHandler.resolve(url) else { return }
-            switch link {
-            case .settings:
-                selectedTab = .settings
-            case .feedback:
-                showFeedback = true
-            case .newItem(let title):
-                pendingNewItemTitle = title
             }
         }
     }
@@ -68,6 +65,18 @@ struct RootView: View {
             NavigationStack { HomeView(pendingNewItemTitle: $pendingNewItemTitle) }
         case .settings:
             NavigationStack { SettingsView() }
+        }
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        guard let link = DeepLinkHandler.resolve(url) else { return }
+        switch link {
+        case .settings:
+            selectedTab = .settings
+        case .feedback:
+            showFeedback = true
+        case .newItem(let title):
+            pendingNewItemTitle = title
         }
     }
 
