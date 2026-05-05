@@ -25,7 +25,7 @@ struct AgentChatBubble: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(userGradient, in: .rect(cornerRadius: 18))
+                .background(AppTheme.Gradients.agentAccent, in: .rect(cornerRadius: 18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
@@ -109,16 +109,6 @@ struct AgentChatBubble: View {
         .appShadow(AppTheme.Shadow.subtle)
     }
 
-    private var userGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.36, green: 0.20, blue: 0.84),
-                Color(red: 0.14, green: 0.45, blue: 0.92),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
 }
 
 struct AgentTypingIndicator: View {

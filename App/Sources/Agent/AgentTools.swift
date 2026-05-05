@@ -34,7 +34,7 @@ enum AgentTools {
                 description: "Save a note or reflection.",
                 properties: [
                     "text": ["type": "string", "description": "Note content"],
-                    "kind": ["type": "string", "enum": ["free", "reflection", "systemEvent"], "description": "Note type"],
+                    "kind": ["type": "string", "enum": ["free", "reflection"], "description": "Note type"],
                 ],
                 required: ["text"]
             ),
@@ -99,10 +99,11 @@ enum AgentTools {
             guard let text = args["text"] as? String, !text.isEmpty else {
                 return error("Missing or empty 'text'")
             }
+            // `systemEvent` is intentionally excluded — that kind is reserved
+            // for app-generated entries; the agent must not be able to forge it.
             let kindStr = args["kind"] as? String ?? "free"
             let kind: NoteKind = switch kindStr {
             case "reflection": .reflection
-            case "systemEvent": .systemEvent
             default: .free
             }
             let note = store.addNote(text: text, kind: kind)

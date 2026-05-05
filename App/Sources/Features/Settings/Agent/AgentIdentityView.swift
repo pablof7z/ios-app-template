@@ -13,6 +13,7 @@ struct AgentIdentityView: View {
     @State private var showQRFullScreen: Bool = false
     @State private var editingPictureURL: Bool = false
     @State private var keyManagementExpanded: Bool = false
+    @State private var keychainErrorMessage: String?
     @FocusState private var nameFocused: Bool
     @FocusState private var bioFocused: Bool
 
@@ -41,6 +42,7 @@ struct AgentIdentityView: View {
                 Button { showQRFullScreen = true } label: {
                     Image(systemName: "qrcode")
                 }
+                .accessibilityLabel("Show QR code")
                 .disabled(!hasPrivateKey)
             }
         }
@@ -63,6 +65,18 @@ struct AgentIdentityView: View {
         .sheet(isPresented: $editingPictureURL) {
             AgentPictureURLSheet(pictureURL: $settings.nostrProfilePicture, isPresented: $editingPictureURL)
         }
+        .alert(
+            "Couldn't save key",
+            isPresented: Binding(
+                get: { keychainErrorMessage != nil },
+                set: { if !$0 { keychainErrorMessage = nil } }
+            ),
+            presenting: keychainErrorMessage
+        ) { _ in
+            Button("OK", role: .cancel) { keychainErrorMessage = nil }
+        } message: { msg in
+            Text(msg)
+        }
     }
 
     // MARK: - Hero
@@ -78,6 +92,7 @@ struct AgentIdentityView: View {
                             .font(.caption)
                             .frame(width: 28, height: 28)
                     }
+                    .accessibilityLabel("Edit profile picture")
                     .glassEffect(.regular.tint(.accentColor).interactive(), in: .circle)
                     .offset(x: 4, y: 4)
                 }
@@ -213,6 +228,7 @@ struct AgentIdentityView: View {
                         .font(.system(size: 10, weight: .semibold))
                         .frame(width: 22, height: 22)
                 }
+                .accessibilityLabel("Expand QR code")
                 .glassEffect(.regular.interactive(), in: .circle)
                 .offset(x: 6, y: -6)
             }
@@ -306,7 +322,13 @@ struct AgentIdentityView: View {
         let privkeyBytes = (0..<32).map { _ in UInt8.random(in: 0...255) }
         let privkeyHex = privkeyBytes.map { String(format: "%02x", $0) }.joined()
         let pubkeyHex = privkeyBytes.reversed().map { String(format: "%02x", $0) }.joined()
-        try? NostrCredentialStore.savePrivateKey(privkeyHex)
+        do {
+            try NostrCredentialStore.savePrivateKey(privkeyHex)
+        } catch {
+            keychainErrorMessage = "Keychain refused to store the private key. \(error.localizedDescription)"
+            Haptics.error()
+            return
+        }
         settings.nostrPublicKeyHex = pubkeyHex
         refreshKeyState()
     }
@@ -314,7 +336,13 @@ struct AgentIdentityView: View {
     private func importPrivateKey() {
         let trimmed = importKeyInput.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmed.isEmpty else { return }
-        try? NostrCredentialStore.savePrivateKey(trimmed)
+        do {
+            try NostrCredentialStore.savePrivateKey(trimmed)
+        } catch {
+            keychainErrorMessage = "Keychain refused to store the imported key. \(error.localizedDescription)"
+            Haptics.error()
+            return
+        }
         settings.nostrPublicKeyHex = String(trimmed.reversed())
         importKeyInput = ""
         refreshKeyState()

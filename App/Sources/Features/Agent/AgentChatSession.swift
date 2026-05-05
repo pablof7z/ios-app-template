@@ -188,3 +188,30 @@ final class AgentChatSession {
         return AgentResult(assistantMessage: message, toolCalls: toolCalls)
     }
 }
+
+// MARK: - Supporting types
+
+struct AgentToolCall: Sendable {
+    let id: String
+    let name: String
+    let arguments: String
+}
+
+struct AgentResult: @unchecked Sendable {
+    let assistantMessage: [String: Any]
+    let toolCalls: [AgentToolCall]
+}
+
+enum AgentError: LocalizedError {
+    case httpError(String)
+    case malformedResponse
+    case invalidURL
+
+    var errorDescription: String? {
+        switch self {
+        case .httpError(let body): "HTTP error: \(body)"
+        case .malformedResponse: "Malformed response from API"
+        case .invalidURL: "Invalid API endpoint URL"
+        }
+    }
+}

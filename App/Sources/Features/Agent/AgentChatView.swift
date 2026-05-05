@@ -221,10 +221,11 @@ struct AgentChatView: View {
                         .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background(sendButtonGradient, in: .circle)
+                        .background(AppTheme.Gradients.agentAccent, in: .circle)
                         .opacity(canSend(session: session) ? 1.0 : 0.4)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Send message")
                 .disabled(!canSend(session: session))
                 .animation(AppTheme.Animation.springFast, value: canSend(session: session))
             }
@@ -253,17 +254,6 @@ struct AgentChatView: View {
                 Haptics.success()
             }
         }
-    }
-
-    private var sendButtonGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.36, green: 0.20, blue: 0.84),
-                Color(red: 0.14, green: 0.45, blue: 0.92),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 
     private var background: LinearGradient {

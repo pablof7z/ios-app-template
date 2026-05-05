@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// "What changed" review sheet — shown after an `AgentSession` finishes,
-/// or from any UI that hands in a `batchID`. Lists the entries the agent
-/// produced for that batch with per-row Undo + an Undo-all action.
+/// "What changed" review sheet — shown from any UI that hands in a `batchID`
+/// (e.g. when the user taps a tool-call batch row in the agent chat).
+/// Lists the entries the agent produced for that batch with per-row Undo
+/// + an Undo-all action.
 ///
 /// The view reads `store.state.agentActivity` directly so per-row toggles
 /// flow back through the existing @Observable pipeline.

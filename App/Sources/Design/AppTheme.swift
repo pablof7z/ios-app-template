@@ -44,6 +44,20 @@ enum AppTheme {
         static let mono = SwiftUI.Font.system(.caption2, design: .monospaced)
     }
 
+    // MARK: - Gradients
+
+    enum Gradients {
+        /// Brand gradient used by the agent send button and user chat bubbles.
+        static let agentAccent = LinearGradient(
+            colors: [
+                Color(red: 0.36, green: 0.20, blue: 0.84),
+                Color(red: 0.14, green: 0.45, blue: 0.92),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
     // MARK: - Shadows
 
     enum Shadow {
