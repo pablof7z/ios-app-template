@@ -14,11 +14,6 @@ final class AppStateStore {
         }
     }
 
-    /// Most recent Spotlight deep-link the user opened. Views observe this to
-    /// scroll-to or highlight the matching record, then clear it. `nil` once
-    /// consumed.
-    var pendingSpotlightLink: SpotlightIndexer.DeepLink?
-
     init() {
         var loadedState = (try? Persistence.load()) ?? AppState()
         Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState)
@@ -60,9 +55,13 @@ final class AppStateStore {
         guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
         state.items[idx].status = status
         state.items[idx].updatedAt = Date()
+        // When an item is completed or dropped, cancel any pending reminder.
+        if status != .pending {
+            NotificationService.cancel(for: id)
+            state.items[idx].reminderAt = nil
+        }
     }
 
-    @discardableResult
     func itemStatus(_ id: UUID) -> ItemStatus? {
         state.items.first { $0.id == id }?.status
     }
@@ -83,6 +82,7 @@ final class AppStateStore {
     func deleteItem(_ id: UUID) {
         guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
         state.items[idx].deleted = true
+        NotificationService.cancel(for: id)
     }
 
     // MARK: - Notes
@@ -236,6 +236,8 @@ final class AppStateStore {
 
     /// Wipes all user data while preserving API credentials and Nostr identity.
     func clearAllData() {
+        let itemIDs = state.items.compactMap { $0.reminderAt != nil ? $0.id : nil }
+        NotificationService.cancelAll(for: itemIDs)
         let preserved = state.settings
         state = AppState()
         state.settings = preserved

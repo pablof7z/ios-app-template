@@ -48,6 +48,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     var deleted: Bool
     var requestedByFriendID: UUID?
     var requestedByDisplayName: String?
+    var reminderAt: Date?
 
     init(title: String, source: ItemSource = .manual) {
         self.id = UUID()
@@ -62,6 +63,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case id, title, status, source, createdAt, updatedAt, deleted
         case requestedByFriendID, requestedByDisplayName
+        case reminderAt
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding
@@ -78,6 +80,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         deleted = try c.decodeIfPresent(Bool.self, forKey: .deleted) ?? false
         requestedByFriendID = try c.decodeIfPresent(UUID.self, forKey: .requestedByFriendID)
         requestedByDisplayName = try c.decodeIfPresent(String.self, forKey: .requestedByDisplayName)
+        reminderAt = try c.decodeIfPresent(Date.self, forKey: .reminderAt)
     }
 }
 
