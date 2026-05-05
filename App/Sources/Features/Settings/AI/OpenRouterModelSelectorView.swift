@@ -214,11 +214,15 @@ struct OpenRouterModelSelectorView: View {
     }
 
     private var providerSummaries: [ProviderSummary] {
-        Dictionary(grouping: viewModel.models, by: \.providerID)
-            .map { id, models in ProviderSummary(id: id, name: models.first?.providerName ?? id, count: models.count) }
-            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            .prefix(24)
-            .map { $0 }
+        let grouped = Dictionary(grouping: viewModel.models, by: \.providerID)
+        let summaries: [ProviderSummary] = grouped.map { id, models in
+            ProviderSummary(id: id, name: models.first?.providerName ?? id, count: models.count)
+        }
+        let sorted = summaries.sorted { lhs, rhs in
+            if lhs.count != rhs.count { return lhs.count > rhs.count }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+        return Array(sorted.prefix(24))
     }
 }
 

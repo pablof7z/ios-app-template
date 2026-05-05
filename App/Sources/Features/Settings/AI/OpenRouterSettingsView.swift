@@ -60,13 +60,13 @@ struct OpenRouterSettingsView: View {
             } label: {
                 HStack(spacing: 12) {
                     ProviderLogoView(
-                        providerID: providerIDFromModel(settings.llmModel),
-                        providerName: providerNameFromModel(settings.llmModel),
+                        providerID: providerIDFromModel(store.state.settings.llmModel),
+                        providerName: providerNameFromModel(store.state.settings.llmModel),
                         size: 34
                     )
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(settings.llmModel)
+                        Text(store.state.settings.llmModel)
                             .font(.subheadline.monospaced())
                             .foregroundStyle(.primary)
                             .lineLimit(1)
@@ -216,6 +216,7 @@ struct OpenRouterSettingsView: View {
     // MARK: - Credential actions
 
     private func connectWithBYOK() async {
+        settings = store.state.settings
         credentialError = nil
         credentialMessage = nil
         isConnectingBYOK = true
@@ -236,6 +237,7 @@ struct OpenRouterSettingsView: View {
     }
 
     private func saveManualKey() {
+        settings = store.state.settings
         credentialError = nil
         credentialMessage = nil
         do {
@@ -252,6 +254,7 @@ struct OpenRouterSettingsView: View {
     }
 
     private func disconnectOpenRouter() {
+        settings = store.state.settings
         credentialError = nil
         credentialMessage = nil
         do {
