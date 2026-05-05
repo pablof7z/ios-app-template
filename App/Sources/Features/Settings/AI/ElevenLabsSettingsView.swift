@@ -1,7 +1,5 @@
 import SwiftUI
 
-private let elevenLabsTint = Color(red: 0, green: 0.78, blue: 0.62)
-
 struct ElevenLabsSettingsView: View {
     @Environment(AppStateStore.self) private var store
 
@@ -13,6 +11,9 @@ struct ElevenLabsSettingsView: View {
     @State private var credentialMessage: String?
     @State private var credentialError: String?
     @State private var byokConnect = BYOKConnectService()
+    @State private var ttsPreview = ElevenLabsTTSPreviewService()
+    @State private var isTestingVoice = false
+    @State private var testVoiceError: String?
 
     var body: some View {
         Form {
@@ -54,7 +55,7 @@ struct ElevenLabsSettingsView: View {
                 Label(isConnectingBYOK ? "Connecting..." : byokButtonTitle, systemImage: "key.viewfinder")
             }
             .buttonStyle(.glassProminent)
-            .tint(elevenLabsTint)
+            .tint(AppTheme.Brand.elevenLabsTint)
             .disabled(isConnectingBYOK)
 
             HStack {
@@ -142,16 +143,40 @@ struct ElevenLabsSettingsView: View {
             } label: {
                 SettingsRow(
                     icon: "waveform.and.mic",
-                    tint: elevenLabsTint,
+                    tint: AppTheme.Brand.elevenLabsTint,
                     title: "Voice",
                     value: store.state.settings.elevenLabsVoiceID.isEmpty ? "Not set" : "Selected"
                 )
             }
+
+            Button {
+                Task { await testVoice() }
+            } label: {
+                HStack {
+                    if isTestingVoice {
+                        Label("Speaking…", systemImage: "waveform")
+                            .symbolEffect(.variableColor.iterative, isActive: isTestingVoice)
+                    } else {
+                        Label("Test Voice", systemImage: "speaker.wave.2")
+                    }
+                    Spacer()
+                }
+            }
+            .disabled(isTestingVoice || store.state.settings.elevenLabsVoiceID.isEmpty || !hasStoredKey)
+            .tint(AppTheme.Brand.elevenLabsTint)
+
+            if let testVoiceError {
+                Text(testVoiceError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         } header: {
             Text("Voice")
         } footer: {
-            Text("Browse the ElevenLabs voice library and preview samples.")
+            Text("Browse the ElevenLabs voice library and preview samples. Use \"Test Voice\" to hear the current voice and TTS model.")
         }
+        .animation(.default, value: testVoiceError)
     }
 
     // MARK: - Derived state
@@ -241,5 +266,19 @@ struct ElevenLabsSettingsView: View {
 
     private func refreshCredentialState() {
         hasStoredKey = ElevenLabsCredentialStore.hasAPIKey()
+    }
+
+    private func testVoice() async {
+        testVoiceError = nil
+        isTestingVoice = true
+        defer { isTestingVoice = false }
+        do {
+            try await ttsPreview.speak(
+                voiceID: settings.elevenLabsVoiceID,
+                model: settings.elevenLabsTTSModel
+            )
+        } catch {
+            testVoiceError = error.localizedDescription
+        }
     }
 }

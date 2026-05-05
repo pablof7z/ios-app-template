@@ -1,5 +1,13 @@
 import SwiftUI
 
+// MARK: - Shared display constants
+
+/// Display constants shared across Agent peer-management views.
+enum NostrPubkeyDisplay {
+    /// Number of hex characters shown in a truncated pubkey preview.
+    static let prefixLength = 16
+}
+
 // MARK: - Relay Card
 
 struct AgentRelayCard: View {

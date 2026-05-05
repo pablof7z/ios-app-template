@@ -2,8 +2,6 @@ import SwiftUI
 import UIKit
 
 private enum AgentWhitelistConstants {
-    /// Number of hex characters shown in the truncated pubkey preview.
-    static let pubkeyPrefixLength = 16
     /// How long (in seconds) the "Copied" confirmation badge stays visible.
     static let copyFeedbackDuration: Duration = .seconds(1.2)
 }
@@ -192,7 +190,7 @@ private struct AllowedRow: View {
                 Image(systemName: "checkmark.shield.fill")
                     .foregroundStyle(.green)
 
-                Text("npub1\(key.prefix(AgentWhitelistConstants.pubkeyPrefixLength))…")
+                Text("npub1\(key.prefix(NostrPubkeyDisplay.prefixLength))…")
                     .font(.callout.monospaced())
                     .foregroundStyle(.primary)
 

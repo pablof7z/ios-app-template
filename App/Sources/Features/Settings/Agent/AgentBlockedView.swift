@@ -1,11 +1,6 @@
 import SwiftUI
 import UIKit
 
-private enum AgentBlockedConstants {
-    /// Number of hex characters shown in the truncated pubkey preview.
-    static let pubkeyPrefixLength = 16
-}
-
 struct AgentBlockedView: View {
     @Environment(AppStateStore.self) private var store
 
@@ -81,7 +76,7 @@ private struct BlockedRow: View {
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("npub1\(key.prefix(AgentBlockedConstants.pubkeyPrefixLength))…")
+                Text("npub1\(key.prefix(NostrPubkeyDisplay.prefixLength))…")
                     .font(.body)
 
                 Text(key)

@@ -91,8 +91,8 @@ struct ElevenLabsHeroCard: View {
     private var connectionTint: Color {
         switch connectionState {
         case .notConnected:      return .secondary
-        case .connectedBYOK:     return Color(red: 0, green: 0.78, blue: 0.62)
-        case .connectedManual:   return Color(red: 0, green: 0.78, blue: 0.62)
+        case .connectedBYOK:     return AppTheme.Brand.elevenLabsTint
+        case .connectedManual:   return AppTheme.Brand.elevenLabsTint
         case .reconnectRequired: return .orange
         }
     }
@@ -116,7 +116,7 @@ struct ElevenLabsHeroCard: View {
     }
 
     private var pillTint: Color {
-        connectionState == .reconnectRequired ? .orange : Color(red: 0, green: 0.78, blue: 0.62)
+        connectionState == .reconnectRequired ? .orange : AppTheme.Brand.elevenLabsTint
     }
 
     private var pillLabel: String {

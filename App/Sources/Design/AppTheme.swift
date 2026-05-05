@@ -77,6 +77,16 @@ enum AppTheme {
         static let mono = SwiftUI.Font.system(.caption2, design: .monospaced)
     }
 
+    // MARK: - Brand colors
+
+    /// Named brand-color tokens for third-party integrations.
+    ///
+    /// Add a token here whenever a partner color appears in more than one file.
+    enum Brand {
+        /// ElevenLabs signature teal — used across all ElevenLabs UI surfaces.
+        static let elevenLabsTint = SwiftUI.Color(red: 0, green: 0.78, blue: 0.62)
+    }
+
     // MARK: - Gradients
 
     /// Shared gradient definitions for brand surfaces.

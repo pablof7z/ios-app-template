@@ -84,6 +84,6 @@ struct ElevenLabsVoiceRow: View {
         guard canPreview else { return Color.secondary.opacity(0.4) }
         return isPlaying
             ? Color.red
-            : Color(red: 0, green: 0.78, blue: 0.62)
+            : AppTheme.Brand.elevenLabsTint
     }
 }

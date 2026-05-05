@@ -117,7 +117,7 @@ struct ElevenLabsVoiceBrowserView: View {
                 Label("Try again", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.glassProminent)
-            .tint(Color(red: 0, green: 0.78, blue: 0.62))
+            .tint(AppTheme.Brand.elevenLabsTint)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
@@ -142,7 +142,7 @@ struct ElevenLabsVoiceBrowserView: View {
                 Label("Back to ElevenLabs Settings", systemImage: "chevron.backward")
             }
             .buttonStyle(.glassProminent)
-            .tint(Color(red: 0, green: 0.78, blue: 0.62))
+            .tint(AppTheme.Brand.elevenLabsTint)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
