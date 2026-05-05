@@ -11,6 +11,7 @@ final class AppStateStore {
         didSet {
             Persistence.save(state)
             SpotlightIndexer.reindex(state: state)
+            Task { await BadgeManager.sync(pendingCount: self.activeItems.count) }
         }
     }
 
