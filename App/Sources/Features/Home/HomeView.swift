@@ -7,7 +7,9 @@ struct HomeView: View {
     @State private var showFeedback = false
     @State private var showAgentChat = false
     @State private var showItemAdd = false
+    @State private var showSearch = false
     @State private var noteSheet: NoteSheetMode?
+    @State private var pendingNoteEdit: Note?
 
     var body: some View {
         ScrollView {
@@ -33,6 +35,21 @@ struct HomeView: View {
         .scrollContentBackground(.hidden)
         .background(backgroundGradient.ignoresSafeArea())
         .navigationTitle("Home")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.selection()
+                    showSearch = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .semibold))
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .accessibilityLabel("Search")
+            }
+        }
         .sheet(isPresented: $showFeedback) {
             FeedbackView(workflow: feedbackWorkflow)
         }
@@ -42,6 +59,12 @@ struct HomeView: View {
         .sheet(isPresented: $showItemAdd) {
             ItemComposeSheet()
         }
+        .sheet(isPresented: $showSearch, onDismiss: handleSearchDismiss) {
+            HomeSearchView(
+                onEditNote: { pendingNoteEdit = $0 },
+                onToggleItem: { toggleItem($0) }
+            )
+        }
         .sheet(item: $noteSheet) { mode in
             switch mode {
             case .compose:
@@ -49,6 +72,20 @@ struct HomeView: View {
             case .edit(let note):
                 NoteComposeSheet(editing: note)
             }
+        }
+    }
+
+    private func handleSearchDismiss() {
+        if let note = pendingNoteEdit {
+            pendingNoteEdit = nil
+            noteSheet = .edit(note)
+        }
+    }
+
+    private func toggleItem(_ item: Item) {
+        let next: ItemStatus = item.status == .done ? .pending : .done
+        withAnimation(AppTheme.Animation.spring) {
+            store.setItemStatus(item.id, status: next)
         }
     }
 
