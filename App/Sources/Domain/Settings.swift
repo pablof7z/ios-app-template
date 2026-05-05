@@ -13,7 +13,7 @@ enum ElevenLabsCredentialSource: String, Codable, Hashable, Sendable {
 struct Settings: Codable, Hashable, Sendable {
     // AI / LLM
     var llmModel: String = "openai/gpt-4o-mini"
-    var agentMaxTurns: Int = 12
+    var memoryCompilationModel: String = "openai/gpt-4o-mini"
 
     // OpenRouter credentials (secret stored in Keychain; only metadata here)
     var openRouterCredentialSource: OpenRouterCredentialSource = .none
@@ -35,7 +35,7 @@ struct Settings: Codable, Hashable, Sendable {
 
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
-    var nostrRelayURL: String = "wss://relay.damus.io"
+    var nostrRelayURL: String = "wss://relay.tenex.chat"
     var nostrProfileName: String = ""
     var nostrProfileAbout: String = ""
     var nostrProfilePicture: String = ""
@@ -47,7 +47,7 @@ struct Settings: Codable, Hashable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case llmModel, agentMaxTurns
+        case llmModel, memoryCompilationModel
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
@@ -63,7 +63,7 @@ struct Settings: Codable, Hashable, Sendable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         llmModel = try c.decodeIfPresent(String.self, forKey: .llmModel) ?? "openai/gpt-4o-mini"
-        agentMaxTurns = try c.decodeIfPresent(Int.self, forKey: .agentMaxTurns) ?? 12
+        memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? "openai/gpt-4o-mini"
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
@@ -77,7 +77,7 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? "eleven_turbo_v2_5"
         elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
         nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
-        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? "wss://relay.damus.io"
+        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? "wss://relay.tenex.chat"
         nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
         nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
         nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
@@ -94,7 +94,7 @@ struct Settings: Codable, Hashable, Sendable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(llmModel, forKey: .llmModel)
-        try c.encode(agentMaxTurns, forKey: .agentMaxTurns)
+        try c.encode(memoryCompilationModel, forKey: .memoryCompilationModel)
         try c.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
         try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
         try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)

@@ -6,6 +6,7 @@ struct FeedbackComposeView: View {
     let store: FeedbackStore
     @Bindable var workflow: FeedbackWorkflow
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppStateStore.self) private var appStore
 
     @State private var isSending = false
     @State private var errorMessage: String?
@@ -16,9 +17,12 @@ struct FeedbackComposeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ZStack(alignment: .topLeading) {
+                Color(.systemBackground)
+                    .ignoresSafeArea()
+
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-                    categoryPicker
+                    identityRow
                     textEditorSection
                     screenshotSection
 
@@ -28,14 +32,19 @@ struct FeedbackComposeView: View {
                             .foregroundStyle(.red)
                             .transition(.opacity)
                     }
+
+                    Spacer()
                 }
                 .padding(AppTheme.Spacing.md)
             }
-            .navigationTitle("New feedback")
+            .navigationTitle("New Feedback")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { cancel() }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    screenshotToolbarButton
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSending {
@@ -44,44 +53,75 @@ struct FeedbackComposeView: View {
                         Button("Send") {
                             Task { await send() }
                         }
-                        .buttonStyle(.glassProminent)
-                        .disabled(!canSend)
                         .fontWeight(.semibold)
+                        .disabled(!canSend)
                     }
                 }
             }
         }
     }
 
-    // MARK: - Category picker
+    // MARK: - Identity row
 
     @ViewBuilder
-    private var categoryPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: AppTheme.Spacing.sm) {
-                ForEach(FeedbackCategory.allCases) { cat in
-                    Button {
-                        workflow.selectedCategory = cat
-                        Haptics.selection()
-                    } label: {
-                        Label(cat.rawValue, systemImage: cat.icon)
-                            .font(AppTheme.Typography.caption)
-                            .padding(.horizontal, AppTheme.Spacing.md)
-                            .padding(.vertical, AppTheme.Spacing.sm)
+    private var identityRow: some View {
+        let settings = appStore.state.settings
+        let name = settings.nostrProfileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pubkey = settings.nostrPublicKeyHex
+
+        HStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: name.isEmpty ? "person.crop.circle" : "person.crop.circle.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(name.isEmpty ? Color(.tertiaryLabel) : Color(.label))
+
+            if name.isEmpty && pubkey == nil {
+                Text("Anonymous")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 1) {
+                    if !name.isEmpty {
+                        Text(name)
+                            .font(AppTheme.Typography.caption.weight(.medium))
+                            .foregroundStyle(.primary)
                     }
-                    .glassEffect(
-                        workflow.selectedCategory == cat
-                            ? .regular.tint(cat.tint).interactive()
-                            : .regular.interactive(),
-                        in: .capsule
-                    )
-                    .animation(AppTheme.Animation.springFast, value: workflow.selectedCategory)
+                    if let hex = pubkey {
+                        Text(String(hex.prefix(8)) + "…")
+                            .font(AppTheme.Typography.mono)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, 2)
+
+            Spacer()
+
+            Text("Posting as")
+                .font(AppTheme.Typography.caption2)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, -AppTheme.Spacing.md)
+        .padding(AppTheme.Spacing.sm)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
+    }
+
+    // MARK: - Toolbar screenshot button
+
+    @ViewBuilder
+    private var screenshotToolbarButton: some View {
+        let hasImage = workflow.annotatedImage != nil || workflow.screenshot != nil
+        Button {
+            if hasImage {
+                workflow.phase = .annotating
+                dismiss()
+            } else {
+                workflow.phase = .awaitingScreenshot
+                dismiss()
+            }
+        } label: {
+            Image(systemName: hasImage ? "camera.viewfinder" : "camera")
+                .symbolVariant(hasImage ? .fill : .none)
+                .foregroundStyle(hasImage ? .blue : .secondary)
+        }
+        .accessibilityLabel(hasImage ? "Re-annotate screenshot" : "Attach screenshot")
     }
 
     // MARK: - Text editor
@@ -95,28 +135,19 @@ struct FeedbackComposeView: View {
                     .padding(AppTheme.Spacing.md)
             }
 
-            VStack(alignment: .trailing, spacing: 0) {
-                TextEditor(text: $workflow.draft)
-                    .frame(minHeight: 200)
-                    .scrollContentBackground(.hidden)
-                    .padding(AppTheme.Spacing.sm)
-
-                Text("\(workflow.draft.count)")
-                    .font(AppTheme.Typography.mono)
-                    .foregroundStyle(.tertiary)
-                    .padding(.trailing, AppTheme.Spacing.sm)
-                    .padding(.bottom, AppTheme.Spacing.xs)
-            }
+            TextEditor(text: $workflow.draft)
+                .frame(minHeight: 200)
+                .scrollContentBackground(.hidden)
+                .padding(AppTheme.Spacing.sm)
         }
-        .glassSurface(cornerRadius: AppTheme.Corner.md)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous))
     }
 
-    // MARK: - Screenshot section
+    // MARK: - Screenshot preview
 
     @ViewBuilder
     private var screenshotSection: some View {
         let displayImage = workflow.annotatedImage ?? workflow.screenshot
-
         if let image = displayImage {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
                 Image(uiImage: image)
@@ -125,44 +156,25 @@ struct FeedbackComposeView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.md))
                     .overlay(
                         RoundedRectangle(cornerRadius: AppTheme.Corner.md)
-                            .strokeBorder(.separator, lineWidth: 0.5)
+                            .strokeBorder(Color(.separator), lineWidth: 0.5)
                     )
-                    .appShadow(AppTheme.Shadow.subtle)
 
-                GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
-                    HStack(spacing: AppTheme.Spacing.sm) {
-                        Button("Re-annotate") {
-                            workflow.phase = .annotating
-                            dismiss()
-                        }
-                        .buttonStyle(.glass)
-
-                        Spacer()
-
-                        Button("Remove") {
-                            workflow.screenshot = nil
-                            workflow.annotatedImage = nil
-                        }
-                        .tint(.red)
-                        .buttonStyle(.glass)
+                HStack {
+                    Button("Re-annotate") {
+                        workflow.phase = .annotating
+                        dismiss()
                     }
-                }
-            }
-        } else {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Button {
-                    workflow.phase = .awaitingScreenshot
-                    dismiss()
-                } label: {
-                    Label("Attach Screenshot", systemImage: "camera.viewfinder")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AppTheme.Spacing.xs)
-                }
-                .buttonStyle(.glass)
+                    .foregroundStyle(.blue)
 
-                Text("Dismiss this sheet, then shake to capture the screen.")
-                    .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.secondary)
+                    Spacer()
+
+                    Button("Remove") {
+                        workflow.screenshot = nil
+                        workflow.annotatedImage = nil
+                    }
+                    .foregroundStyle(.red)
+                }
+                .font(AppTheme.Typography.caption)
             }
         }
     }

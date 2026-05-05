@@ -149,44 +149,35 @@ private struct FriendListRow: View {
 private struct AddFriendSheet: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+
+    @State private var mode: Mode = .camera
     @State private var displayName = ""
     @State private var identifier = ""
-    @FocusState private var focusedField: Field?
+    @State private var scanned = false
+    @FocusState private var nameFocused: Bool
 
-    private enum Field { case name, identifier }
+    private enum Mode { case camera, paste }
 
     private var cleanedIdentifier: String {
-        let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if trimmed.hasPrefix("npub1") {
+        let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("npub1") {
             return String(trimmed.dropFirst("npub1".count))
         }
         return trimmed
     }
 
-    private var trimmedName: String {
-        displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private var isValid: Bool {
-        !trimmedName.isEmpty && cleanedIdentifier.count >= 32
+        !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        cleanedIdentifier.count >= 32
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Display name", text: $displayName)
-                        .focused($focusedField, equals: .name)
-                        .submitLabel(.next)
-                        .onSubmit { focusedField = .identifier }
-
-                    TextField("npub or hex pubkey", text: $identifier)
-                        .focused($focusedField, equals: .identifier)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .font(.callout.monospaced())
-                } footer: {
-                    Text("Paste your friend's Nostr public key. Both npub1… and raw hex are accepted.")
+            VStack(spacing: 0) {
+                if mode == .camera {
+                    cameraPanel
+                } else {
+                    pastePanel
                 }
             }
             .navigationTitle("Add Friend")
@@ -195,21 +186,86 @@ private struct AddFriendSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(mode == .camera ? "Paste" : "Camera") {
+                        withAnimation { mode = mode == .camera ? .paste : .camera }
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { add() }
-                        .fontWeight(.semibold)
-                        .disabled(!isValid)
+                    if mode == .paste {
+                        Button("Add") { add() }
+                            .fontWeight(.semibold)
+                            .disabled(!isValid)
+                    }
                 }
             }
-            .onAppear { focusedField = .name }
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
+    // MARK: - Camera panel
+
+    private var cameraPanel: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                QRCodeScannerView { value in
+                    guard !scanned else { return }
+                    scanned = true
+                    Haptics.success()
+                    identifier = value
+                    mode = .paste
+                    nameFocused = true
+                }
+                .ignoresSafeArea()
+
+                VStack {
+                    Spacer()
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(.white.opacity(0.6), lineWidth: 2)
+                        .frame(width: 200, height: 200)
+                    Spacer()
+                }
+
+                VStack {
+                    Spacer()
+                    Text("Point at a Nostr QR code")
+                        .font(.caption)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .padding(.bottom, 32)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Paste panel
+
+    private var pastePanel: some View {
+        Form {
+            Section {
+                TextField("Display name", text: $displayName)
+                    .focused($nameFocused)
+                    .submitLabel(.next)
+
+                TextField("npub or hex pubkey", text: $identifier)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .font(.callout.monospaced())
+            } footer: {
+                Text("Both npub1… and raw hex pubkeys are accepted.")
+            }
+        }
+        .onAppear { if !scanned { nameFocused = true } }
+    }
+
     private func add() {
+        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard isValid else { return }
-        _ = store.addFriend(displayName: trimmedName, identifier: cleanedIdentifier)
+        _ = store.addFriend(displayName: name, identifier: cleanedIdentifier)
         Haptics.success()
         dismiss()
     }

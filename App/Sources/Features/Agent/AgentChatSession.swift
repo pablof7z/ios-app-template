@@ -94,7 +94,7 @@ final class AgentChatSession {
     private let history: ChatHistoryStore
     private var rawMessages: [[String: Any]] = []
 
-    private var maxTurns: Int { max(1, store.state.settings.agentMaxTurns) }
+    private let maxTurns: Int = 20
 
     init(store: AppStateStore, history: ChatHistoryStore = .shared) {
         self.store = store
@@ -211,7 +211,7 @@ final class AgentChatSession {
             history.save(messages)
         }
 
-        let limitMsg = "Reached the \(maxTurns)-turn limit. Adjust max turns in Agent settings if you need longer runs."
+        let limitMsg = "The agent reached its turn limit. Try a simpler request or start a new conversation."
         messages.append(ChatMessage(role: .error, text: limitMsg))
         phase = .failed(limitMsg)
         history.save(messages)

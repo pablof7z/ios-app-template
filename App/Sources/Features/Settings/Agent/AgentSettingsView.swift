@@ -13,7 +13,6 @@ struct AgentSettingsView: View {
             List {
                 agentSection
                 nostrSection
-                runtimeSection
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -95,13 +94,4 @@ struct AgentSettingsView: View {
         }
     }
 
-    private var runtimeSection: some View {
-        Section("Runtime") {
-            Stepper(
-                "Max turns: \(settings.agentMaxTurns)",
-                value: $settings.agentMaxTurns,
-                in: 1...20
-            )
-        }
-    }
 }

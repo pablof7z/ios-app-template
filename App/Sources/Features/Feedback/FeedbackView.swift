@@ -9,7 +9,7 @@ struct FeedbackView: View {
     @State private var store = FeedbackStore()
     @State private var composerPresented = false
     @State private var showMine = true
-    @State private var identityPlaceholderPresented = false
+    @State private var identityPresented = false
 
     private var visibleThreads: [FeedbackThread] {
         // Both segments return all threads until identity / multi-user is wired up.
@@ -29,7 +29,7 @@ struct FeedbackView: View {
                         GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
                             HStack(spacing: AppTheme.Spacing.sm) {
                                 Button {
-                                    identityPlaceholderPresented = true
+                                    identityPresented = true
                                 } label: {
                                     Image(systemName: "person.crop.circle")
                                 }
@@ -52,8 +52,8 @@ struct FeedbackView: View {
         .sheet(isPresented: $composerPresented) {
             FeedbackComposeView(store: store, workflow: workflow)
         }
-        .sheet(isPresented: $identityPlaceholderPresented) {
-            identityPlaceholderSheet
+        .sheet(isPresented: $identityPresented) {
+            NavigationStack { AgentIdentityView() }
         }
         .onAppear {
             if workflow.screenshot != nil || workflow.annotatedImage != nil {
@@ -134,33 +134,6 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: - Identity placeholder sheet
-
-    @ViewBuilder
-    private var identityPlaceholderSheet: some View {
-        NavigationStack {
-            VStack(spacing: AppTheme.Spacing.lg) {
-                Image(systemName: "person.crop.circle.badge.clock")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.secondary)
-                Text("Identity Coming Soon")
-                    .font(AppTheme.Typography.title)
-                Text("Signed identity support will be added in a future update.")
-                    .font(AppTheme.Typography.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(AppTheme.Spacing.xl)
-            .navigationTitle("Identity")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { identityPlaceholderPresented = false }
-                }
-            }
-        }
-        .presentationDetents([.medium])
-    }
 }
 
 // MARK: - Placeholder helpers

@@ -30,7 +30,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>$(PRODUCT_NAME) uses the camera to capture screenshots for feedback.</string>
+	<string>$(PRODUCT_NAME) uses the camera to scan QR codes and capture screenshots.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>$(PRODUCT_NAME) uses the microphone for voice input.</string>
 	<key>UIApplicationSceneManifest</key>
