@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
     @State private var showAgentChat = false
+    @State private var showItemAdd = false
     @State private var noteSheet: NoteSheetMode?
 
     var body: some View {
@@ -15,6 +16,9 @@ struct HomeView: View {
                 HomeQuickActions(
                     onTalkToAgent: { showAgentChat = true },
                     onFeedback: { presentFeedback() }
+                )
+                HomeItemsSection(
+                    onAdd: { showItemAdd = true }
                 )
                 HomeNotesSection(
                     onCompose: { noteSheet = .compose },
@@ -34,6 +38,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showAgentChat) {
             AgentChatView()
+        }
+        .sheet(isPresented: $showItemAdd) {
+            ItemComposeSheet()
         }
         .sheet(item: $noteSheet) { mode in
             switch mode {
