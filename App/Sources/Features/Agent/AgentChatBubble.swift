@@ -1,5 +1,39 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum Layout {
+    static let avatarSize: CGFloat = 30
+    static let avatarIconSize: CGFloat = 14
+    static let bubbleCornerRadius: CGFloat = 18
+    static let bubblePaddingH: CGFloat = 14
+    static let bubblePaddingV: CGFloat = 10
+}
+
+// MARK: - Avatar
+
+private struct AgentAvatarView: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(LinearGradient(
+                    colors: [Color.indigo, Color.blue],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+                .frame(width: Layout.avatarSize, height: Layout.avatarSize)
+            Image(systemName: "sparkles")
+                .font(.system(size: Layout.avatarIconSize, weight: .semibold))
+                .foregroundStyle(.white)
+                .accessibilityHidden(true)
+        }
+        .accessibilityHidden(true)
+        .appShadow(AppTheme.Shadow.subtle)
+    }
+}
+
+// MARK: - Chat Bubble
+
 struct AgentChatBubble: View {
     let message: ChatMessage
     var onOpenBatch: (UUID) -> Void = { _ in }
@@ -23,11 +57,11 @@ struct AgentChatBubble: View {
             Text(message.text)
                 .font(AppTheme.Typography.body)
                 .foregroundStyle(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(AppTheme.Gradients.agentAccent, in: .rect(cornerRadius: 18))
+                .padding(.horizontal, Layout.bubblePaddingH)
+                .padding(.vertical, Layout.bubblePaddingV)
+                .background(AppTheme.Gradients.agentAccent, in: .rect(cornerRadius: Layout.bubbleCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: Layout.bubbleCornerRadius, style: .continuous)
                         .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
                 )
                 .appShadow(AppTheme.Shadow.subtle)
@@ -36,14 +70,14 @@ struct AgentChatBubble: View {
 
     private var assistantBubble: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
-            assistantAvatar
+            AgentAvatarView()
             Text(message.text)
                 .font(AppTheme.Typography.body)
                 .foregroundStyle(.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Layout.bubblePaddingH)
+                .padding(.vertical, Layout.bubblePaddingV)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                .glassEffect(.regular, in: .rect(cornerRadius: Layout.bubbleCornerRadius))
             Spacer(minLength: 0)
         }
     }
@@ -57,6 +91,7 @@ struct AgentChatBubble: View {
                 Image(systemName: "wand.and.stars")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.indigo)
+                    .accessibilityHidden(true)
                 Text(count == 1 ? "Agent ran 1 action" : "Agent ran \(count) actions")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.primary)
@@ -64,6 +99,7 @@ struct AgentChatBubble: View {
                 Image(systemName: "chevron.right")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -82,31 +118,16 @@ struct AgentChatBubble: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
                 .padding(.top, 8)
+                .accessibilityHidden(true)
             Text(message.text)
                 .font(AppTheme.Typography.callout)
                 .foregroundStyle(.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Layout.bubblePaddingH)
+                .padding(.vertical, Layout.bubblePaddingV)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .glassEffect(.regular.tint(.orange.opacity(0.12)), in: .rect(cornerRadius: 18))
+                .glassEffect(.regular.tint(.orange.opacity(0.12)), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
             Spacer(minLength: 0)
         }
-    }
-
-    private var assistantAvatar: some View {
-        ZStack {
-            Circle()
-                .fill(LinearGradient(
-                    colors: [Color.indigo, Color.blue],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ))
-                .frame(width: 30, height: 30)
-            Image(systemName: "sparkles")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white)
-        }
-        .appShadow(AppTheme.Shadow.subtle)
     }
 
 }
@@ -116,19 +137,8 @@ struct AgentTypingIndicator: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [Color.indigo, Color.blue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 30, height: 30)
-                Image(systemName: "sparkles")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .symbolEffect(.pulse, options: .repeating)
-            }
+            AgentAvatarView()
+                .symbolEffect(.pulse, options: .repeating)
 
             HStack(spacing: 6) {
                 ForEach(0..<3, id: \.self) { i in
