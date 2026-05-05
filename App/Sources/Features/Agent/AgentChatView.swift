@@ -12,6 +12,7 @@ struct AgentChatView: View {
     @State private var bannerDismissed = false
     @State private var didSendInSession = false
     @State private var showClearConfirm = false
+    @State private var scrolledMessageID: AnyHashable? = nil
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -130,8 +131,34 @@ struct AgentChatView: View {
 
     private func transcript(session: AgentChatSession) -> some View {
         ScrollViewReader { proxy in
+            let isAtBottom = scrolledMessageID == nil
+                || scrolledMessageID == session.messages.last?.id
+                || scrolledMessageID == AnyHashable("typing-indicator")
+
             ScrollView {
                 messageList(session: session)
+            }
+            .scrollPosition(id: $scrolledMessageID, anchor: .bottom)
+            .overlay(alignment: .bottomTrailing) {
+                if !isAtBottom {
+                    Button {
+                        Haptics.selection()
+                        withAnimation(AppTheme.Animation.spring) {
+                            if let lastID = session.messages.last?.id {
+                                proxy.scrollTo(lastID, anchor: .bottom)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down.circle.fill")
+                            .font(.system(size: 30))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(Color.indigo)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(AppTheme.Spacing.md)
+                    .transition(.scale.combined(with: .opacity))
+                    .accessibilityLabel("Jump to latest message")
+                }
             }
             .onChange(of: session.messages.count) {
                 guard let last = session.messages.last else { return }
