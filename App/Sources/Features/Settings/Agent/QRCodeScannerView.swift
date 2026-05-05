@@ -8,8 +8,8 @@ struct QRCodeScannerView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> QRCaptureView {
         let view = QRCaptureView()
-        view.onScanned = { [weak context] value in
-            context?.coordinator.deliver(value)
+        view.onScanned = { value in
+            context.coordinator.deliver(value)
         }
         view.start()
         return view
@@ -38,7 +38,7 @@ struct QRCodeScannerView: UIViewRepresentable {
 final class QRCaptureView: UIView {
     var onScanned: ((String) -> Void)?
 
-    private let session = AVCaptureSession()
+    nonisolated(unsafe) private let session = AVCaptureSession()
     private var previewLayer: AVCaptureVideoPreviewLayer?
 
     override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
@@ -73,10 +73,13 @@ final class QRCaptureView: UIView {
         }
     }
 
-    deinit { session.stopRunning() }
+    deinit {
+        let s = session
+        DispatchQueue.global(qos: .userInitiated).async { s.stopRunning() }
+    }
 }
 
-extension QRCaptureView: AVCaptureMetadataOutputObjectsDelegate {
+extension QRCaptureView: @preconcurrency AVCaptureMetadataOutputObjectsDelegate {
     func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput objects: [AVMetadataObject], from connection: AVCaptureConnection) {
         guard let object = objects.first as? AVMetadataMachineReadableCodeObject,
               let value = object.stringValue else { return }

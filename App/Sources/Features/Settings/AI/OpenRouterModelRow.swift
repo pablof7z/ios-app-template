@@ -8,7 +8,7 @@ struct OpenRouterModelRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            ProviderLogoView(providerID: model.providerID, providerName: model.providerName)
+            ProviderLogoView(providerID: model.providerID, providerName: model.providerName, iconURL: model.providerIconURL)
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {

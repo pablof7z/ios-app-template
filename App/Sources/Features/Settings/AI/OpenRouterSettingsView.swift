@@ -13,11 +13,9 @@ struct OpenRouterSettingsView: View {
     @State private var credentialMessage: String?
     @State private var credentialError: String?
     @State private var byokConnect = BYOKConnectService()
-    @State private var modelSelectorPresented = false
 
     var body: some View {
         Form {
-            modelSection
             connectionSection
         }
         .listStyle(.insetGrouped)
@@ -28,67 +26,8 @@ struct OpenRouterSettingsView: View {
             refreshCredentialState()
         }
         .onChange(of: settings) { _, new in store.updateSettings(new) }
-        .sheet(isPresented: $modelSelectorPresented) {
-            NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: modelBinding)
-            }
-            .presentationDragIndicator(.visible)
-        }
         .animation(.default, value: credentialMessage)
         .animation(.default, value: credentialError)
-    }
-
-    // MARK: - Binding
-
-    private var modelBinding: Binding<String> {
-        Binding(
-            get: { store.state.settings.llmModel },
-            set: { newValue in
-                var updated = store.state.settings
-                updated.llmModel = newValue
-                store.updateSettings(updated)
-            }
-        )
-    }
-
-    // MARK: - Model section
-
-    private var modelSection: some View {
-        Section {
-            Button {
-                modelSelectorPresented = true
-            } label: {
-                HStack(spacing: 12) {
-                    ProviderLogoView(
-                        providerID: providerIDFromModel(store.state.settings.llmModel),
-                        providerName: providerNameFromModel(store.state.settings.llmModel),
-                        size: 34
-                    )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(store.state.settings.llmModel)
-                            .font(.subheadline.monospaced())
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Text("Active model")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(.plain)
-        } header: {
-            Text("Model")
-        } footer: {
-            Text("The language model your agent uses for every request.")
-        }
     }
 
     // MARK: - Connection section
@@ -197,20 +136,6 @@ struct OpenRouterSettingsView: View {
 
     private var byokButtonTitle: String {
         settings.openRouterCredentialSource == .byok ? "Reconnect BYOK" : "Connect with BYOK"
-    }
-
-    // MARK: - Model ID helpers
-
-    private func providerIDFromModel(_ modelID: String) -> String {
-        modelID.split(separator: "/", maxSplits: 1).first.map(String.init) ?? "openrouter"
-    }
-
-    private func providerNameFromModel(_ modelID: String) -> String {
-        providerIDFromModel(modelID)
-            .replacingOccurrences(of: "-", with: " ")
-            .split(separator: " ")
-            .map { $0.capitalized }
-            .joined(separator: " ")
     }
 
     // MARK: - Credential actions

@@ -60,6 +60,7 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
     var name: String
     var providerID: String
     var providerName: String
+    var providerIconURL: URL?
     var modelDescription: String?
     var promptCostPerMillion: Double?
     var completionCostPerMillion: Double?
@@ -96,6 +97,7 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         self.name = model.name
         self.providerID = pID
         self.providerName = Self.providerName(from: model.name, provider: provider, providerID: pID)
+        self.providerIconURL = provider?.icon.flatMap { URL(string: $0) }
         self.modelDescription = model.description
         self.promptCostPerMillion = model.pricing?.prompt?.costPerMillion ?? devModel?.cost?.input
         self.completionCostPerMillion = model.pricing?.completion?.costPerMillion ?? devModel?.cost?.output

@@ -78,6 +78,7 @@ struct ModelsDevCatalog: Sendable {
 struct ModelsDevProvider: Decodable, Hashable, Sendable {
     var id: String
     var name: String
+    var icon: String?
     var models: [String: ModelsDevModel]
 }
 
