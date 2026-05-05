@@ -8,6 +8,11 @@ struct NostrKeyPair: Sendable {
     let privateKeyHex: String
     let publicKeyHex: String
 
+    /// Expected byte length of a secp256k1 private key or x-only public key.
+    private static let keyByteCount = 32
+    /// Bech32 human-readable part for a Nostr private key.
+    private static let nsecHRP = "nsec"
+
     private init(privateKeyHex: String, publicKeyHex: String) {
         self.privateKeyHex = privateKeyHex
         self.publicKeyHex = publicKeyHex
@@ -24,7 +29,9 @@ struct NostrKeyPair: Sendable {
     }
 
     init(nsec: String) throws {
-        guard let (hrp, bytes) = Bech32.decode(nsec), hrp == "nsec", bytes.count == 32 else {
+        guard let (hrp, bytes) = Bech32.decode(nsec),
+              hrp == NostrKeyPair.nsecHRP,
+              bytes.count == NostrKeyPair.keyByteCount else {
             throw NostrKeyPairError.invalidPrivateKey
         }
         let key = try P256K.Schnorr.PrivateKey(dataRepresentation: bytes)
@@ -33,7 +40,8 @@ struct NostrKeyPair: Sendable {
     }
 
     init(privateKeyHex: String) throws {
-        guard let data = Data(hexString: privateKeyHex), data.count == 32 else {
+        guard let data = Data(hexString: privateKeyHex),
+              data.count == NostrKeyPair.keyByteCount else {
             throw NostrKeyPairError.invalidPrivateKey
         }
         let key = try P256K.Schnorr.PrivateKey(dataRepresentation: data)
@@ -43,8 +51,10 @@ struct NostrKeyPair: Sendable {
 
     // MARK: - Bech32 display
 
-    var nsec: String { Bech32.encode(hrp: "nsec", data: Data(hexString: privateKeyHex) ?? Data()) }
-    var npub: String { Bech32.encode(hrp: "npub", data: Data(hexString: publicKeyHex) ?? Data()) }
+    /// Bech32-encoded private key (nsec…). Safe to force-unwrap: both initialisers
+    /// validate hex and length, and `generate()` produces hex directly from raw bytes.
+    var nsec: String { Bech32.encode(hrp: NostrKeyPair.nsecHRP, data: Data(hexString: privateKeyHex)!) }
+    var npub: String { Bech32.encode(hrp: "npub", data: Data(hexString: publicKeyHex)!) }
 }
 
 enum NostrKeyPairError: LocalizedError {

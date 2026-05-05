@@ -5,6 +5,8 @@ import Foundation
 enum Bech32 {
     private static let charset = Array("qpzry9x8gf2tvdw0s3jn54khce6mua7l")
     private static let generator: [UInt32] = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+    /// Number of 5-bit checksum characters appended to every Bech32 string.
+    private static let checksumLength = 6
 
     static func encode(hrp: String, data: Data) -> String {
         let values = convertBits(data: Array(data), fromBits: 8, toBits: 5, pad: true)!
@@ -19,7 +21,7 @@ enum Bech32 {
         guard let separatorIdx = lower.lastIndex(of: "1") else { return nil }
         let hrp = String(lower[..<separatorIdx])
         let encoded = String(lower[lower.index(after: separatorIdx)...])
-        guard !hrp.isEmpty, encoded.count >= 6 else { return nil }
+        guard !hrp.isEmpty, encoded.count >= checksumLength else { return nil }
 
         var decoded: [UInt8] = []
         for ch in encoded {
@@ -27,7 +29,7 @@ enum Bech32 {
             decoded.append(UInt8(idx))
         }
         guard verifyChecksum(hrp: hrp, data: decoded) else { return nil }
-        let payload = Array(decoded.dropLast(6))
+        let payload = Array(decoded.dropLast(checksumLength))
         guard let bytes = convertBits(data: payload, fromBits: 5, toBits: 8, pad: false) else { return nil }
         return (hrp, Data(bytes))
     }
@@ -71,9 +73,9 @@ enum Bech32 {
     }
 
     private static func createChecksum(hrp: String, data: [UInt8]) -> [UInt8] {
-        let values = hrpExpand(hrp) + data + [0, 0, 0, 0, 0, 0]
+        let values = hrpExpand(hrp) + data + [UInt8](repeating: 0, count: checksumLength)
         let polymod = Self.polymod(values) ^ 1
-        return (0..<6).map { UInt8((polymod >> (5 * (5 - $0))) & 31) }
+        return (0..<checksumLength).map { UInt8((polymod >> (5 * (checksumLength - 1 - $0))) & 31) }
     }
 
     private static func verifyChecksum(hrp: String, data: [UInt8]) -> Bool {
