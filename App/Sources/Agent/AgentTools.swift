@@ -47,7 +47,7 @@ enum AgentTools {
     // MARK: - Dispatcher
 
     @MainActor
-    static func dispatch(name: String, argsJSON: String, store: AppStateStore) async -> String {
+    static func dispatch(name: String, argsJSON: String, store: AppStateStore, batchID: UUID) async -> String {
         let args = (try? JSONSerialization.jsonObject(with: Data(argsJSON.utf8)) as? [String: Any]) ?? [:]
 
         switch name {
@@ -56,20 +56,40 @@ enum AgentTools {
                 return error("Missing or empty 'title'")
             }
             let item = store.addItem(title: title, source: .agent)
+            store.recordAgentActivity(.init(
+                batchID: batchID,
+                kind: .itemCreated(itemID: item.id),
+                summary: "Created \"\(item.title)\""
+            ))
             return success(["id": item.id.uuidString, "title": item.title])
 
         case "mark_item_done":
             guard let idStr = args["id"] as? String, let id = UUID(uuidString: idStr) else {
                 return error("Invalid or missing 'id'")
             }
+            guard let prior = store.itemStatus(id) else {
+                return error("Item not found")
+            }
             store.setItemStatus(id, status: .done)
+            let title = store.state.items.first { $0.id == id }?.title ?? "item"
+            store.recordAgentActivity(.init(
+                batchID: batchID,
+                kind: .itemMarkedDone(itemID: id, priorStatus: prior),
+                summary: "Marked \"\(title)\" done"
+            ))
             return success(["id": idStr])
 
         case "delete_item":
             guard let idStr = args["id"] as? String, let id = UUID(uuidString: idStr) else {
                 return error("Invalid or missing 'id'")
             }
+            let title = store.state.items.first { $0.id == id }?.title ?? "item"
             store.deleteItem(id)
+            store.recordAgentActivity(.init(
+                batchID: batchID,
+                kind: .itemDeleted(itemID: id),
+                summary: "Deleted \"\(title)\""
+            ))
             return success(["id": idStr])
 
         case "create_note":
@@ -83,6 +103,11 @@ enum AgentTools {
             default: .free
             }
             let note = store.addNote(text: text, kind: kind)
+            store.recordAgentActivity(.init(
+                batchID: batchID,
+                kind: .noteCreated(noteID: note.id),
+                summary: "Saved note \"\(text.prefix(40))\(text.count > 40 ? "…" : "")\""
+            ))
             return success(["id": note.id.uuidString])
 
         case "record_memory":
@@ -90,6 +115,11 @@ enum AgentTools {
                 return error("Missing or empty 'content'")
             }
             let mem = store.addAgentMemory(content: content)
+            store.recordAgentActivity(.init(
+                batchID: batchID,
+                kind: .memoryRecorded(memoryID: mem.id),
+                summary: "Remembered \"\(content.prefix(40))\(content.count > 40 ? "…" : "")\""
+            ))
             return success(["id": mem.id.uuidString])
 
         default:

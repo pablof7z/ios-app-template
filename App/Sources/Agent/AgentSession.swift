@@ -20,6 +20,7 @@ final class AgentSession {
     }
 
     private(set) var phase: Phase = .idle
+    let batchID: UUID
 
     private let store: AppStateStore
     private let maxTurns: Int
@@ -27,6 +28,11 @@ final class AgentSession {
     init(store: AppStateStore, maxTurns: Int = 12) {
         self.store = store
         self.maxTurns = maxTurns
+        self.batchID = UUID()
+    }
+
+    var activityCount: Int {
+        store.agentActivity(forBatch: batchID).count
     }
 
     func run(transcript: String) async {
@@ -80,7 +86,8 @@ final class AgentSession {
                 let resultJSON = await AgentTools.dispatch(
                     name: toolCall.name,
                     argsJSON: toolCall.arguments,
-                    store: store
+                    store: store,
+                    batchID: batchID
                 )
                 messages.append([
                     "role": "tool",

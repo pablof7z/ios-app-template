@@ -1,0 +1,175 @@
+import SwiftUI
+
+/// "What changed" review sheet — shown after an `AgentSession` finishes,
+/// or from any UI that hands in a `batchID`. Lists the entries the agent
+/// produced for that batch with per-row Undo + an Undo-all action.
+///
+/// The view reads `store.state.agentActivity` directly so per-row toggles
+/// flow back through the existing @Observable pipeline.
+struct AgentActivitySheet: View {
+    let batchID: UUID
+
+    @Environment(AppStateStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    private var entries: [AgentActivityEntry] {
+        store.agentActivity(forBatch: batchID)
+    }
+
+    private var activeCount: Int {
+        entries.filter { !$0.undone }.count
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if entries.isEmpty {
+                    emptyState
+                } else {
+                    list
+                }
+            }
+            .navigationTitle("What changed")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Undo all") {
+                        withAnimation(AppTheme.Animation.spring) {
+                            store.undoAgentActivityBatch(batchID)
+                        }
+                        Haptics.warning()
+                    }
+                    .disabled(activeCount == 0)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Subviews
+
+    private var list: some View {
+        List {
+            Section {
+                ForEach(entries) { entry in
+                    row(for: entry)
+                        .listRowSeparator(.hidden)
+                }
+            } header: {
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.secondary)
+                    Text("\(activeCount) of \(entries.count) still applied")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .textCase(nil)
+            } footer: {
+                Text("Tap Undo on any row to reverse just that change. The agent's other actions stay applied.")
+                    .font(AppTheme.Typography.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .listStyle(.insetGrouped)
+        .animation(AppTheme.Animation.spring, value: entries.map(\.undone))
+    }
+
+    @ViewBuilder
+    private func row(for entry: AgentActivityEntry) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.md) {
+            Image(systemName: entry.kind.icon)
+                .foregroundStyle(entry.undone ? AnyShapeStyle(.tertiary) : AnyShapeStyle(entry.kind.tint))
+                .font(.callout)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.summary)
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(entry.undone ? .secondary : .primary)
+                    .strikethrough(entry.undone, color: .secondary)
+                    .lineLimit(2)
+                Text(relativeTimestamp(entry.timestamp))
+                    .font(AppTheme.Typography.caption2)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
+            }
+
+            Spacer(minLength: AppTheme.Spacing.sm)
+
+            if entry.undone {
+                Label("Undone", systemImage: "arrow.uturn.backward.circle.fill")
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(.secondary)
+                    .font(.title3)
+                    .accessibilityLabel("Undone")
+                    .transition(.scale.combined(with: .opacity))
+            } else {
+                Button("Undo") {
+                    withAnimation(AppTheme.Animation.spring) {
+                        store.undoAgentActivity(entry.id)
+                    }
+                    Haptics.selection()
+                }
+                .buttonStyle(.glass)
+                .controlSize(.small)
+                .transition(.opacity)
+            }
+        }
+        .padding(.vertical, AppTheme.Spacing.xs)
+        .contentShape(Rectangle())
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: AppTheme.Spacing.md) {
+            Image(systemName: "sparkle")
+                .font(.system(size: 44))
+                .foregroundStyle(.secondary)
+                .symbolEffect(.pulse, options: .repeating)
+            Text("Nothing changed")
+                .font(AppTheme.Typography.headline)
+            Text("The agent finished without making any changes.")
+                .font(AppTheme.Typography.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(AppTheme.Spacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func relativeTimestamp(_ date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 5 { return "just now" }
+        if interval < 60 { return "\(Int(interval))s ago" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        return "\(Int(interval / 3600))h ago"
+    }
+}
+
+// MARK: - Activity kind presentation
+
+private extension AgentActivityKind {
+    var icon: String {
+        switch self {
+        case .itemCreated: "plus.circle.fill"
+        case .itemMarkedDone: "checkmark.circle.fill"
+        case .itemDeleted: "trash.circle.fill"
+        case .noteCreated: "note.text"
+        case .memoryRecorded: "brain"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .itemCreated: .blue
+        case .itemMarkedDone: .green
+        case .itemDeleted: .red
+        case .noteCreated: .purple
+        case .memoryRecorded: .indigo
+        }
+    }
+}

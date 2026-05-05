@@ -15,13 +15,14 @@ struct HomeView: View {
     @State private var showAddSheet = false
     @State private var showAgentCompose = false
     @State private var agentSession: AgentSession?
+    @State private var sessionDismissTask: Task<Void, Never>?
+    @State private var reviewBatchID: UUID?
     @State private var filter: ItemFilter = .all
     @State private var showCompleted = false
     @State private var quickAddText = ""
     @State private var isQuickAdding = false
     @FocusState private var quickAddFocused: Bool
     @Namespace private var glassNS
-    @Namespace private var listNS
 
     // MARK: - Derived
 
@@ -71,14 +72,25 @@ struct HomeView: View {
         .sheet(isPresented: $showAgentCompose) {
             AgentComposeSheet(isPresented: $showAgentCompose, agentSession: $agentSession)
         }
+        .sheet(item: Binding(
+            get: { reviewBatchID.map(IdentifiedBatch.init(id:)) },
+            set: { reviewBatchID = $0?.id }
+        )) { wrapped in
+            AgentActivitySheet(batchID: wrapped.id)
+        }
         .onChange(of: agentSession?.phase) { _, phase in
-            if case .completed = phase {
-                Task {
-                    try? await Task.sleep(for: .seconds(4))
-                    withAnimation(AppTheme.Animation.spring) { agentSession = nil }
-                }
+            sessionDismissTask?.cancel()
+            guard case .completed = phase else { return }
+            // Hold the banner longer when there are changes to review so the
+            // user has time to tap "Review" before it disappears.
+            let delay: Duration = (agentSession?.activityCount ?? 0) > 0 ? .seconds(10) : .seconds(4)
+            sessionDismissTask = Task { @MainActor in
+                try? await Task.sleep(for: delay)
+                guard !Task.isCancelled else { return }
+                withAnimation(AppTheme.Animation.spring) { agentSession = nil }
             }
         }
+        .onDisappear { sessionDismissTask?.cancel() }
     }
 
     // MARK: - Filter picker
@@ -286,7 +298,23 @@ struct HomeView: View {
                 Text(exhausted ? "Done (turn limit)" : "Done")
                     .font(AppTheme.Typography.caption)
                 Spacer()
+                if session.activityCount > 0 {
+                    Button {
+                        sessionDismissTask?.cancel()
+                        reviewBatchID = session.batchID
+                        Haptics.selection()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("Review")
+                            StatBadge.count(session.activityCount, color: .green)
+                        }
+                    }
+                    .font(AppTheme.Typography.caption)
+                    .buttonStyle(.glassProminent)
+                    .transition(.scale.combined(with: .opacity))
+                }
                 Button("Dismiss") {
+                    sessionDismissTask?.cancel()
                     withAnimation(AppTheme.Animation.spring) { agentSession = nil }
                 }
                 .font(AppTheme.Typography.caption)
@@ -299,6 +327,7 @@ struct HomeView: View {
                     .lineLimit(1)
                 Spacer()
                 Button("Dismiss") {
+                    sessionDismissTask?.cancel()
                     withAnimation(AppTheme.Animation.spring) { agentSession = nil }
                 }
                 .font(AppTheme.Typography.caption)
@@ -332,267 +361,8 @@ struct HomeView: View {
     }
 }
 
-// MARK: - ThinkingDots
+// MARK: - Sheet item wrapper
 
-private struct ThinkingDots: View {
-    @State private var active = 0
-
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(Color.primary)
-                    .frame(width: 5, height: 5)
-                    .opacity(active == i ? 1 : 0.25)
-                    .scaleEffect(active == i ? 1.2 : 1.0)
-            }
-        }
-        .onAppear {
-            withAnimation(
-                .easeInOut(duration: 0.5).repeatForever(autoreverses: false)
-            ) {}
-            startCycle()
-        }
-    }
-
-    private func startCycle() {
-        Task { @MainActor in
-            while true {
-                for i in 0..<3 {
-                    withAnimation(AppTheme.Animation.springFast) { active = i }
-                    try? await Task.sleep(for: .milliseconds(380))
-                }
-            }
-        }
-    }
+private struct IdentifiedBatch: Identifiable, Hashable {
+    let id: UUID
 }
-
-// MARK: - ItemRow
-
-struct ItemRow: View {
-    @Environment(AppStateStore.self) private var store
-    let item: Item
-    @State private var showNoteInput = false
-    @State private var noteText = ""
-
-    private var noteCount: Int {
-        store.activeNotes.filter { $0.target == .item(id: item.id) }.count
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: AppTheme.Spacing.md) {
-                Button {
-                    Haptics.selection()
-                    withAnimation(AppTheme.Animation.spring) {
-                        store.setItemStatus(item.id, status: item.status == .pending ? .done : .pending)
-                    }
-                } label: {
-                    Image(systemName: item.status == .done ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(item.status == .done ? .green : .secondary)
-                        .font(.title3)
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .buttonStyle(.plain)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
-                        .strikethrough(item.status == .done)
-                        .foregroundStyle(item.status == .done ? .secondary : .primary)
-                        .animation(AppTheme.Animation.spring, value: item.status)
-
-                    if let name = item.requestedByDisplayName {
-                        Label(name, systemImage: "person.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                HStack(spacing: AppTheme.Spacing.xs) {
-                    if noteCount > 0 {
-                        StatBadge.count(noteCount, color: .purple)
-                    }
-                    if item.source == .agent {
-                        Image(systemName: "sparkles")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .opacity(item.status == .done ? 0.55 : 1.0)
-            .animation(AppTheme.Animation.spring, value: item.status)
-            .padding(.vertical, AppTheme.Spacing.xs)
-
-            if showNoteInput {
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    TextField("Add a note…", text: $noteText)
-                        .font(AppTheme.Typography.caption)
-                        .submitLabel(.done)
-                        .onSubmit { commitNote() }
-
-                    Button { commitNote() } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .foregroundStyle(.purple)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(noteText.isEmpty)
-                }
-                .padding(.vertical, AppTheme.Spacing.xs)
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) { store.deleteItem(item.id) } label: {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                store.setItemStatus(item.id, status: item.status == .done ? .pending : .done)
-                Haptics.selection()
-            } label: {
-                Label(
-                    item.status == .done ? "Reopen" : "Done",
-                    systemImage: item.status == .done ? "arrow.uturn.left" : "checkmark"
-                )
-            }
-            .tint(.green)
-        }
-        .contextMenu {
-            Button("Add Note", systemImage: "note.text.badge.plus") {
-                withAnimation(AppTheme.Animation.spring) { showNoteInput = true }
-            }
-            Button("Mark \(item.status == .done ? "Pending" : "Done")", systemImage: item.status == .done ? "arrow.uturn.left" : "checkmark.circle") {
-                store.setItemStatus(item.id, status: item.status == .done ? .pending : .done)
-                Haptics.selection()
-            }
-            Divider()
-            Button("Delete", systemImage: "trash", role: .destructive) {
-                store.deleteItem(item.id)
-            }
-        }
-    }
-
-    private func commitNote() {
-        let text = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else {
-            withAnimation(AppTheme.Animation.spring) { showNoteInput = false }
-            return
-        }
-        store.addNote(text: text, target: .item(id: item.id))
-        Haptics.success()
-        noteText = ""
-        withAnimation(AppTheme.Animation.spring) { showNoteInput = false }
-    }
-}
-
-// MARK: - AddItemSheet
-
-private struct AddItemSheet: View {
-    @Environment(AppStateStore.self) private var store
-    @Binding var isPresented: Bool
-    @State private var title = ""
-    @FocusState private var focused: Bool
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("What do you want to do?", text: $title, axis: .vertical)
-                        .focused($focused)
-                        .lineLimit(2...5)
-                }
-            }
-            .navigationTitle("New Item")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isPresented = false } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { add() }
-                        .fontWeight(.semibold)
-                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .onAppear { focused = true }
-        }
-        .presentationDetents([.medium])
-    }
-
-    private func add() {
-        let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty else { return }
-        store.addItem(title: t)
-        Haptics.success()
-        isPresented = false
-    }
-}
-
-// MARK: - AgentComposeSheet
-
-private struct AgentComposeSheet: View {
-    @Environment(AppStateStore.self) private var store
-    @Binding var isPresented: Bool
-    @Binding var agentSession: AgentSession?
-    @State private var input = ""
-    @FocusState private var focused: Bool
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Tell the agent what to do…", text: $input, axis: .vertical)
-                        .focused($focused)
-                        .lineLimit(3...8)
-                }
-                Section {
-                    Text("The agent can create items, take notes, and remember things about you.")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("Agent")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isPresented = false } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Run") { runAgent() }
-                        .fontWeight(.semibold)
-                        .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .onAppear { focused = true }
-        }
-        .presentationDetents([.medium])
-    }
-
-    private func runAgent() {
-        let t = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty else { return }
-        let session = AgentSession(store: store, maxTurns: store.state.settings.agentMaxTurns)
-        agentSession = session
-        isPresented = false
-        Task { await session.run(transcript: t) }
-    }
-}
-
-// MARK: - Phase helpers
-
-private extension AgentSession.Phase {
-    var isActive: Bool {
-        if case .idle = self { return false }
-        return true
-    }
-
-    var bannerTint: Color {
-        switch self {
-        case .running: .blue
-        case .completed: .green
-        case .failed: .orange
-        case .idle: .clear
-        }
-    }
-}
-

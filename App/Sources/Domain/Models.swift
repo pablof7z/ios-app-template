@@ -127,6 +127,37 @@ struct AgentMemory: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+// MARK: - Agent Activity
+// One row per agent-driven mutation, capturing just enough to render a
+// human-readable summary and undo the effect by flipping a soft-delete or
+// restoring a prior status. Grouped by `batchID` (one batch per agent run).
+
+enum AgentActivityKind: Codable, Hashable, Sendable {
+    case itemCreated(itemID: UUID)
+    case itemMarkedDone(itemID: UUID, priorStatus: ItemStatus)
+    case itemDeleted(itemID: UUID)
+    case noteCreated(noteID: UUID)
+    case memoryRecorded(memoryID: UUID)
+}
+
+struct AgentActivityEntry: Codable, Identifiable, Hashable, Sendable {
+    var id: UUID
+    var batchID: UUID
+    var timestamp: Date
+    var kind: AgentActivityKind
+    var summary: String
+    var undone: Bool
+
+    init(batchID: UUID, kind: AgentActivityKind, summary: String) {
+        self.id = UUID()
+        self.batchID = batchID
+        self.timestamp = Date()
+        self.kind = kind
+        self.summary = summary
+        self.undone = false
+    }
+}
+
 // MARK: - Nostr Pending Approval
 // A contact requesting communication before being explicitly allowed or blocked.
 
@@ -266,6 +297,7 @@ struct AppState: Codable, Sendable {
     var nostrAllowedPubkeys: Set<String> = []
     var nostrBlockedPubkeys: Set<String> = []
     var nostrPendingApprovals: [NostrPendingApproval] = []
+    var agentActivity: [AgentActivityEntry] = []
 
     init() {}
 }
