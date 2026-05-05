@@ -26,6 +26,26 @@ private enum ItemSort: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Source Filter
+
+private enum SourceFilter: String, CaseIterable, Identifiable {
+    case all    = "all"
+    case manual = "manual"
+    case agent  = "agent"
+    case voice  = "voice"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all:    return "All"
+        case .manual: return "Manual"
+        case .agent:  return "Agent"
+        case .voice:  return "Voice"
+        }
+    }
+}
+
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
     @Binding var pendingNewItemTitle: String?
@@ -35,10 +55,15 @@ struct HomeView: View {
     @State private var completedExpanded: Bool = false
     @State private var editingItem: Item?
     @State private var searchText: String = ""
-    @AppStorage("home.itemSort") private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
+    @AppStorage("home.itemSort")     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
+    @AppStorage("home.sourceFilter") private var sourceFilterRaw: String = SourceFilter.all.rawValue
 
     private var currentSort: ItemSort {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
+    }
+
+    private var currentSourceFilter: SourceFilter {
+        SourceFilter(rawValue: sourceFilterRaw) ?? .all
     }
 
     private var isSearching: Bool { !searchText.isEmpty }
@@ -58,10 +83,22 @@ struct HomeView: View {
     }
 
     private var filteredActiveItems: [Item] {
-        guard isSearching else { return sortedActiveItems }
-        return sortedActiveItems.filter {
-            $0.title.localizedCaseInsensitiveContains(searchText)
+        var items = sortedActiveItems
+
+        // Source filter
+        switch currentSourceFilter {
+        case .all:    break
+        case .manual: items = items.filter { $0.source == .manual }
+        case .agent:  items = items.filter { $0.source == .agent }
+        case .voice:  items = items.filter { $0.source == .voice }
         }
+
+        // Text search
+        if isSearching {
+            items = items.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+        }
+
+        return items
     }
 
     private var hasAnyItems: Bool {
@@ -112,7 +149,8 @@ struct HomeView: View {
         }
         .onAppear { consumePendingTitle() }
         .onChange(of: pendingNewItemTitle) { consumePendingTitle() }
-        .onChange(of: sortOrder) { Haptics.selection() }
+        .onChange(of: sortOrder)        { Haptics.selection() }
+        .onChange(of: sourceFilterRaw)  { Haptics.selection() }
         .onChange(of: searchText) { _, new in
             if new.isEmpty { Haptics.light() }
         }
@@ -140,6 +178,7 @@ struct HomeView: View {
 
     private var itemList: some View {
         List {
+            sourceFilterPicker
             if isSearching && filteredActiveItems.isEmpty {
                 ContentUnavailableView.search(text: searchText)
                     .listRowSeparator(.hidden)
@@ -153,6 +192,24 @@ struct HomeView: View {
         .listStyle(.plain)
         .animation(AppTheme.Animation.spring, value: filteredActiveItems.count)
         .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
+    }
+
+    private var sourceFilterPicker: some View {
+        Section {
+            Picker("Source", selection: $sourceFilterRaw) {
+                ForEach(SourceFilter.allCases) { filter in
+                    Text(filter.label).tag(filter.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(
+                top: AppTheme.Spacing.xs,
+                leading: AppTheme.Spacing.md,
+                bottom: AppTheme.Spacing.xs,
+                trailing: AppTheme.Spacing.md
+            ))
+        }
     }
 
     @ViewBuilder
@@ -232,89 +289,5 @@ struct HomeView: View {
         pendingNewItemTitle = nil
         composeInitialTitle = title
         showCompose = true
-    }
-}
-
-// MARK: - Item Row
-
-private struct ItemRow: View {
-    let item: Item
-
-    var body: some View {
-        HStack(spacing: AppTheme.Spacing.md) {
-            Image(systemName: "checkmark.circle")
-                .font(.system(size: 22, weight: .regular))
-                .foregroundStyle(.green)
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text(item.title)
-                    .font(AppTheme.Typography.body)
-                    .lineLimit(2)
-                if let reminder = item.reminderAt {
-                    let rel = ReminderLabel.from(reminder)
-                    Label(rel.text, systemImage: "bell.fill")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(rel.color)
-                }
-            }
-            Spacer(minLength: 0)
-            sourceIcon
-        }
-        .padding(.vertical, AppTheme.Spacing.xs)
-        .contentShape(Rectangle())
-    }
-
-    @ViewBuilder
-    private var sourceIcon: some View {
-        if item.isPriority {
-            Image(systemName: "star.fill")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(.yellow)
-        }
-        switch item.source {
-        case .agent:
-            Image(systemName: "sparkle")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(.secondary)
-        case .voice:
-            Image(systemName: "mic.fill")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(.secondary)
-        case .manual:
-            EmptyView()
-        }
-    }
-}
-
-// MARK: - ReminderLabel
-
-private struct ReminderLabel {
-    let text: String
-    let color: Color
-
-    static func from(_ date: Date) -> ReminderLabel {
-        let cal = Calendar.current
-        let now = Date()
-        let timeStr = date.formatted(date: .omitted, time: .shortened)
-
-        if date < now {
-            // Overdue
-            if cal.isDateInToday(date) {
-                return ReminderLabel(text: "Today, \(timeStr)", color: .red)
-            } else if cal.isDateInYesterday(date) {
-                return ReminderLabel(text: "Yesterday, \(timeStr)", color: .red)
-            } else {
-                return ReminderLabel(text: "Overdue · \(date.formatted(date: .abbreviated, time: .shortened))", color: .red)
-            }
-        } else if cal.isDateInToday(date) {
-            return ReminderLabel(text: "Today, \(timeStr)", color: .orange)
-        } else if cal.isDateInTomorrow(date) {
-            return ReminderLabel(text: "Tomorrow, \(timeStr)", color: .orange)
-        } else if let days = cal.dateComponents([.day], from: cal.startOfDay(for: now), to: cal.startOfDay(for: date)).day,
-                  days <= 6 {
-            let weekday = date.formatted(.dateTime.weekday(.wide))
-            return ReminderLabel(text: "\(weekday), \(timeStr)", color: .secondary)
-        } else {
-            return ReminderLabel(text: date.formatted(date: .abbreviated, time: .shortened), color: .secondary)
-        }
     }
 }
