@@ -178,7 +178,12 @@ struct AgentChatView: View {
 
     private func messageList(session: AgentChatSession) -> some View {
         LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            ForEach(session.messages) { msg in
+            ForEach(Array(session.messages.enumerated()), id: \.element.id) { index, msg in
+                let prev = index > 0 ? session.messages[index - 1] : nil
+                if shouldShowSeparator(before: msg, previous: prev) {
+                    ChatTimeSeparator(date: msg.timestamp)
+                        .transition(.opacity)
+                }
                 AgentChatBubble(message: msg) { batchID in
                     presentedBatch = batchID
                 }
@@ -196,6 +201,26 @@ struct AgentChatView: View {
         .padding(.bottom, AppTheme.Spacing.sm)
         .animation(AppTheme.Animation.spring, value: session.messages.count)
         .animation(AppTheme.Animation.spring, value: session.phase)
+    }
+
+    // MARK: - Timestamp separator logic
+
+    /// Returns true when a time-gap separator label should be shown before `msg`.
+    /// Separators appear before the first conversational message in a session,
+    /// and whenever 15 or more minutes have elapsed since the previous message.
+    /// Tool-batch and error rows (system events) are never given separators.
+    private func shouldShowSeparator(before msg: ChatMessage, previous prev: ChatMessage?) -> Bool {
+        switch msg.role {
+        case .user, .assistant: break
+        case .toolBatch, .error: return false
+        }
+        guard let prev else { return true }
+        switch prev.role {
+        case .user, .assistant:
+            return msg.timestamp.timeIntervalSince(prev.timestamp) >= 15 * 60
+        case .toolBatch, .error:
+            return false
+        }
     }
 
     @ViewBuilder
@@ -388,3 +413,4 @@ struct AgentChatView: View {
 private struct IdentifiedBatch: Identifiable {
     let id: UUID
 }
+

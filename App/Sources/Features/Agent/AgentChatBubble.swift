@@ -158,6 +158,46 @@ struct AgentChatBubble: View {
 
 }
 
+// MARK: - Time Separator
+
+/// Centered timestamp label shown between message groups separated by ≥ 15 minutes.
+/// Uses a human-friendly format: "Today 2:34 PM", "Yesterday 9:15 AM",
+/// "Mon 2:34 PM" (within the last week), or "Mar 5, 2:34 PM" (older).
+struct ChatTimeSeparator: View {
+    let date: Date
+
+    var body: some View {
+        Text(formattedDate)
+            .font(AppTheme.Typography.caption2)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, AppTheme.Spacing.xs)
+            .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var formattedDate: String {
+        let calendar = Calendar.current
+        let now = Date()
+        let timeStr = date.formatted(date: .omitted, time: .shortened)
+        if calendar.isDateInToday(date) {
+            return "Today \(timeStr)"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday \(timeStr)"
+        } else if let days = calendar.dateComponents([.day], from: date, to: now).day, days < 7 {
+            let dayName = date.formatted(.dateTime.weekday(.wide))
+            return "\(dayName) \(timeStr)"
+        } else {
+            return date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+        }
+    }
+
+    private var accessibilityLabel: String {
+        date.formatted(date: .complete, time: .shortened)
+    }
+}
+
+// MARK: - Typing Indicator
+
 /// Animated three-dot indicator shown while the agent is generating a response.
 struct AgentTypingIndicator: View {
     @State private var phase: Int = 0
