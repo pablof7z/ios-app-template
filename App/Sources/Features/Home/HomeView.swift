@@ -5,15 +5,14 @@ struct HomeView: View {
 
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
-    @State private var showAgentCompose = false
-    @State private var agentPrompt = ""
+    @State private var showAgentChat = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: AppTheme.Spacing.lg) {
                 hero
                 HomeQuickActions(
-                    onTalkToAgent: { showAgentCompose = true },
+                    onTalkToAgent: { showAgentChat = true },
                     onFeedback: { presentFeedback() }
                 )
                 HomeActivityFeed(entries: recentActivity)
@@ -28,8 +27,8 @@ struct HomeView: View {
         .sheet(isPresented: $showFeedback) {
             FeedbackView(workflow: feedbackWorkflow)
         }
-        .sheet(isPresented: $showAgentCompose) {
-            AgentComposePlaceholderSheet(prompt: $agentPrompt)
+        .sheet(isPresented: $showAgentChat) {
+            AgentChatView()
         }
     }
 
@@ -128,70 +127,5 @@ struct HomeView: View {
         feedbackWorkflow.phase = .composing
         Haptics.medium()
         showFeedback = true
-    }
-}
-
-// MARK: - Agent Compose Placeholder Sheet
-
-private struct AgentComposePlaceholderSheet: View {
-    @Binding var prompt: String
-    @Environment(\.dismiss) private var dismiss
-    @FocusState private var promptFocused: Bool
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-                Label("Talk to your agent", systemImage: "sparkles")
-                    .font(AppTheme.Typography.headline)
-                    .foregroundStyle(.secondary)
-
-                Text("Describe what you'd like to do. The agent will reason about your prompt and propose changes you can review and undo.")
-                    .font(AppTheme.Typography.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                ZStack(alignment: .topLeading) {
-                    if prompt.isEmpty {
-                        Text("e.g. Remind me to pay rent on the 1st")
-                            .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 14)
-                    }
-                    TextEditor(text: $prompt)
-                        .focused($promptFocused)
-                        .scrollContentBackground(.hidden)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .frame(minHeight: 140)
-                }
-                .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
-
-                Spacer()
-
-                HStack {
-                    Spacer()
-                    Button {
-                        Haptics.success()
-                        dismiss()
-                    } label: {
-                        Label("Send", systemImage: "paperplane.fill")
-                    }
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.large)
-                    .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .padding(AppTheme.Spacing.lg)
-            .navigationTitle("New prompt")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-            .onAppear { promptFocused = true }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 }
