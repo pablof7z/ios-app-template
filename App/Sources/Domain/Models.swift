@@ -46,8 +46,6 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     var createdAt: Date
     var updatedAt: Date
     var deleted: Bool
-
-    // Peer attribution: set when a friend's agent creates or modifies this item
     var requestedByFriendID: UUID?
     var requestedByDisplayName: String?
 
@@ -65,9 +63,9 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
 // MARK: - Note
 
 enum NoteKind: String, Codable, Hashable, Sendable {
-    case free         // General text note
-    case reflection   // Intentional reflection
-    case systemEvent  // Written by agent/system, not user
+    case free
+    case reflection
+    case systemEvent
 }
 
 struct Note: Codable, Identifiable, Hashable, Sendable {
@@ -89,13 +87,12 @@ struct Note: Codable, Identifiable, Hashable, Sendable {
 }
 
 // MARK: - Friend
-// Represents a trusted contact whose agent can interact with this app.
-// `identifier` is app-specific: could be a Nostr pubkey, username, email, etc.
+// Represents a trusted Nostr contact. `identifier` stores the hex pubkey.
 
 struct Friend: Codable, Identifiable, Hashable, Sendable {
     var id: UUID
     var displayName: String
-    var identifier: String
+    var identifier: String    // hex pubkey for Nostr contacts
     var addedAt: Date
     var avatarURL: String?
     var about: String?
@@ -106,10 +103,15 @@ struct Friend: Codable, Identifiable, Hashable, Sendable {
         self.identifier = identifier
         self.addedAt = Date()
     }
+
+    /// Returns a truncated display of the identifier (first 8 + last 8 chars).
+    var shortIdentifier: String {
+        guard identifier.count > 16 else { return identifier }
+        return "\(identifier.prefix(8))…\(identifier.suffix(8))"
+    }
 }
 
 // MARK: - Agent Memory
-// Individual facts the agent learns and stores for future sessions.
 
 struct AgentMemory: Codable, Identifiable, Hashable, Sendable {
     var id: UUID
@@ -125,63 +127,107 @@ struct AgentMemory: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+// MARK: - Nostr Pending Approval
+// A contact requesting communication before being explicitly allowed or blocked.
+
+struct NostrPendingApproval: Codable, Identifiable, Hashable, Sendable {
+    var id: UUID
+    var pubkeyHex: String
+    var displayName: String?
+    var about: String?
+    var pictureURL: String?
+    var receivedAt: Date
+
+    init(pubkeyHex: String, displayName: String? = nil, about: String? = nil, pictureURL: String? = nil) {
+        self.id = UUID()
+        self.pubkeyHex = pubkeyHex
+        self.displayName = displayName
+        self.about = about
+        self.pictureURL = pictureURL
+        self.receivedAt = Date()
+    }
+
+    var shortPubkey: String {
+        guard pubkeyHex.count > 16 else { return pubkeyHex }
+        return "\(pubkeyHex.prefix(8))…\(pubkeyHex.suffix(8))"
+    }
+}
+
 // MARK: - Settings
 
 enum OpenRouterCredentialSource: String, Codable, Hashable, Sendable {
-    case none
-    case manual
-    case byok
+    case none, manual, byok
 }
 
 struct Settings: Codable, Hashable, Sendable {
+    // AI / LLM
     var llmModel: String = "openai/gpt-4o-mini"
     var agentMaxTurns: Int = 12
+
+    // OpenRouter credentials (secret stored in Keychain; only metadata here)
     var openRouterCredentialSource: OpenRouterCredentialSource = .none
     var openRouterBYOKKeyID: String?
     var openRouterBYOKKeyLabel: String?
     var openRouterConnectedAt: Date?
     var legacyOpenRouterAPIKey: String?
 
+    // Nostr identity (private key stored in Keychain via NostrCredentialStore)
+    var nostrEnabled: Bool = false
+    var nostrRelayURL: String = "wss://relay.damus.io"
+    var nostrProfileName: String = ""
+    var nostrProfileAbout: String = ""
+    var nostrProfilePicture: String = ""
+    var nostrPublicKeyHex: String?
+
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case llmModel
-        case openRouterAPIKey
-        case agentMaxTurns
+        case llmModel, agentMaxTurns
+        case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
-        case openRouterBYOKKeyID
-        case openRouterBYOKKeyLabel
-        case openRouterConnectedAt
+        case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
+        case nostrEnabled, nostrRelayURL
+        case nostrProfileName, nostrProfileAbout, nostrProfilePicture
+        case nostrPublicKeyHex
     }
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        llmModel = try container.decodeIfPresent(String.self, forKey: .llmModel) ?? "openai/gpt-4o-mini"
-        agentMaxTurns = try container.decodeIfPresent(Int.self, forKey: .agentMaxTurns) ?? 12
-        openRouterCredentialSource = try container.decodeIfPresent(
-            OpenRouterCredentialSource.self,
-            forKey: .openRouterCredentialSource
-        ) ?? .none
-        openRouterBYOKKeyID = try container.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
-        openRouterBYOKKeyLabel = try container.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
-        openRouterConnectedAt = try container.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
-        legacyOpenRouterAPIKey = try container.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        llmModel = try c.decodeIfPresent(String.self, forKey: .llmModel) ?? "openai/gpt-4o-mini"
+        agentMaxTurns = try c.decodeIfPresent(Int.self, forKey: .agentMaxTurns) ?? 12
+        openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
+        openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
+        openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
+        openRouterConnectedAt = try c.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
+        legacyOpenRouterAPIKey = try c.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
+        nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
+        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? "wss://relay.damus.io"
+        nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
+        nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
+        nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
+        nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
 
         if openRouterCredentialSource == .none,
-           let legacyOpenRouterAPIKey,
-           !legacyOpenRouterAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+           let legacy = legacyOpenRouterAPIKey,
+           !legacy.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             openRouterCredentialSource = .manual
         }
     }
 
     func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(llmModel, forKey: .llmModel)
-        try container.encode(agentMaxTurns, forKey: .agentMaxTurns)
-        try container.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
-        try container.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
-        try container.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
-        try container.encodeIfPresent(openRouterConnectedAt, forKey: .openRouterConnectedAt)
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(llmModel, forKey: .llmModel)
+        try c.encode(agentMaxTurns, forKey: .agentMaxTurns)
+        try c.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
+        try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
+        try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
+        try c.encodeIfPresent(openRouterConnectedAt, forKey: .openRouterConnectedAt)
+        try c.encode(nostrEnabled, forKey: .nostrEnabled)
+        try c.encode(nostrRelayURL, forKey: .nostrRelayURL)
+        try c.encode(nostrProfileName, forKey: .nostrProfileName)
+        try c.encode(nostrProfileAbout, forKey: .nostrProfileAbout)
+        try c.encode(nostrProfilePicture, forKey: .nostrProfilePicture)
+        try c.encodeIfPresent(nostrPublicKeyHex, forKey: .nostrPublicKeyHex)
     }
 
     mutating func markOpenRouterManual(connectedAt: Date = Date()) {
@@ -210,7 +256,6 @@ struct Settings: Codable, Hashable, Sendable {
 }
 
 // MARK: - AppState
-// The single serializable source of truth. Persisted to disk on every mutation.
 
 struct AppState: Codable, Sendable {
     var items: [Item] = []
@@ -218,6 +263,9 @@ struct AppState: Codable, Sendable {
     var friends: [Friend] = []
     var agentMemories: [AgentMemory] = []
     var settings: Settings = Settings()
+    var nostrAllowedPubkeys: Set<String> = []
+    var nostrBlockedPubkeys: Set<String> = []
+    var nostrPendingApprovals: [NostrPendingApproval] = []
 
     init() {}
 }

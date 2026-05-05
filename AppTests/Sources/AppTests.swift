@@ -1,6 +1,7 @@
 import XCTest
 @testable import AppTemplate
 
+@MainActor
 final class AppTests: XCTestCase {
 
     // MARK: - AppStateStore

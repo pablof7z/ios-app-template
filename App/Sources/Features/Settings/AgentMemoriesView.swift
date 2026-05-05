@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AgentMemoriesView: View {
     @Environment(AppStateStore.self) private var store
@@ -14,19 +15,36 @@ struct AgentMemoriesView: View {
     var body: some View {
         List {
             if filteredMemories.isEmpty {
-                ContentUnavailableView(
-                    searchText.isEmpty ? "No memories yet" : "No results",
-                    systemImage: searchText.isEmpty ? "brain" : "magnifyingglass",
-                    description: Text(
+                ContentUnavailableView {
+                    Label(
+                        searchText.isEmpty ? "No memories yet" : "No results",
+                        systemImage: searchText.isEmpty ? "brain" : "magnifyingglass"
+                    )
+                    .symbolEffect(.pulse, isActive: searchText.isEmpty && store.activeMemories.isEmpty)
+                } description: {
+                    Text(
                         searchText.isEmpty
                             ? "The agent will remember things about you as you interact."
                             : "Try a different search term."
                     )
-                )
+                }
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(filteredMemories) { memory in
                     MemoryRow(memory: memory)
+                        .contextMenu {
+                            Button {
+                                UIPasteboard.general.string = memory.content
+                                Haptics.selection()
+                            } label: {
+                                Label("Copy", systemImage: "doc.on.doc")
+                            }
+                            Button(role: .destructive) {
+                                store.deleteAgentMemory(memory.id)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
                                 store.deleteAgentMemory(memory.id)

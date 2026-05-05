@@ -2,13 +2,11 @@ import SwiftUI
 
 enum RootTab: String, CaseIterable {
     case home = "Home"
-    case friends = "Friends"
     case settings = "Settings"
 
     var icon: String {
         switch self {
         case .home: "house.fill"
-        case .friends: "person.2.fill"
         case .settings: "gear"
         }
     }
@@ -48,8 +46,6 @@ struct RootView: View {
         switch tab {
         case .home:
             NavigationStack { HomeView() }
-        case .friends:
-            NavigationStack { FriendsView() }
         case .settings:
             NavigationStack { SettingsView() }
         }

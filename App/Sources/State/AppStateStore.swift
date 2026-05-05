@@ -85,6 +85,11 @@ final class AppStateStore {
         return friend
     }
 
+    func updateFriend(_ friend: Friend) {
+        guard let idx = state.friends.firstIndex(where: { $0.id == friend.id }) else { return }
+        state.friends[idx] = friend
+    }
+
     func updateFriendDisplayName(_ id: UUID, newName: String) {
         guard let idx = state.friends.firstIndex(where: { $0.id == id }) else { return }
         state.friends[idx].displayName = newName
@@ -112,13 +117,47 @@ final class AppStateStore {
         state.agentMemories[idx].deleted = true
     }
 
+    // MARK: - Nostr Access Control
+
+    func allowNostrPubkey(_ pubkeyHex: String) {
+        state.nostrAllowedPubkeys.insert(pubkeyHex)
+        state.nostrBlockedPubkeys.remove(pubkeyHex)
+        state.nostrPendingApprovals.removeAll { $0.pubkeyHex == pubkeyHex }
+    }
+
+    func blockNostrPubkey(_ pubkeyHex: String) {
+        state.nostrBlockedPubkeys.insert(pubkeyHex)
+        state.nostrAllowedPubkeys.remove(pubkeyHex)
+        state.nostrPendingApprovals.removeAll { $0.pubkeyHex == pubkeyHex }
+    }
+
+    func removeFromNostrAllowlist(_ pubkeyHex: String) {
+        state.nostrAllowedPubkeys.remove(pubkeyHex)
+    }
+
+    func removeFromNostrBlocklist(_ pubkeyHex: String) {
+        state.nostrBlockedPubkeys.remove(pubkeyHex)
+    }
+
+    func addNostrPendingApproval(_ approval: NostrPendingApproval) {
+        guard !state.nostrAllowedPubkeys.contains(approval.pubkeyHex),
+              !state.nostrBlockedPubkeys.contains(approval.pubkeyHex),
+              !state.nostrPendingApprovals.contains(where: { $0.pubkeyHex == approval.pubkeyHex })
+        else { return }
+        state.nostrPendingApprovals.append(approval)
+    }
+
+    func dismissNostrPendingApproval(_ id: UUID) {
+        state.nostrPendingApprovals.removeAll { $0.id == id }
+    }
+
     // MARK: - Settings
 
     func updateSettings(_ settings: Settings) {
         state.settings = settings
     }
 
-    /// Wipes all user data while preserving API credentials.
+    /// Wipes all user data while preserving API credentials and Nostr identity.
     func clearAllData() {
         let preserved = state.settings
         state = AppState()
@@ -138,5 +177,9 @@ final class AppStateStore {
 
     var activeMemories: [AgentMemory] {
         state.agentMemories.filter { !$0.deleted }
+    }
+
+    var pendingNostrApprovals: [NostrPendingApproval] {
+        state.nostrPendingApprovals
     }
 }
