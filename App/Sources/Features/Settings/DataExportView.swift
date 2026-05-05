@@ -74,35 +74,43 @@ struct DataExportView: View {
     @ViewBuilder
     private var actionSection: some View {
         if let errorMessage {
-            Section {
-                Text(errorMessage)
-                    .foregroundStyle(.red)
-                Button("Try again") { generate() }
-            }
+            errorActionSection(message: errorMessage)
         } else {
-            Section {
-                Toggle(isOn: $exportCompletedOnly) {
-                    SettingsRow(
-                        icon: "checkmark.circle.fill",
-                        tint: .green,
-                        title: "Completed items only",
-                        subtitle: "Export only items marked as done"
-                    )
-                }
-                Button {
-                    generate()
-                } label: {
-                    SettingsRow(
-                        icon: "square.and.arrow.up",
-                        tint: .indigo,
-                        title: "Export & Share",
-                        subtitle: "Generates a JSON file and opens the share sheet"
-                    )
-                }
-                .foregroundStyle(.primary)
-            } footer: {
-                Text(actionFooterText)
+            exportActionSection
+        }
+    }
+
+    private func errorActionSection(message: String) -> some View {
+        Section {
+            Text(message)
+                .foregroundStyle(.red)
+            Button("Try again") { generate() }
+        }
+    }
+
+    private var exportActionSection: some View {
+        Section {
+            Toggle(isOn: $exportCompletedOnly) {
+                SettingsRow(
+                    icon: "checkmark.circle.fill",
+                    tint: .green,
+                    title: "Completed items only",
+                    subtitle: "Export only items marked as done"
+                )
             }
+            Button {
+                generate()
+            } label: {
+                SettingsRow(
+                    icon: "square.and.arrow.up",
+                    tint: .indigo,
+                    title: "Export & Share",
+                    subtitle: "Generates a JSON file and opens the share sheet"
+                )
+            }
+            .foregroundStyle(.primary)
+        } footer: {
+            Text(actionFooterText)
         }
     }
 
@@ -194,8 +202,10 @@ struct DataExportView: View {
     }
 
     private func formatBytes(_ n: Int) -> String {
-        if n >= 1_048_576 { return String(format: "%.1f MB", Double(n) / 1_048_576) }
-        if n >= 1024 { return String(format: "%.1f KB", Double(n) / 1024) }
+        let kb = 1_024
+        let mb = 1_048_576
+        if n >= mb { return String(format: "%.1f MB", Double(n) / Double(mb)) }
+        if n >= kb { return String(format: "%.1f KB", Double(n) / Double(kb)) }
         return "\(n) B"
     }
 }
