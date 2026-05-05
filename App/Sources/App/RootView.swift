@@ -18,6 +18,7 @@ struct RootView: View {
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
     @State private var lastShakeTime: Date = .distantPast
+    @State private var pendingNewItemTitle: String?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -46,6 +47,17 @@ struct RootView: View {
             )
         ) {
             OnboardingView()
+        }
+        .onOpenURL { url in
+            guard let link = DeepLinkHandler.resolve(url) else { return }
+            switch link {
+            case .settings:
+                selectedTab = .settings
+            case .feedback:
+                showFeedback = true
+            case .newItem(let title):
+                pendingNewItemTitle = title
+            }
         }
     }
 
