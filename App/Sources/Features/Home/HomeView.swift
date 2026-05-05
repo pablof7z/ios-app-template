@@ -270,6 +270,15 @@ struct HomeView: View {
                             systemImage: item.isPriority ? "star.slash" : "star"
                         )
                     }
+                    if item.reminderAt != nil {
+                        Menu {
+                            Button("In 1 hour") { snoozeItem(item, by: 3600) }
+                            Button("In 3 hours") { snoozeItem(item, by: 10800) }
+                            Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
+                        } label: {
+                            Label("Snooze Reminder", systemImage: "bell.badge.slash")
+                        }
+                    }
                     Divider()
                     Button(role: .destructive) {
                         store.deleteItem(item.id)
@@ -289,5 +298,31 @@ struct HomeView: View {
         pendingNewItemTitle = nil
         composeInitialTitle = title
         showCompose = true
+    }
+
+    // MARK: - Snooze
+
+    private func snoozeItem(_ item: Item, by seconds: TimeInterval) {
+        let newDate = Date().addingTimeInterval(seconds)
+        applySnooze(to: item, date: newDate)
+    }
+
+    private func snoozeItemTomorrow(_ item: Item) {
+        let cal = Calendar.current
+        guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()),
+              let date = cal.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)
+        else { return }
+        applySnooze(to: item, date: date)
+    }
+
+    private func applySnooze(to item: Item, date: Date) {
+        NotificationService.cancel(for: item.id)
+        var updated = item
+        updated.reminderAt = date
+        store.updateItem(updated)
+        Task {
+            await NotificationService.scheduleReminder(for: item.id, title: item.title, at: date)
+        }
+        Haptics.success()
     }
 }
