@@ -7,6 +7,16 @@ import UIKit
 // binding source, and key-management state — splitting further would force
 // 6+ bindings across files and fragment focus state, which is worse than the
 // extra ~60 lines. Leave as-is.
+
+private enum AgentIdentityLayout {
+    /// Side length of the avatar circle and the QR tile in the identity card.
+    static let avatarSize: CGFloat = 112
+    /// Standard card internal padding and card-stack spacing.
+    static let cardPadding: CGFloat = 16
+    /// Horizontal padding applied to the name and bio fields in the hero section.
+    static let heroPadding: CGFloat = 32
+}
+
 struct AgentIdentityView: View {
     @Environment(AppStateStore.self) private var store
 
@@ -90,7 +100,7 @@ struct AgentIdentityView: View {
     private var heroSection: some View {
         VStack(spacing: 0) {
             avatarView
-                .frame(width: 112, height: 112)
+                .frame(width: AgentIdentityLayout.avatarSize, height: AgentIdentityLayout.avatarSize)
                 .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
                 .overlay(alignment: .bottomTrailing) {
                     Button { editingPictureURL = true } label: {
@@ -103,13 +113,13 @@ struct AgentIdentityView: View {
                     .offset(x: 4, y: 4)
                 }
 
-            nameField.padding(.top, 16).padding(.horizontal, 32)
+            nameField.padding(.top, AgentIdentityLayout.cardPadding).padding(.horizontal, AgentIdentityLayout.heroPadding)
 
             if hasPrivateKey && !npubFull.isEmpty {
                 npubChip.padding(.top, 8)
             }
 
-            bioField.padding(.top, 8).padding(.horizontal, 32)
+            bioField.padding(.top, 8).padding(.horizontal, AgentIdentityLayout.heroPadding)
         }
         .frame(maxWidth: .infinity)
     }
@@ -195,7 +205,7 @@ struct AgentIdentityView: View {
     // MARK: - Cards
 
     private var cardsSection: some View {
-        GlassEffectContainer(spacing: 16) {
+        GlassEffectContainer(spacing: AgentIdentityLayout.cardPadding) {
             if hasPrivateKey {
                 identityCard
             } else {
@@ -215,58 +225,65 @@ struct AgentIdentityView: View {
                 onImport: importPrivateKey
             )
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AgentIdentityLayout.cardPadding)
         .padding(.bottom, 8)
     }
 
     private var identityCard: some View {
-        HStack(spacing: 16) {
-            ZStack(alignment: .topTrailing) {
-                ZStack {
-                    Color.white.clipShape(RoundedRectangle(cornerRadius: 16))
-                    QRCodeView(content: npubFull).padding(8)
-                }
-                .frame(width: 112, height: 112)
-                .onTapGesture { showQRFullScreen = true }
-
-                Button { showQRFullScreen = true } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .frame(width: 22, height: 22)
-                }
-                .accessibilityLabel("Expand QR code")
-                .glassEffect(.regular.interactive(), in: .circle)
-                .offset(x: 6, y: -6)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Public key")
-                    .font(.caption2).foregroundStyle(.tertiary)
-                    .textCase(.uppercase).kerning(0.5)
-                Text(npubFull.isEmpty ? "—" : npubFull)
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary).lineLimit(3)
-                HStack(spacing: 8) {
-                    Button { showQRFullScreen = true } label: {
-                        Label("QR", systemImage: "qrcode").font(.caption)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                    }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-
-                    Button { copyPublicKey() } label: {
-                        Label(showCopied ? "Copied" : "Copy",
-                              systemImage: showCopied ? "checkmark" : "doc.on.doc")
-                            .font(.caption)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                    }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    .disabled(npubFull.isEmpty)
-                }
-            }
+        HStack(spacing: AgentIdentityLayout.cardPadding) {
+            identityCardQRTile
+            identityCardPublicKeyDetails
             Spacer(minLength: 0)
         }
-        .padding(16)
+        .padding(AgentIdentityLayout.cardPadding)
         .glassSurface(cornerRadius: 24, interactive: true)
+    }
+
+    private var identityCardQRTile: some View {
+        ZStack(alignment: .topTrailing) {
+            ZStack {
+                Color.white.clipShape(RoundedRectangle(cornerRadius: 16))
+                QRCodeView(content: npubFull).padding(8)
+            }
+            .frame(width: AgentIdentityLayout.avatarSize, height: AgentIdentityLayout.avatarSize)
+            .onTapGesture { showQRFullScreen = true }
+
+            Button { showQRFullScreen = true } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 22, height: 22)
+            }
+            .accessibilityLabel("Expand QR code")
+            .glassEffect(.regular.interactive(), in: .circle)
+            .offset(x: 6, y: -6)
+        }
+    }
+
+    private var identityCardPublicKeyDetails: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Public key")
+                .font(.caption2).foregroundStyle(.tertiary)
+                .textCase(.uppercase).kerning(0.5)
+            Text(npubFull.isEmpty ? "—" : npubFull)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(.secondary).lineLimit(3)
+            HStack(spacing: 8) {
+                Button { showQRFullScreen = true } label: {
+                    Label("QR", systemImage: "qrcode").font(.caption)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                }
+                .glassEffect(.regular.interactive(), in: .capsule)
+
+                Button { copyPublicKey() } label: {
+                    Label(showCopied ? "Copied" : "Copy",
+                          systemImage: showCopied ? "checkmark" : "doc.on.doc")
+                        .font(.caption)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                }
+                .glassEffect(.regular.interactive(), in: .capsule)
+                .disabled(npubFull.isEmpty)
+            }
+        }
     }
 
     private var generateKeyCard: some View {
