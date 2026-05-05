@@ -6,7 +6,7 @@ import SwiftUI
 // and light interaction. The tinted overload keys color to semantic state.
 
 struct GlassSurface: ViewModifier {
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = AppTheme.Corner.lg
     var isInteractive: Bool = false
 
     func body(content: Content) -> some View {
@@ -19,11 +19,11 @@ struct GlassSurface: ViewModifier {
 }
 
 extension View {
-    func glassSurface(cornerRadius: CGFloat = 16, interactive: Bool = false) -> some View {
+    func glassSurface(cornerRadius: CGFloat = AppTheme.Corner.lg, interactive: Bool = false) -> some View {
         modifier(GlassSurface(cornerRadius: cornerRadius, isInteractive: interactive))
     }
 
-    func glassSurface(cornerRadius: CGFloat = 16, tint: Color, interactive: Bool = false) -> some View {
+    func glassSurface(cornerRadius: CGFloat = AppTheme.Corner.lg, tint: Color, interactive: Bool = false) -> some View {
         self.glassEffect(
             interactive ? .regular.tint(tint).interactive() : .regular.tint(tint),
             in: .rect(cornerRadius: cornerRadius)
