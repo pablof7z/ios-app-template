@@ -20,7 +20,16 @@ struct MarkItemDoneIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        var state = (try? Persistence.load()) ?? AppState()
+        // CRITICAL: never fall back to a fresh AppState() on decode failure —
+        // saving on top would clobber the rest of the user's items. Surface an
+        // error dialog instead and leave persisted state untouched.
+        var state: AppState
+        do {
+            state = try Persistence.load()
+        } catch {
+            FileHandle.standardError.write(Data("MarkItemDoneIntent: load failed: \(error)\n".utf8))
+            return .result(dialog: "I couldn't read your data. Open the app once and try again.")
+        }
         guard let idx = state.items.firstIndex(where: { $0.id == target.id }) else {
             return .result(dialog: "I couldn't find that item.")
         }

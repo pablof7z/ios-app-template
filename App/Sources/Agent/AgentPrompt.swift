@@ -26,8 +26,12 @@ enum AgentPrompt {
         }
 
         if !state.friends.isEmpty {
+            // Expose only displayName + truncated public identifier. Internal
+            // UUIDs have no value to the LLM (no tool consumes a friend UUID),
+            // and leaking them broadens the prompt-injection / data-exfiltration
+            // surface unnecessarily.
             let list = state.friends
-                .map { "- \($0.displayName) — id: \($0.id)" }
+                .map { "- \($0.displayName) (\($0.shortIdentifier))" }
                 .joined(separator: "\n")
             sections.append("## Friends\n\(list)")
         }

@@ -1,0 +1,312 @@
+import Foundation
+
+// MARK: - Catalog service
+
+struct OpenRouterModelCatalogService: Sendable {
+    func fetchModels() async throws -> [OpenRouterModelOption] {
+        async let openRouter = fetchOpenRouterModels()
+        async let modelsDev = fetchModelsDevCatalogOptional()
+
+        let models = try await openRouter
+        let metadata = await modelsDev
+
+        return models
+            .map { OpenRouterModelOption(openRouter: $0, modelsDev: metadata) }
+            .sorted { lhs, rhs in
+                if lhs.isCompatible != rhs.isCompatible { return lhs.isCompatible && !rhs.isCompatible }
+                if lhs.createdAt != rhs.createdAt { return (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast) }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+    }
+
+    private func fetchOpenRouterModels() async throws -> [ORModel] {
+        var request = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/models")!)
+        request.setValue("iOS App Template", forHTTPHeaderField: "X-Title")
+        request.timeoutInterval = 30
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        do {
+            return try JSONDecoder().decode(ORModelsResponse.self, from: data).data
+        } catch {
+            throw CatalogError.decoding("OpenRouter models: \(error.localizedDescription)")
+        }
+    }
+
+    private func fetchModelsDevCatalogOptional() async -> ModelsDevCatalog? {
+        do {
+            var request = URLRequest(url: URL(string: "https://models.dev/api.json")!)
+            request.cachePolicy = .reloadRevalidatingCacheData
+            request.timeoutInterval = 15
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let providers = try JSONDecoder().decode([String: ModelsDevProvider].self, from: data)
+            return ModelsDevCatalog(providers: providers)
+        } catch {
+            return nil
+        }
+    }
+}
+
+enum CatalogError: LocalizedError {
+    case decoding(String)
+    var errorDescription: String? {
+        switch self { case .decoding(let msg): return msg }
+    }
+}
+
+// MARK: - Public model type
+
+struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
+    var id: String
+    var name: String
+    var providerID: String
+    var providerName: String
+    var modelDescription: String?
+    var promptCostPerMillion: Double?
+    var completionCostPerMillion: Double?
+    var cacheReadCostPerMillion: Double?
+    var cacheWriteCostPerMillion: Double?
+    var requestCost: Double?
+    var imageCost: Double?
+    var webSearchCost: Double?
+    var contextLength: Int?
+    var outputLimit: Int?
+    var inputModalities: [String]
+    var outputModalities: [String]
+    var tokenizer: String?
+    var supportsTools: Bool
+    var supportsReasoning: Bool
+    var supportsResponseFormat: Bool
+    var supportsStructuredOutputs: Bool
+    var openWeights: Bool
+    var isModerated: Bool?
+    var createdAt: Date?
+    var knowledgeCutoff: String?
+    var releaseDate: String?
+    var lastUpdated: String?
+
+    init(openRouter model: ORModel, modelsDev: ModelsDevCatalog?) {
+        let devModel = modelsDev?.openRouterModel(id: model.id)
+        let pID = Self.providerID(from: model.id)
+        let provider = modelsDev?.provider(id: pID)
+        let supported = Set(model.supportedParameters ?? [])
+        let input = model.architecture?.inputModalities ?? devModel?.modalities?.input ?? []
+        let output = model.architecture?.outputModalities ?? devModel?.modalities?.output ?? []
+
+        self.id = model.id
+        self.name = model.name
+        self.providerID = pID
+        self.providerName = Self.providerName(from: model.name, provider: provider, providerID: pID)
+        self.modelDescription = model.description
+        self.promptCostPerMillion = model.pricing?.prompt?.costPerMillion ?? devModel?.cost?.input
+        self.completionCostPerMillion = model.pricing?.completion?.costPerMillion ?? devModel?.cost?.output
+        self.cacheReadCostPerMillion = model.pricing?.inputCacheRead?.costPerMillion ?? devModel?.cost?.cacheRead
+        self.cacheWriteCostPerMillion = model.pricing?.inputCacheWrite?.costPerMillion ?? devModel?.cost?.cacheWrite
+        self.requestCost = model.pricing?.request.flatMap(Double.init)
+        self.imageCost = model.pricing?.image.flatMap(Double.init)
+        self.webSearchCost = model.pricing?.webSearch.flatMap(Double.init)
+        self.contextLength = model.contextLength ?? model.topProvider?.contextLength ?? devModel?.limit?.context
+        self.outputLimit = model.topProvider?.maxCompletionTokens ?? devModel?.limit?.output
+        self.inputModalities = input
+        self.outputModalities = output
+        self.tokenizer = model.architecture?.tokenizer
+        self.supportsTools = supported.contains("tools") || devModel?.toolCall == true
+        self.supportsReasoning = supported.contains { $0.contains("reasoning") } || devModel?.reasoning == true
+        self.supportsStructuredOutputs = supported.contains("structured_outputs") || devModel?.structuredOutput == true
+        self.supportsResponseFormat = supported.contains("response_format") || self.supportsStructuredOutputs
+        self.openWeights = devModel?.openWeights == true
+        self.isModerated = model.topProvider?.isModerated
+        self.createdAt = model.created.map { Date(timeIntervalSince1970: TimeInterval($0)) }
+        self.knowledgeCutoff = model.knowledgeCutoff ?? devModel?.knowledge
+        self.releaseDate = devModel?.releaseDate
+        self.lastUpdated = devModel?.lastUpdated
+    }
+
+    var isFree: Bool {
+        promptCostPerMillion == 0 && completionCostPerMillion == 0
+    }
+
+    var isTextOutput: Bool {
+        outputModalities.isEmpty || outputModalities.contains("text")
+    }
+
+    var isCompatible: Bool {
+        isTextOutput && supportsResponseFormat
+    }
+
+    var compactPricing: String {
+        guard let input = promptCostPerMillion, let output = completionCostPerMillion else { return "Variable" }
+        if input == 0 && output == 0 { return "Free" }
+        return "\(Self.money(input)) in / \(Self.money(output)) out"
+    }
+
+    var searchText: String {
+        [id, name, providerName, providerID,
+         modelDescription ?? "", tokenizer ?? "",
+         inputModalities.joined(separator: " "),
+         outputModalities.joined(separator: " ")]
+        .joined(separator: " ").lowercased()
+    }
+
+    static func money(_ value: Double) -> String {
+        if value == 0 { return "$0" }
+        if value < 0.01 { return String(format: "$%.4f", value) }
+        if value < 1 { return String(format: "$%.2f", value) }
+        if value.rounded() == value { return String(format: "$%.0f", value) }
+        return String(format: "$%.2f", value)
+    }
+
+    static func perToken(_ value: Double?) -> String {
+        guard let value else { return "Variable" }
+        let token = value / 1_000_000
+        if token == 0 { return "$0/token" }
+        return String(format: "$%.9f/token", token)
+    }
+
+    private static func providerID(from modelID: String) -> String {
+        modelID.split(separator: "/", maxSplits: 1).first.map(String.init) ?? "openrouter"
+    }
+
+    private static func providerName(from modelName: String, provider: ModelsDevProvider?, providerID: String) -> String {
+        if let provider { return provider.name }
+        if let colon = modelName.firstIndex(of: ":") { return String(modelName[..<colon]) }
+        return providerID
+            .replacingOccurrences(of: "-", with: " ")
+            .split(separator: " ").map { $0.capitalized }.joined(separator: " ")
+    }
+}
+
+// MARK: - Private DTOs
+
+struct ORModelsResponse: Decodable, Sendable { var data: [ORModel] }
+
+struct ORModel: Decodable, Sendable {
+    var id: String
+    var name: String
+    var created: Int?
+    var description: String?
+    var contextLength: Int?
+    var architecture: ORArchitecture?
+    var pricing: ORPricing?
+    var topProvider: ORTopProvider?
+    var supportedParameters: [String]?
+    var knowledgeCutoff: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, created, description
+        case contextLength = "context_length"
+        case architecture, pricing
+        case topProvider = "top_provider"
+        case supportedParameters = "supported_parameters"
+        case knowledgeCutoff = "knowledge_cutoff"
+    }
+}
+
+struct ORArchitecture: Decodable, Sendable {
+    var inputModalities: [String]?
+    var outputModalities: [String]?
+    var tokenizer: String?
+
+    enum CodingKeys: String, CodingKey {
+        case inputModalities = "input_modalities"
+        case outputModalities = "output_modalities"
+        case tokenizer
+    }
+}
+
+struct ORPricing: Decodable, Sendable {
+    var prompt: String?
+    var completion: String?
+    var request: String?
+    var image: String?
+    var webSearch: String?
+    var inputCacheRead: String?
+    var inputCacheWrite: String?
+
+    enum CodingKeys: String, CodingKey {
+        case prompt, completion, request, image
+        case webSearch = "web_search"
+        case inputCacheRead = "input_cache_read"
+        case inputCacheWrite = "input_cache_write"
+    }
+}
+
+struct ORTopProvider: Decodable, Sendable {
+    var contextLength: Int?
+    var maxCompletionTokens: Int?
+    var isModerated: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case contextLength = "context_length"
+        case maxCompletionTokens = "max_completion_tokens"
+        case isModerated = "is_moderated"
+    }
+}
+
+struct ModelsDevCatalog: Sendable {
+    var providers: [String: ModelsDevProvider]
+    func provider(id: String) -> ModelsDevProvider? { providers[id] }
+    func openRouterModel(id: String) -> ModelsDevModel? { providers["openrouter"]?.models[id] }
+}
+
+struct ModelsDevProvider: Decodable, Hashable, Sendable {
+    var id: String
+    var name: String
+    var models: [String: ModelsDevModel]
+}
+
+struct ModelsDevModel: Decodable, Hashable, Sendable {
+    var id: String
+    var name: String
+    var reasoning: Bool?
+    var toolCall: Bool?
+    var structuredOutput: Bool?
+    var knowledge: String?
+    var releaseDate: String?
+    var lastUpdated: String?
+    var modalities: ModelsDevModalities?
+    var openWeights: Bool?
+    var cost: ModelsDevCost?
+    var limit: ModelsDevLimit?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, reasoning
+        case toolCall = "tool_call"
+        case structuredOutput = "structured_output"
+        case knowledge
+        case releaseDate = "release_date"
+        case lastUpdated = "last_updated"
+        case modalities
+        case openWeights = "open_weights"
+        case cost, limit
+    }
+}
+
+struct ModelsDevModalities: Decodable, Hashable, Sendable {
+    var input: [String]?
+    var output: [String]?
+}
+
+struct ModelsDevCost: Decodable, Hashable, Sendable {
+    var input: Double?
+    var output: Double?
+    var cacheRead: Double?
+    var cacheWrite: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case input, output
+        case cacheRead = "cache_read"
+        case cacheWrite = "cache_write"
+    }
+}
+
+struct ModelsDevLimit: Decodable, Hashable, Sendable {
+    var context: Int?
+    var output: Int?
+}
+
+private extension String {
+    var costPerMillion: Double? {
+        guard let value = Double(self), value >= 0 else { return nil }
+        return value * 1_000_000
+    }
+}

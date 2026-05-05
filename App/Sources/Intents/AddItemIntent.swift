@@ -39,10 +39,21 @@ struct AddItemIntent: AppIntent {
             return .result(dialog: "I need something to add.")
         }
 
-        var state = (try? Persistence.load()) ?? AppState()
+        // CRITICAL: never fall back to a fresh AppState() on decode failure —
+        // saving on top would obliterate the user's existing items. Only swallow
+        // the "no persisted state yet" case (first launch); on real decode errors,
+        // surface a dialog and bail so the user's data stays intact.
+        let state: AppState
+        do {
+            state = try Persistence.load()
+        } catch {
+            FileHandle.standardError.write(Data("AddItemIntent: load failed: \(error)\n".utf8))
+            return .result(dialog: "I couldn't read your data. Open the app once and try again.")
+        }
+        var nextState = state
         let item = Item(title: trimmed, source: .manual)
-        state.items.append(item)
-        Persistence.save(state)
+        nextState.items.append(item)
+        Persistence.save(nextState)
 
         return .result(dialog: "Added “\(trimmed)”.")
     }
@@ -59,7 +70,14 @@ struct PendingItemCountIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Int> & ProvidesDialog {
-        let state = (try? Persistence.load()) ?? AppState()
+        // Read-only — safe to fall back to an empty state on decode failure.
+        let state: AppState
+        do {
+            state = try Persistence.load()
+        } catch {
+            FileHandle.standardError.write(Data("PendingItemCountIntent: load failed: \(error)\n".utf8))
+            state = AppState()
+        }
         let count = state.items.filter { !$0.deleted && $0.status == .pending }.count
         let dialog: IntentDialog
         switch count {

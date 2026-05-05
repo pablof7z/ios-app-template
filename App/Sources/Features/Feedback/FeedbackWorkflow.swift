@@ -21,6 +21,7 @@ final class FeedbackWorkflow {
     var draft: String = ""
     var screenshot: UIImage? = nil
     var annotatedImage: UIImage? = nil
+    var selectedCategory: FeedbackCategory = .bug
 
     var isSheetVisible: Bool { phase == .composing }
     var isAnnotationVisible: Bool { phase == .annotating }

@@ -36,8 +36,22 @@ struct ItemEntity: AppEntity, IndexedEntity, Sendable {
 /// host where `AppStateStore` is unreachable.
 struct ItemEntityQuery: EntityQuery, Sendable {
 
+    /// Read-only loader for query callbacks. Decode errors are logged to stderr
+    /// and surface as an empty `AppState` so the picker silently degrades to "no
+    /// items" instead of crashing the Shortcuts host. Mutating intents must use
+    /// `try Persistence.load()` directly so they can refuse to overwrite data
+    /// they failed to read.
+    fileprivate static func loadStateLogged() -> AppState {
+        do {
+            return try Persistence.load()
+        } catch {
+            FileHandle.standardError.write(Data("ItemEntityQuery: load failed: \(error)\n".utf8))
+            return AppState()
+        }
+    }
+
     func entities(for identifiers: [ItemEntity.ID]) async throws -> [ItemEntity] {
-        let state = (try? Persistence.load()) ?? AppState()
+        let state = Self.loadStateLogged()
         let lookup = Dictionary(uniqueKeysWithValues: state.items.map { ($0.id, $0) })
         return identifiers.compactMap { id in
             guard let item = lookup[id], !item.deleted else { return nil }
@@ -48,7 +62,7 @@ struct ItemEntityQuery: EntityQuery, Sendable {
     /// What the Shortcuts picker shows by default — pending items only,
     /// freshest first, capped so we don't dump a 1000-item list into Siri.
     func suggestedEntities() async throws -> [ItemEntity] {
-        let state = (try? Persistence.load()) ?? AppState()
+        let state = Self.loadStateLogged()
         return state.items
             .filter { !$0.deleted && $0.status == .pending }
             .sorted { $0.createdAt > $1.createdAt }
@@ -61,7 +75,7 @@ extension ItemEntityQuery: EnumerableEntityQuery {
     /// Required by `IndexedEntity` so the system can learn the full set of
     /// items for predictions / Spotlight donations.
     func allEntities() async throws -> [ItemEntity] {
-        let state = (try? Persistence.load()) ?? AppState()
+        let state = Self.loadStateLogged()
         return state.items
             .filter { !$0.deleted }
             .map(ItemEntity.init(from:))

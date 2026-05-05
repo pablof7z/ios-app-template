@@ -58,6 +58,27 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         self.updatedAt = Date()
         self.deleted = false
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, status, source, createdAt, updatedAt, deleted
+        case requestedByFriendID, requestedByDisplayName
+    }
+
+    // Forward-compat: every field decoded with `decodeIfPresent` so adding
+    // new fields (e.g. due dates, priority) never breaks decode of older
+    // persisted state.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        status = try c.decodeIfPresent(ItemStatus.self, forKey: .status) ?? .pending
+        source = try c.decodeIfPresent(ItemSource.self, forKey: .source) ?? .manual
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+        deleted = try c.decodeIfPresent(Bool.self, forKey: .deleted) ?? false
+        requestedByFriendID = try c.decodeIfPresent(UUID.self, forKey: .requestedByFriendID)
+        requestedByDisplayName = try c.decodeIfPresent(String.self, forKey: .requestedByDisplayName)
+    }
 }
 
 // MARK: - Note
@@ -83,6 +104,22 @@ struct Note: Codable, Identifiable, Hashable, Sendable {
         self.target = target
         self.createdAt = Date()
         self.deleted = false
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, text, kind, target, createdAt, deleted
+    }
+
+    // Forward-compat: every field decoded with `decodeIfPresent` so adding
+    // new fields never breaks decode of older persisted state.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
+        kind = try c.decodeIfPresent(NoteKind.self, forKey: .kind) ?? .free
+        target = try c.decodeIfPresent(Anchor.self, forKey: .target)
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        deleted = try c.decodeIfPresent(Bool.self, forKey: .deleted) ?? false
     }
 }
 
@@ -190,6 +227,10 @@ enum OpenRouterCredentialSource: String, Codable, Hashable, Sendable {
     case none, manual, byok
 }
 
+enum ElevenLabsCredentialSource: String, Codable, Hashable, Sendable {
+    case none, manual, byok
+}
+
 struct Settings: Codable, Hashable, Sendable {
     // AI / LLM
     var llmModel: String = "openai/gpt-4o-mini"
@@ -201,6 +242,17 @@ struct Settings: Codable, Hashable, Sendable {
     var openRouterBYOKKeyLabel: String?
     var openRouterConnectedAt: Date?
     var legacyOpenRouterAPIKey: String?
+
+    // ElevenLabs credentials (secret stored in Keychain; only metadata here)
+    var elevenLabsCredentialSource: ElevenLabsCredentialSource = .none
+    var elevenLabsBYOKKeyID: String?
+    var elevenLabsBYOKKeyLabel: String?
+    var elevenLabsConnectedAt: Date?
+
+    // ElevenLabs configuration
+    var elevenLabsSTTModel: String = "scribe_v1"
+    var elevenLabsTTSModel: String = "eleven_turbo_v2_5"
+    var elevenLabsVoiceID: String = ""
 
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
@@ -217,6 +269,9 @@ struct Settings: Codable, Hashable, Sendable {
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
+        case elevenLabsCredentialSource
+        case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
+        case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID
         case nostrEnabled, nostrRelayURL
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
@@ -231,6 +286,13 @@ struct Settings: Codable, Hashable, Sendable {
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
         openRouterConnectedAt = try c.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
         legacyOpenRouterAPIKey = try c.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
+        elevenLabsCredentialSource = try c.decodeIfPresent(ElevenLabsCredentialSource.self, forKey: .elevenLabsCredentialSource) ?? .none
+        elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
+        elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
+        elevenLabsConnectedAt = try c.decodeIfPresent(Date.self, forKey: .elevenLabsConnectedAt)
+        elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? "scribe_v1"
+        elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? "eleven_turbo_v2_5"
+        elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
         nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
         nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? "wss://relay.damus.io"
         nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
@@ -253,6 +315,13 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
         try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
         try c.encodeIfPresent(openRouterConnectedAt, forKey: .openRouterConnectedAt)
+        try c.encode(elevenLabsCredentialSource, forKey: .elevenLabsCredentialSource)
+        try c.encodeIfPresent(elevenLabsBYOKKeyID, forKey: .elevenLabsBYOKKeyID)
+        try c.encodeIfPresent(elevenLabsBYOKKeyLabel, forKey: .elevenLabsBYOKKeyLabel)
+        try c.encodeIfPresent(elevenLabsConnectedAt, forKey: .elevenLabsConnectedAt)
+        try c.encode(elevenLabsSTTModel, forKey: .elevenLabsSTTModel)
+        try c.encode(elevenLabsTTSModel, forKey: .elevenLabsTTSModel)
+        try c.encode(elevenLabsVoiceID, forKey: .elevenLabsVoiceID)
         try c.encode(nostrEnabled, forKey: .nostrEnabled)
         try c.encode(nostrRelayURL, forKey: .nostrRelayURL)
         try c.encode(nostrProfileName, forKey: .nostrProfileName)
@@ -283,6 +352,27 @@ struct Settings: Codable, Hashable, Sendable {
         openRouterBYOKKeyLabel = nil
         openRouterConnectedAt = nil
         legacyOpenRouterAPIKey = nil
+    }
+
+    mutating func markElevenLabsManual(connectedAt: Date = Date()) {
+        elevenLabsCredentialSource = .manual
+        elevenLabsBYOKKeyID = nil
+        elevenLabsBYOKKeyLabel = nil
+        elevenLabsConnectedAt = connectedAt
+    }
+
+    mutating func markElevenLabsBYOK(keyID: String?, keyLabel: String?, connectedAt: Date = Date()) {
+        elevenLabsCredentialSource = .byok
+        elevenLabsBYOKKeyID = keyID
+        elevenLabsBYOKKeyLabel = keyLabel
+        elevenLabsConnectedAt = connectedAt
+    }
+
+    mutating func clearElevenLabsCredential() {
+        elevenLabsCredentialSource = .none
+        elevenLabsBYOKKeyID = nil
+        elevenLabsBYOKKeyLabel = nil
+        elevenLabsConnectedAt = nil
     }
 }
 

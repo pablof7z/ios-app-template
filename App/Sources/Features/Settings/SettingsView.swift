@@ -3,44 +3,23 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var showClearConfirm = false
-    @State private var hasStoredKey = false
-    @State private var pendingCount = 0
 
     var body: some View {
-        Form {
-            Section {
-                NavigationLink {
-                    AgentHubView()
-                } label: {
-                    HStack {
-                        Label("Agent", systemImage: "brain.head.profile")
-                        Spacer()
-                        agentStatusBadge
-                    }
-                }
-            } header: {
-                Text("Configuration")
-            }
+        ZStack {
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
 
-            Section("About") {
-                LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")
-                LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "–")
+            List {
+                configurationSection
+                dataSection
+                aboutSection
+                destructiveSection
             }
-
-            Section {
-                Button("Clear All Data", role: .destructive) {
-                    showClearConfirm = true
-                }
-            } footer: {
-                Text("Permanently deletes all items, notes, friends, and memories. API credentials and Nostr identity are preserved.")
-            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
-        .onAppear {
-            hasStoredKey = OpenRouterCredentialStore.hasAPIKey()
-            pendingCount = store.pendingNostrApprovals.count
-        }
         .alert("Clear All Data?", isPresented: $showClearConfirm) {
             Button("Clear Everything", role: .destructive) {
                 store.clearAllData()
@@ -52,15 +31,91 @@ struct SettingsView: View {
         }
     }
 
-    @ViewBuilder
-    private var agentStatusBadge: some View {
-        HStack(spacing: 6) {
-            if pendingCount > 0 {
-                StatBadge(value: pendingCount, label: nil, color: .orange)
+    // MARK: - Sections
+
+    private var configurationSection: some View {
+        Section("Configuration") {
+            NavigationLink {
+                AISettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "sparkles",
+                    tint: .blue,
+                    title: "AI",
+                    value: currentModelShortName
+                )
             }
-            Text(hasStoredKey ? "Connected" : "Not set up")
-                .font(.caption)
-                .foregroundStyle(hasStoredKey ? .green : .secondary)
+
+            NavigationLink {
+                AgentSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "brain.head.profile",
+                    tint: .orange,
+                    title: "Agent",
+                    badge: store.pendingNostrApprovals.count
+                )
+            }
         }
+    }
+
+    private var dataSection: some View {
+        Section {
+            NavigationLink {
+                DataExportView()
+            } label: {
+                SettingsRow(
+                    icon: "square.and.arrow.up",
+                    tint: .indigo,
+                    title: "Export Data",
+                    value: exportSummary
+                )
+            }
+        } header: {
+            Text("Data")
+        } footer: {
+            Text("Generates a portable JSON file of items, notes, friends, memories, and agent activity. Secrets are not included.")
+        }
+    }
+
+    private var aboutSection: some View {
+        Section("About") {
+            SettingsRow(icon: "info.circle", tint: .gray, title: "Version", value: versionString)
+            SettingsRow(icon: "hammer", tint: .gray, title: "Build", value: buildString)
+        }
+    }
+
+    private var destructiveSection: some View {
+        Section {
+            Button("Clear All Data", role: .destructive) {
+                showClearConfirm = true
+            }
+        } footer: {
+            Text("Permanently deletes all items, notes, friends, and memories. API credentials and Nostr identity are preserved.")
+        }
+    }
+
+    // MARK: - Derived values
+
+    private var exportSummary: String {
+        let total = DataExport.stats(for: store.state).totalRecords
+        return "\(total) record\(total == 1 ? "" : "s")"
+    }
+
+    private var currentModelShortName: String {
+        let model = store.state.settings.llmModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !model.isEmpty else { return "Not set" }
+        if let slashIndex = model.lastIndex(of: "/") {
+            return String(model[model.index(after: slashIndex)...])
+        }
+        return model
+    }
+
+    private var versionString: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
+    }
+
+    private var buildString: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "-"
     }
 }
