@@ -99,4 +99,26 @@ enum NotificationService {
         let ids = itemIDs.map { identifier(for: $0) }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }
+
+    // MARK: - Nostr approval
+
+    /// Fires an immediate notification when an unknown Nostr sender requests access.
+    /// Deduped by pubkey — won't fire again if one is already pending for that key.
+    static func notifyPendingApproval(pubkeyHex: String) async {
+        let center = UNUserNotificationCenter.current()
+        let pending = await center.pendingNotificationRequests()
+        let id = "nostr-approval:\(pubkeyHex)"
+        guard !pending.contains(where: { $0.identifier == id }) else { return }
+
+        let granted = await requestAuthorization()
+        guard granted else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "New contact request"
+        content.body = "Someone wants to reach your agent. Open the app to review."
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        try? await center.add(request)
+    }
 }
