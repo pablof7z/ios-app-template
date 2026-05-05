@@ -184,6 +184,27 @@ struct HomeView: View {
                         Label("Delete", systemImage: "trash.fill")
                     }
                 }
+                .contextMenu {
+                    Button {
+                        Haptics.selection()
+                        editingItem = item
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    Button {
+                        store.setItemStatus(item.id, status: .done)
+                        Haptics.success()
+                    } label: {
+                        Label("Complete", systemImage: "checkmark.circle")
+                    }
+                    Divider()
+                    Button(role: .destructive) {
+                        store.deleteItem(item.id)
+                        Haptics.medium()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
         }
     }
