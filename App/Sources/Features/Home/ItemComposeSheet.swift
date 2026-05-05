@@ -23,12 +23,14 @@ struct ItemComposeSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .keyboardShortcut(.cancelAction)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") { Task { await save() } }
                         .buttonStyle(.glassProminent)
                         .disabled(!canSave)
                         .fontWeight(.semibold)
+                        .keyboardShortcut(.return, modifiers: .command)
                 }
             }
         }

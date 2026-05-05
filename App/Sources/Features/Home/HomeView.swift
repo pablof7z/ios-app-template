@@ -42,6 +42,7 @@ struct HomeView: View {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
                 }
+                .keyboardShortcut("n", modifiers: .command)
                 .accessibilityLabel("Add Item")
             }
         }
