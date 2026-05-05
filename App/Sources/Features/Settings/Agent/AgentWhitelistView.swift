@@ -1,6 +1,13 @@
 import SwiftUI
 import UIKit
 
+private enum AgentWhitelistConstants {
+    /// Number of hex characters shown in the truncated pubkey preview.
+    static let pubkeyPrefixLength = 16
+    /// How long (in seconds) the "Copied" confirmation badge stays visible.
+    static let copyFeedbackDuration: Duration = .seconds(1.2)
+}
+
 struct AgentWhitelistView: View {
     @Environment(AppStateStore.self) private var store
 
@@ -129,7 +136,7 @@ struct AgentWhitelistView: View {
         Haptics.selection()
         copiedKey = key
         Task {
-            try? await Task.sleep(for: .seconds(1.2))
+            try? await Task.sleep(for: AgentWhitelistConstants.copyFeedbackDuration)
             await MainActor.run {
                 if copiedKey == key { copiedKey = nil }
             }
@@ -185,7 +192,7 @@ private struct AllowedRow: View {
                 Image(systemName: "checkmark.shield.fill")
                     .foregroundStyle(.green)
 
-                Text("npub1\(key.prefix(16))…")
+                Text("npub1\(key.prefix(AgentWhitelistConstants.pubkeyPrefixLength))…")
                     .font(.callout.monospaced())
                     .foregroundStyle(.primary)
 
