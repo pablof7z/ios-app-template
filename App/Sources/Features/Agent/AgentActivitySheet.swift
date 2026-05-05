@@ -152,7 +152,7 @@ struct AgentActivitySheet: View {
 
 // MARK: - Activity kind presentation
 
-private extension AgentActivityKind {
+extension AgentActivityKind {
     var icon: String {
         switch self {
         case .itemCreated: "plus.circle.fill"
