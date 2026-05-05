@@ -10,8 +10,14 @@ struct FeedbackComposeView: View {
 
     @State private var errorMessage: String?
 
+    private let characterLimit = 280
+
+    private var characterCount: Int { workflow.draft.count }
+    private var charactersRemaining: Int { characterLimit - characterCount }
+    private var isOverLimit: Bool { characterCount > characterLimit }
+
     private var canSend: Bool {
-        !workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !workflow.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isOverLimit
     }
 
     var body: some View {
@@ -23,6 +29,7 @@ struct FeedbackComposeView: View {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                     identityRow
                     textEditorSection
+                    characterCounterRow
                     screenshotSection
 
                     if let error = errorMessage {
@@ -129,6 +136,18 @@ struct FeedbackComposeView: View {
                 .padding(AppTheme.Spacing.sm)
         }
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous))
+    }
+
+    // MARK: - Character counter
+
+    private var characterCounterRow: some View {
+        HStack {
+            Spacer()
+            Text("\(characterCount) / \(characterLimit)")
+                .font(AppTheme.Typography.caption)
+                .foregroundStyle(isOverLimit ? .red : .secondary)
+                .monospacedDigit()
+        }
     }
 
     // MARK: - Screenshot preview
