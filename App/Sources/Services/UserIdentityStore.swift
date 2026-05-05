@@ -51,10 +51,15 @@ final class UserIdentityStore {
 
     func generateKey() throws {
         loginError = nil
-        let pair = try NostrKeyPair.generate()
-        try KeychainStore.saveString(pair.privateKeyHex, service: Self.service, account: Self.account)
-        keyPair = pair
-        publicKeyHex = pair.publicKeyHex
+        do {
+            let pair = try NostrKeyPair.generate()
+            try KeychainStore.saveString(pair.privateKeyHex, service: Self.service, account: Self.account)
+            keyPair = pair
+            publicKeyHex = pair.publicKeyHex
+        } catch {
+            loginError = "Failed to generate key — please try again."
+            throw error
+        }
     }
 
     // MARK: - Sign out

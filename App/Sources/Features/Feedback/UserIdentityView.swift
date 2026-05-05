@@ -91,27 +91,31 @@ struct UserIdentityView: View {
                     .lineLimit(3)
                     .textSelection(.enabled)
 
-                Button {
-                    UIPasteboard.general.string = npub
-                    Haptics.selection()
-                    showCopied = true
-                    Task {
-                        try? await Task.sleep(for: .seconds(1.5))
-                        await MainActor.run { showCopied = false }
-                    }
-                } label: {
-                    Label(showCopied ? "Copied!" : "Copy npub", systemImage: showCopied ? "checkmark" : "doc.on.doc")
-                        .font(AppTheme.Typography.caption)
-                        .padding(.horizontal, AppTheme.Spacing.md)
-                        .padding(.vertical, AppTheme.Spacing.sm)
-                }
-                .buttonStyle(.bordered)
-                .tint(showCopied ? .green : .accentColor)
+                copyNpubButton(npub: npub)
             }
         }
         .padding(AppTheme.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
+    }
+
+    private func copyNpubButton(npub: String) -> some View {
+        Button {
+            UIPasteboard.general.string = npub
+            Haptics.selection()
+            showCopied = true
+            Task {
+                try? await Task.sleep(for: .seconds(1.5))
+                await MainActor.run { showCopied = false }
+            }
+        } label: {
+            Label(showCopied ? "Copied!" : "Copy npub", systemImage: showCopied ? "checkmark" : "doc.on.doc")
+                .font(AppTheme.Typography.caption)
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.vertical, AppTheme.Spacing.sm)
+        }
+        .buttonStyle(.bordered)
+        .tint(showCopied ? .green : .accentColor)
     }
 
     // MARK: - Import nsec card
@@ -160,8 +164,12 @@ struct UserIdentityView: View {
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
             Button {
-                try? identity.generateKey()
-                Haptics.success()
+                do {
+                    try identity.generateKey()
+                    Haptics.success()
+                } catch {
+                    Haptics.error()
+                }
             } label: {
                 Label("Generate key", systemImage: "plus.circle.fill")
                     .frame(maxWidth: .infinity)
