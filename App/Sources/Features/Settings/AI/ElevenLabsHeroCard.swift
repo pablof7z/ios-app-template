@@ -26,15 +26,40 @@ struct ElevenLabsHeroCard: View {
     let keyLabel: String?
     let connectedAt: Date?
 
+    private enum Constants {
+        /// Horizontal gap between the icon and the text stack.
+        static let hStackSpacing: CGFloat = 14
+        /// Font size for the connection icon.
+        static let iconSize: CGFloat = 36
+        /// Fixed width reserved for the icon so text always aligns.
+        static let iconFrameWidth: CGFloat = 44
+        /// Vertical gap between title and subtitle in the text stack.
+        static let textStackSpacing: CGFloat = 4
+        /// Card padding on all sides.
+        static let cardPadding: CGFloat = 16
+        /// Minimum card height to keep it visually substantial.
+        static let cardMinHeight: CGFloat = 88
+        /// Corner radius of the glass card surface.
+        static let cardCornerRadius: CGFloat = 16
+        /// Diameter of the status dot inside the pill.
+        static let pillDotSize: CGFloat = 6
+        /// Gap between status dot and pill label text.
+        static let pillHStackSpacing: CGFloat = 6
+        /// Horizontal inset for the status pill capsule.
+        static let pillHPadding: CGFloat = 10
+        /// Vertical inset for the status pill capsule.
+        static let pillVPadding: CGFloat = 5
+    }
+
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: Constants.hStackSpacing) {
             Image(systemName: connectionIcon)
-                .font(.system(size: 36, weight: .medium))
+                .font(.system(size: Constants.iconSize, weight: .medium))
                 .foregroundStyle(connectionTint)
                 .symbolEffect(.bounce, value: connectionState == .notConnected ? 0 : 1)
-                .frame(width: 44)
+                .frame(width: Constants.iconFrameWidth)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Constants.textStackSpacing) {
                 Text("ElevenLabs")
                     .font(AppTheme.Typography.title)
                 Text(heroSubtitle)
@@ -53,23 +78,23 @@ struct ElevenLabsHeroCard: View {
                 statusPill
             }
         }
-        .padding(16)
-        .frame(minHeight: 88)
-        .glassSurface(cornerRadius: 16, interactive: true)
+        .padding(Constants.cardPadding)
+        .frame(minHeight: Constants.cardMinHeight)
+        .glassSurface(cornerRadius: Constants.cardCornerRadius, interactive: true)
     }
 
     // MARK: - Status pill
 
     private var statusPill: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Constants.pillHStackSpacing) {
             Circle()
                 .fill(pillTint)
-                .frame(width: 6, height: 6)
+                .frame(width: Constants.pillDotSize, height: Constants.pillDotSize)
             Text(pillLabel)
                 .font(.caption.weight(.medium))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
+        .padding(.horizontal, Constants.pillHPadding)
+        .padding(.vertical, Constants.pillVPadding)
         .glassEffect(.regular.tint(pillTint), in: .capsule)
     }
 
