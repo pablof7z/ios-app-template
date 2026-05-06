@@ -119,7 +119,7 @@ struct FriendDetailView: View {
                     Haptics.selection()
                     withAnimation(AppTheme.Animation.springFast) { showCopiedFeedback = true }
                     Task {
-                        try? await Task.sleep(for: .seconds(1.8))
+                        try? await Task.sleep(for: AppTheme.Timing.copyFeedback)
                         withAnimation(AppTheme.Animation.easeOut) { showCopiedFeedback = false }
                     }
                 } label: {

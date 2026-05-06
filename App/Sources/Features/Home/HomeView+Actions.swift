@@ -13,7 +13,7 @@ extension HomeView {
         Haptics.success()
         celebration.trigger()
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(220))
+            try? await Task.sleep(for: AppTheme.Timing.itemCompletionDelay)
             store.setItemStatus(item.id, status: .done)
             completingIDs.remove(item.id)
         }

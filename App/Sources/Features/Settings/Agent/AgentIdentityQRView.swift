@@ -176,7 +176,7 @@ struct AgentIdentityQRView: View {
         Haptics.success()
         withAnimation(AppTheme.Animation.spring) { copied = true }
         Task {
-            try? await Task.sleep(for: .seconds(1.4))
+            try? await Task.sleep(for: AppTheme.Timing.copyFeedback)
             await MainActor.run {
                 withAnimation(AppTheme.Animation.spring) { copied = false }
             }

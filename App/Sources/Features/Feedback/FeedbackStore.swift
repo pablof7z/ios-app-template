@@ -31,7 +31,7 @@ final class FeedbackStore {
 
     @discardableResult
     func publishThread(category: FeedbackCategory, content: String, image: UIImage?) async throws -> FeedbackThread {
-        try await Task.sleep(for: .milliseconds(600))
+        try await Task.sleep(for: AppTheme.Timing.feedbackPublishDelay)
         let thread = FeedbackThread(category: category, content: content, attachedImage: image)
         threads.insert(thread, at: 0)
         do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishThread: \(error)") }
@@ -39,7 +39,7 @@ final class FeedbackStore {
     }
 
     func publishReply(content: String, threadID: UUID) async throws {
-        try await Task.sleep(for: .milliseconds(300))
+        try await Task.sleep(for: AppTheme.Timing.feedbackReplyDelay)
         guard let idx = threads.firstIndex(where: { $0.id == threadID }) else { return }
         threads[idx].replies.append(FeedbackReply(content: content, isFromMe: true))
         do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishReply: \(error)") }

@@ -16,6 +16,7 @@ struct ItemComposeSheet: View {
     @State private var title: String = ""
     @State private var details: String = ""
     @State private var isPriority: Bool = false
+    @State private var recurrence: Recurrence = .none
     @State private var reminderDate: Date = Date().addingTimeInterval(ComposeDefaults.reminderOffset)
     @State private var reminderEnabled: Bool = false
     @State private var notificationDenied: Bool = false
@@ -58,6 +59,7 @@ struct ItemComposeSheet: View {
             titleField
             detailsField
             priorityRow
+            recurrenceRow
             reminderRow
             if notificationDenied {
                 deniedBanner
@@ -111,6 +113,25 @@ struct ItemComposeSheet: View {
                 .foregroundStyle(isPriority ? .yellow : .secondary)
         }
         .tint(.yellow)
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var recurrenceRow: some View {
+        HStack(spacing: AppTheme.Spacing.md) {
+            Image(systemName: Recurrence.daily.systemImage)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(recurrence != .none ? Color.teal : .secondary)
+            Picker("Repeats", selection: $recurrence) {
+                ForEach(Recurrence.allCases, id: \.self) { period in
+                    Text(period.label).tag(period)
+                }
+            }
+            .pickerStyle(.menu)
+            .font(AppTheme.Typography.body)
+            .tint(recurrence != .none ? Color.teal : .secondary)
+            Spacer(minLength: 0)
+        }
         .padding(AppTheme.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
     }
@@ -169,9 +190,10 @@ struct ItemComposeSheet: View {
 
         var item = store.addItem(title: trimmed, source: .manual)
         let trimmedDetails = details.trimmingCharacters(in: .whitespacesAndNewlines)
-        if isPriority || !trimmedDetails.isEmpty {
+        if isPriority || !trimmedDetails.isEmpty || recurrence != .none {
             item.isPriority = isPriority
             item.details = trimmedDetails
+            item.recurrence = recurrence
             store.updateItem(item)
         }
 

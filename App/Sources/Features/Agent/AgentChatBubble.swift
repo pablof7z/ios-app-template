@@ -236,7 +236,7 @@ struct AgentTypingIndicator: View {
                         .frame(width: Layout.typingDotSize, height: Layout.typingDotSize)
                         .opacity(phase == i ? 1.0 : 0.35)
                         .scaleEffect(phase == i ? 1.15 : 0.9)
-                        .animation(.easeInOut(duration: 0.3), value: phase)
+                        .animation(AppTheme.Animation.easeInOut, value: phase)
                 }
             }
             .padding(.horizontal, Layout.typingPaddingH)
@@ -244,7 +244,7 @@ struct AgentTypingIndicator: View {
             .glassEffect(.regular, in: .rect(cornerRadius: Layout.typingCornerRadius))
             .task {
                 while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 350_000_000)
+                    try? await Task.sleep(for: AppTheme.Timing.typingDotStep)
                     phase = (phase + 1) % 3
                 }
             }

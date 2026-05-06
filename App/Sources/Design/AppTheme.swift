@@ -50,6 +50,8 @@ enum AppTheme {
         static let easeOut = SwiftUI.Animation.easeOut(duration: 0.25)
         /// Ease-in — elements leaving the screen.
         static let easeIn = SwiftUI.Animation.easeIn(duration: 0.2)
+        /// Ease-in-out — looping UI elements such as typing-indicator dots.
+        static let easeInOut = SwiftUI.Animation.easeInOut(duration: 0.3)
     }
 
     // MARK: - Typography
@@ -174,6 +176,25 @@ enum AppTheme {
         static let onboardingChipFriends = SwiftUI.Color(red: 0.60, green: 0.88, blue: 1.0)
         /// Mint-green used for the feedback feature chip on the onboarding ready page.
         static let onboardingChipFeedback = SwiftUI.Color(red: 0.70, green: 1.0, blue: 0.85)
+    }
+
+    // MARK: - Timing
+
+    /// Duration constants for Task.sleep-based UI feedback and animation delays.
+    ///
+    /// Use these instead of hardcoding raw `.seconds()` / `.milliseconds()` values
+    /// so all copy-feedback, completion-animation, and typing-indicator delays stay in sync.
+    enum Timing {
+        /// 1.5 s — standard "Copied!" chip display time across agent/identity views.
+        static let copyFeedback: Duration = .seconds(1.5)
+        /// 220 ms — row scale-out delay before removing a completed item.
+        static let itemCompletionDelay: Duration = .milliseconds(220)
+        /// 350 ms — typing-indicator dot phase cycle step.
+        static let typingDotStep: Duration = .milliseconds(350)
+        /// 600 ms — simulated publish latency for a new feedback thread.
+        static let feedbackPublishDelay: Duration = .milliseconds(600)
+        /// 300 ms — simulated reply latency for a feedback thread reply.
+        static let feedbackReplyDelay: Duration = .milliseconds(300)
     }
 
     // MARK: - Shadows

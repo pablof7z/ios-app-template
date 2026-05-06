@@ -49,98 +49,23 @@ struct ElevenLabsSettingsView: View {
     }
 
     private var connectionSection: some View {
-        Section {
-            Label(statusTitle, systemImage: statusIcon)
-
-            Button {
-                Task { await connectWithBYOK() }
-            } label: {
-                Label(isConnectingBYOK ? "Connecting..." : byokButtonTitle, systemImage: "key.viewfinder")
-            }
-            .buttonStyle(.glassProminent)
-            .tint(AppTheme.Brand.elevenLabsTint)
-            .disabled(isConnectingBYOK)
-
-            HStack {
-                if showManualAPIKey {
-                    TextField("xi-…", text: $manualAPIKey)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                } else {
-                    SecureField("Paste ElevenLabs API Key", text: $manualAPIKey)
-                }
-                Button {
-                    showManualAPIKey.toggle()
-                } label: {
-                    Image(systemName: showManualAPIKey ? "eye.slash" : "eye")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(showManualAPIKey ? "Hide API key" : "Show API key")
-            }
-
-            Button {
-                saveManualKey()
-            } label: {
-                Label("Save Manual Key", systemImage: "square.and.arrow.down")
-            }
-            .disabled(manualAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-            if hasStoredKey {
-                Button(role: .destructive) {
-                    disconnectElevenLabs()
-                } label: {
-                    Label("Disconnect ElevenLabs", systemImage: "trash")
-                }
-            }
-
-            if hasStoredKey {
-                Button {
-                    Task { await validateStoredKey() }
-                } label: {
-                    HStack {
-                        Label(
-                            isValidatingKey ? "Validating…" : "Validate Key",
-                            systemImage: "checkmark.shield"
-                        )
-                        if isValidatingKey {
-                            Spacer()
-                            ProgressView()
-                        }
-                    }
-                }
-                .disabled(isValidatingKey)
-                .tint(AppTheme.Brand.elevenLabsTint)
-            }
-
-            if let keyInfo {
-                ElevenLabsKeyInfoCard(info: keyInfo)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            if let credentialMessage {
-                Text(credentialMessage)
-                    .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.secondary)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            if let credentialError {
-                Text(credentialError)
-                    .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.red)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        } header: {
-            Text("Connection")
-        } footer: {
-            Text("BYOK opens byok.f7z.io for consent and stores the returned ElevenLabs key in Keychain. Manual keys are also saved only in Keychain.")
-        }
-        .animation(.default, value: credentialMessage)
-        .animation(.default, value: credentialError)
-        .animation(.default, value: keyInfo?.tier)
+        ElevenLabsConnectionSection(
+            statusTitle: statusTitle,
+            statusIcon: statusIcon,
+            byokButtonTitle: byokButtonTitle,
+            isConnectingBYOK: isConnectingBYOK,
+            isValidatingKey: isValidatingKey,
+            hasStoredKey: hasStoredKey,
+            keyInfo: keyInfo,
+            credentialMessage: credentialMessage,
+            credentialError: credentialError,
+            manualAPIKey: $manualAPIKey,
+            showManualAPIKey: $showManualAPIKey,
+            onConnectBYOK: { Task { await connectWithBYOK() } },
+            onSaveManualKey: saveManualKey,
+            onDisconnect: disconnectElevenLabs,
+            onValidateKey: { Task { await validateStoredKey() } }
+        )
     }
 
     private var modelsSection: some View {

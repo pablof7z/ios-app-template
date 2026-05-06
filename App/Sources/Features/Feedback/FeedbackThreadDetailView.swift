@@ -143,7 +143,7 @@ struct FeedbackThreadDetailView: View {
             }
             .onChange(of: currentThread.replies.count) { _, _ in
                 if let last = currentThread.replies.last {
-                    withAnimation(.easeOut(duration: 0.2)) {
+                    withAnimation(AppTheme.Animation.easeOut) {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }

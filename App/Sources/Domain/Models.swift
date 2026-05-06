@@ -43,6 +43,39 @@ enum ItemSource: String, Codable, Hashable, Sendable {
     case manual, voice, agent
 }
 
+/// Recurrence period for a repeating item.
+/// When an item with a non-`.none` recurrence is completed, a new pending copy
+/// is automatically inserted with the reminder date advanced by the period.
+enum Recurrence: String, Codable, Hashable, CaseIterable, Sendable {
+    case none
+    case daily
+    case weekly
+    case monthly
+
+    /// Human-readable label shown in the picker.
+    var label: String {
+        switch self {
+        case .none:    return "None"
+        case .daily:   return "Daily"
+        case .weekly:  return "Weekly"
+        case .monthly: return "Monthly"
+        }
+    }
+
+    /// SF Symbol shown in ItemRow when the item repeats.
+    var systemImage: String { "arrow.triangle.2.circlepath" }
+
+    /// Advances `date` by one period using the given calendar.
+    func nextDate(after date: Date, calendar: Calendar = .current) -> Date? {
+        switch self {
+        case .none:    return nil
+        case .daily:   return calendar.date(byAdding: .day, value: 1, to: date)
+        case .weekly:  return calendar.date(byAdding: .weekOfYear, value: 1, to: date)
+        case .monthly: return calendar.date(byAdding: .month, value: 1, to: date)
+        }
+    }
+}
+
 struct Item: Codable, Identifiable, Hashable, Sendable {
     var id: UUID
     var title: String
@@ -58,6 +91,8 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     var requestedByDisplayName: String?
     var reminderAt: Date?
     var isPriority: Bool
+    /// If non-`.none`, completing this item spawns a new pending copy advanced by the period.
+    var recurrence: Recurrence
 
     init(title: String, source: ItemSource = .manual) {
         self.id = UUID()
@@ -69,12 +104,13 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         self.updatedAt = Date()
         self.deleted = false
         self.isPriority = false
+        self.recurrence = .none
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, title, details, status, source, createdAt, updatedAt, deleted
         case requestedByFriendID, requestedByDisplayName
-        case reminderAt, isPriority
+        case reminderAt, isPriority, recurrence
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding
@@ -93,6 +129,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         requestedByDisplayName = try c.decodeIfPresent(String.self, forKey: .requestedByDisplayName)
         reminderAt = try c.decodeIfPresent(Date.self, forKey: .reminderAt)
         isPriority = try c.decodeIfPresent(Bool.self, forKey: .isPriority) ?? false
+        recurrence = try c.decodeIfPresent(Recurrence.self, forKey: .recurrence) ?? .none
     }
 }
 
@@ -100,11 +137,14 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
 
 extension Item {
     /// Plain-text summary formatted for sharing (Messages, Mail, Notes, etc.).
-    /// Includes title, optional details, and optional reminder date.
+    /// Includes title, optional details, recurrence, and optional reminder date.
     var shareText: String {
         var parts: [String] = [title]
         if !details.isEmpty {
             parts.append(details)
+        }
+        if recurrence != .none {
+            parts.append("Repeats: \(recurrence.label)")
         }
         if let date = reminderAt {
             let formatted = date.formatted(.dateTime.month(.wide).day().year().hour().minute())

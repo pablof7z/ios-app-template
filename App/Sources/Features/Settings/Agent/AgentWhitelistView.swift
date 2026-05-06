@@ -1,11 +1,6 @@
 import SwiftUI
 import UIKit
 
-private enum AgentWhitelistConstants {
-    /// How long (in seconds) the "Copied" confirmation badge stays visible.
-    static let copyFeedbackDuration: Duration = .seconds(1.2)
-}
-
 struct AgentWhitelistView: View {
     @Environment(AppStateStore.self) private var store
 
@@ -148,7 +143,7 @@ struct AgentWhitelistView: View {
         Haptics.selection()
         copiedKey = key
         Task {
-            try? await Task.sleep(for: AgentWhitelistConstants.copyFeedbackDuration)
+            try? await Task.sleep(for: AppTheme.Timing.copyFeedback)
             await MainActor.run {
                 if copiedKey == key { copiedKey = nil }
             }

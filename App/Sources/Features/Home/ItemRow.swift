@@ -25,6 +25,11 @@ struct ItemRow: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
+                if item.recurrence != .none {
+                    Label(item.recurrence.label, systemImage: item.recurrence.systemImage)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.teal)
+                }
                 if let reminder = item.reminderAt {
                     let rel = ReminderLabel.from(reminder)
                     Label(rel.text, systemImage: "bell.fill")

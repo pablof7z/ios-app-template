@@ -18,6 +18,7 @@ struct ItemEditSheet: View {
     @State private var title: String = ""
     @State private var details: String = ""
     @State private var isPriority: Bool = false
+    @State private var recurrence: Recurrence = .none
     @State private var reminderEnabled: Bool = false
     @State private var reminderDate: Date = Date().addingTimeInterval(EditDefaults.reminderOffset)
     @State private var notificationDenied: Bool = false
@@ -56,6 +57,7 @@ struct ItemEditSheet: View {
             title = item.title
             details = item.details
             isPriority = item.isPriority
+            recurrence = item.recurrence
             reminderEnabled = item.reminderAt != nil
             reminderDate = item.reminderAt ?? Date().addingTimeInterval(EditDefaults.reminderOffset)
             isFocused = true
@@ -69,6 +71,7 @@ struct ItemEditSheet: View {
             titleField
             detailsField
             priorityRow
+            recurrenceRow
             reminderRow
             if notificationDenied {
                 deniedBanner
@@ -126,6 +129,25 @@ struct ItemEditSheet: View {
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
     }
 
+    private var recurrenceRow: some View {
+        HStack(spacing: AppTheme.Spacing.md) {
+            Image(systemName: Recurrence.daily.systemImage)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(recurrence != .none ? Color.teal : .secondary)
+            Picker("Repeats", selection: $recurrence) {
+                ForEach(Recurrence.allCases, id: \.self) { period in
+                    Text(period.label).tag(period)
+                }
+            }
+            .pickerStyle(.menu)
+            .font(AppTheme.Typography.body)
+            .tint(recurrence != .none ? Color.teal : .secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
     private var reminderRow: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
             Toggle(isOn: $reminderEnabled) {
@@ -176,9 +198,10 @@ struct ItemEditSheet: View {
         let titleChanged = trimmed != item.title
         let detailsChanged = details != item.details
         let priorityChanged = isPriority != item.isPriority
+        let recurrenceChanged = recurrence != item.recurrence
         let reminderChanged = reminderEnabled != (item.reminderAt != nil)
             || (reminderEnabled && reminderDate != item.reminderAt)
-        return titleChanged || detailsChanged || priorityChanged || reminderChanged
+        return titleChanged || detailsChanged || priorityChanged || recurrenceChanged || reminderChanged
     }
 
     private func save() async {
@@ -189,6 +212,7 @@ struct ItemEditSheet: View {
         updated.title = trimmed
         updated.details = details
         updated.isPriority = isPriority
+        updated.recurrence = recurrence
 
         // Handle reminder transitions
         let hadReminder = item.reminderAt != nil

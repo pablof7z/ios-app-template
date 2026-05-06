@@ -34,7 +34,7 @@ struct PendingApprovalRow: View {
                         Haptics.selection()
                         pubkeyCopied = true
                         Task {
-                            try? await Task.sleep(for: .seconds(1.5))
+                            try? await Task.sleep(for: AppTheme.Timing.copyFeedback)
                             await MainActor.run { pubkeyCopied = false }
                         }
                     } label: {

@@ -43,10 +43,29 @@ struct MarkItemDoneIntent: AppIntent {
             return .result(dialog: "That's already done.")
         }
 
+        let completed = state.items[idx]
         state.items[idx].status = .done
         state.items[idx].updatedAt = Date()
+        NotificationService.cancel(for: completed.id)
+        state.items[idx].reminderAt = nil
+
+        // Roll forward recurring items — mirror AppStateStore.spawnRecurringItem.
+        if completed.recurrence != .none {
+            var next = Item(title: completed.title, source: completed.source)
+            next.details = completed.details
+            next.isPriority = completed.isPriority
+            next.recurrence = completed.recurrence
+            next.requestedByFriendID = completed.requestedByFriendID
+            next.requestedByDisplayName = completed.requestedByDisplayName
+            if let base = completed.reminderAt,
+               let advanced = completed.recurrence.nextDate(after: base) {
+                next.reminderAt = advanced
+            }
+            state.items.append(next)
+        }
+
         Persistence.save(state)
 
-        return .result(dialog: "Marked “\(state.items[idx].title)” as done.")
+        return .result(dialog: "Marked “\(completed.title)” as done.")
     }
 }

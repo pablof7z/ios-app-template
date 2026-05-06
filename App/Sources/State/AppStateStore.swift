@@ -65,6 +65,7 @@ final class AppStateStore {
 
     func setItemStatus(_ id: UUID, status: ItemStatus) {
         guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
+        let completed = state.items[idx]
         state.items[idx].status = status
         state.items[idx].updatedAt = Date()
         // When an item is completed or dropped, cancel any pending reminder.
@@ -74,7 +75,35 @@ final class AppStateStore {
         }
         if status == .done {
             ReviewPrompt.recordMeaningfulAction()
+            // Roll forward recurring items: insert a new pending copy advanced by one period.
+            spawnRecurringItem(from: completed)
         }
+    }
+
+    /// If `original` has a non-`.none` recurrence, creates a new pending Item
+    /// with all fields copied and the reminder date (if any) advanced by one period.
+    private func spawnRecurringItem(from original: Item) {
+        guard original.recurrence != .none else { return }
+        var next = Item(title: original.title, source: original.source)
+        next.details = original.details
+        next.isPriority = original.isPriority
+        next.recurrence = original.recurrence
+        next.requestedByFriendID = original.requestedByFriendID
+        next.requestedByDisplayName = original.requestedByDisplayName
+        if let base = original.reminderAt,
+           let advanced = original.recurrence.nextDate(after: base) {
+            next.reminderAt = advanced
+            // Schedule the notification asynchronously; ignore permission denials silently
+            // since the user already granted permission when they first set the reminder.
+            Task {
+                await NotificationService.scheduleReminder(
+                    for: next.id,
+                    title: next.title,
+                    at: advanced
+                )
+            }
+        }
+        state.items.append(next)
     }
 
     func itemStatus(_ id: UUID) -> ItemStatus? {
