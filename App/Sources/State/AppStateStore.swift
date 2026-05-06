@@ -88,6 +88,7 @@ final class AppStateStore {
         next.details = original.details
         next.isPriority = original.isPriority
         next.recurrence = original.recurrence
+        next.colorLabel = original.colorLabel
         next.requestedByFriendID = original.requestedByFriendID
         next.requestedByDisplayName = original.requestedByDisplayName
         if let base = original.reminderAt,
@@ -218,45 +219,6 @@ final class AppStateStore {
         state.agentMemories[idx].deleted = false
     }
 
-    // MARK: - Agent Activity Log
-
-    func recordAgentActivity(_ entry: AgentActivityEntry) {
-        state.agentActivity.append(entry)
-    }
-
-    func agentActivity(forBatch batchID: UUID) -> [AgentActivityEntry] {
-        state.agentActivity
-            .filter { $0.batchID == batchID }
-            .sorted { $0.timestamp > $1.timestamp }
-    }
-
-    /// Reverses the side-effect of an agent activity entry and marks it `undone`.
-    /// Idempotent — calling on an already-undone entry is a no-op.
-    func undoAgentActivity(_ entryID: UUID) {
-        guard let idx = state.agentActivity.firstIndex(where: { $0.id == entryID }) else { return }
-        guard !state.agentActivity[idx].undone else { return }
-        switch state.agentActivity[idx].kind {
-        case .itemCreated(let itemID):
-            deleteItem(itemID)
-        case .itemMarkedDone(let itemID, let priorStatus):
-            setItemStatus(itemID, status: priorStatus)
-        case .itemDeleted(let itemID):
-            restoreItem(itemID)
-        case .noteCreated(let noteID):
-            deleteNote(noteID)
-        case .memoryRecorded(let memoryID):
-            deleteAgentMemory(memoryID)
-        }
-        state.agentActivity[idx].undone = true
-    }
-
-    func undoAgentActivityBatch(_ batchID: UUID) {
-        let ids = state.agentActivity
-            .filter { $0.batchID == batchID && !$0.undone }
-            .map(\.id)
-        for id in ids { undoAgentActivity(id) }
-    }
-
     // MARK: - Settings
 
     func updateSettings(_ settings: Settings) {
@@ -272,31 +234,5 @@ final class AppStateStore {
         state.settings = preserved
         Persistence.save(state)
         SpotlightIndexer.clearAll()
-    }
-
-    // MARK: - Derived views
-
-    var activeItems: [Item] {
-        state.items.filter { !$0.deleted && $0.status == .pending }
-    }
-
-    var completedItems: [Item] {
-        state.items
-            .filter { !$0.deleted && $0.status == .done }
-            .sorted { $0.updatedAt > $1.updatedAt }
-    }
-
-    func clearCompletedItems() {
-        for idx in state.items.indices where !state.items[idx].deleted && state.items[idx].status == .done {
-            state.items[idx].deleted = true
-        }
-    }
-
-    var activeNotes: [Note] {
-        state.notes.filter { !$0.deleted }
-    }
-
-    var activeMemories: [AgentMemory] {
-        state.agentMemories.filter { !$0.deleted }
     }
 }

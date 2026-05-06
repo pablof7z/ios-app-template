@@ -15,6 +15,7 @@ struct ItemEditSheet: View {
     @State private var details: String = ""
     @State private var isPriority: Bool = false
     @State private var recurrence: Recurrence = .none
+    @State private var colorLabel: ItemColor? = nil
     @State private var dueDateEnabled: Bool = false
     @State private var dueDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var reminderEnabled: Bool = false
@@ -56,6 +57,7 @@ struct ItemEditSheet: View {
             details = item.details
             isPriority = item.isPriority
             recurrence = item.recurrence
+            colorLabel = item.colorLabel
             dueDateEnabled = item.dueDate != nil
             dueDate = item.dueDate ?? Calendar.current.startOfDay(for: Date())
             reminderEnabled = item.reminderAt != nil
@@ -71,6 +73,7 @@ struct ItemEditSheet: View {
             titleField
             detailsField
             priorityRow
+            ItemColorPickerRow(selection: $colorLabel)
             recurrenceRow
             dueDateRow
             reminderRow
@@ -228,11 +231,13 @@ struct ItemEditSheet: View {
         let detailsChanged = details != item.details
         let priorityChanged = isPriority != item.isPriority
         let recurrenceChanged = recurrence != item.recurrence
+        let colorLabelChanged = colorLabel != item.colorLabel
         let dueDateChanged = dueDateEnabled != (item.dueDate != nil)
             || (dueDateEnabled && !Calendar.current.isDate(dueDate, inSameDayAs: item.dueDate ?? .distantPast))
         let reminderChanged = reminderEnabled != (item.reminderAt != nil)
             || (reminderEnabled && reminderDate != item.reminderAt)
-        return titleChanged || detailsChanged || priorityChanged || recurrenceChanged || dueDateChanged || reminderChanged
+        return titleChanged || detailsChanged || priorityChanged || recurrenceChanged
+            || colorLabelChanged || dueDateChanged || reminderChanged
     }
 
     private func save() async {
@@ -244,6 +249,7 @@ struct ItemEditSheet: View {
         updated.details = details
         updated.isPriority = isPriority
         updated.recurrence = recurrence
+        updated.colorLabel = colorLabel
 
         // Handle due date
         updated.dueDate = dueDateEnabled ? Calendar.current.startOfDay(for: dueDate) : nil
@@ -281,8 +287,7 @@ struct ItemEditSheet: View {
     }
 }
 
-// MARK: - Zoom Transition Helper
-
+// MARK: - Zoom transition helper
 private extension View {
     @ViewBuilder
     func applyZoomTransition(sourceID: UUID?, namespace: Namespace.ID?) -> some View {

@@ -1,4 +1,37 @@
 import Foundation
+import SwiftUI
+
+// MARK: - Item Color Label
+
+/// A semantic color tag the user can pin to an item for visual grouping.
+/// Stored as a stable raw string so persisted data survives future case additions.
+enum ItemColor: String, Codable, CaseIterable, Hashable, Sendable {
+    case red, orange, yellow, green, blue, purple
+
+    /// Localized display name shown in the picker.
+    var label: String {
+        switch self {
+        case .red:    return "Red"
+        case .orange: return "Orange"
+        case .yellow: return "Yellow"
+        case .green:  return "Green"
+        case .blue:   return "Blue"
+        case .purple: return "Purple"
+        }
+    }
+
+    /// SwiftUI color for the color dot and row accent.
+    var swiftUIColor: Color {
+        switch self {
+        case .red:    return .red
+        case .orange: return .orange
+        case .yellow: return .yellow
+        case .green:  return .green
+        case .blue:   return .blue
+        case .purple: return .purple
+        }
+    }
+}
 
 // MARK: - Anchor
 // Polymorphic reference target — links notes/items to their context.
@@ -91,6 +124,8 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     /// Optional hard deadline (day-granular). Shown on ItemRow in amber when due today,
     /// red when overdue. Distinct from `reminderAt` which is a notification trigger.
     var dueDate: Date?
+    /// Optional color tag for visual grouping. Rendered as a colored dot in ItemRow.
+    var colorLabel: ItemColor?
 
     init(title: String, source: ItemSource = .manual) {
         self.id = UUID()
@@ -104,12 +139,13 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         self.isPriority = false
         self.recurrence = .none
         self.dueDate = nil
+        self.colorLabel = nil
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, title, details, status, source, createdAt, updatedAt, deleted
         case requestedByFriendID, requestedByDisplayName
-        case reminderAt, isPriority, recurrence, dueDate
+        case reminderAt, isPriority, recurrence, dueDate, colorLabel
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding
@@ -130,6 +166,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         isPriority = try c.decodeIfPresent(Bool.self, forKey: .isPriority) ?? false
         recurrence = try c.decodeIfPresent(Recurrence.self, forKey: .recurrence) ?? .none
         dueDate = try c.decodeIfPresent(Date.self, forKey: .dueDate)
+        colorLabel = try c.decodeIfPresent(ItemColor.self, forKey: .colorLabel)
     }
 }
 

@@ -8,10 +8,18 @@ struct ItemRow: View {
     private enum Layout {
         /// Point size of the checkmark circle icon.
         static let checkmarkSize: CGFloat = 22
+        /// Diameter of the color label dot shown at the leading edge.
+        static let colorDotSize: CGFloat = 8
     }
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
+            if let color = item.colorLabel {
+                Circle()
+                    .fill(color.swiftUIColor)
+                    .frame(width: Layout.colorDotSize, height: Layout.colorDotSize)
+                    .accessibilityLabel("\(color.label) label")
+            }
             Image(systemName: "checkmark.circle")
                 .font(.system(size: Layout.checkmarkSize, weight: .regular))
                 .foregroundStyle(.green)

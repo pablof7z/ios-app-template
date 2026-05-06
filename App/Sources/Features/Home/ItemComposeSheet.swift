@@ -13,6 +13,7 @@ struct ItemComposeSheet: View {
     @State private var details: String = ""
     @State private var isPriority: Bool = false
     @State private var recurrence: Recurrence = .none
+    @State private var colorLabel: ItemColor? = nil
     @State private var dueDateEnabled: Bool = false
     @State private var dueDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var reminderDate: Date = Date().addingTimeInterval(ItemSheetLayout.defaultReminderOffset)
@@ -57,6 +58,7 @@ struct ItemComposeSheet: View {
             titleField
             detailsField
             priorityRow
+            ItemColorPickerRow(selection: $colorLabel)
             recurrenceRow
             dueDateRow
             reminderRow
@@ -217,11 +219,12 @@ struct ItemComposeSheet: View {
 
         var item = store.addItem(title: trimmed, source: .manual)
         let trimmedDetails = details.trimmingCharacters(in: .whitespacesAndNewlines)
-        if isPriority || !trimmedDetails.isEmpty || recurrence != .none || dueDateEnabled {
+        if isPriority || !trimmedDetails.isEmpty || recurrence != .none || dueDateEnabled || colorLabel != nil {
             item.isPriority = isPriority
             item.details = trimmedDetails
             item.recurrence = recurrence
             item.dueDate = dueDateEnabled ? Calendar.current.startOfDay(for: dueDate) : nil
+            item.colorLabel = colorLabel
             store.updateItem(item)
         }
 
