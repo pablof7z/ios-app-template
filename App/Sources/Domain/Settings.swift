@@ -41,6 +41,7 @@ struct Settings: Codable, Hashable, Sendable {
     var elevenLabsSTTModel: String = Defaults.elevenLabsSTTModel
     var elevenLabsTTSModel: String = Defaults.elevenLabsTTSModel
     var elevenLabsVoiceID: String = ""
+    var elevenLabsVoiceName: String = ""
 
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
@@ -62,7 +63,7 @@ struct Settings: Codable, Hashable, Sendable {
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
-        case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID
+        case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
         case nostrEnabled, nostrRelayURL
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
@@ -85,6 +86,7 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? Defaults.elevenLabsSTTModel
         elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? Defaults.elevenLabsTTSModel
         elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
+        elevenLabsVoiceName = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) ?? ""
         nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
         nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? Defaults.nostrRelayURL
         nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
@@ -115,6 +117,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(elevenLabsSTTModel, forKey: .elevenLabsSTTModel)
         try c.encode(elevenLabsTTSModel, forKey: .elevenLabsTTSModel)
         try c.encode(elevenLabsVoiceID, forKey: .elevenLabsVoiceID)
+        try c.encode(elevenLabsVoiceName, forKey: .elevenLabsVoiceName)
         try c.encode(nostrEnabled, forKey: .nostrEnabled)
         try c.encode(nostrRelayURL, forKey: .nostrRelayURL)
         try c.encode(nostrProfileName, forKey: .nostrProfileName)

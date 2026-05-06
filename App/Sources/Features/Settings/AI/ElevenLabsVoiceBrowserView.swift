@@ -287,6 +287,7 @@ struct ElevenLabsVoiceBrowserView: View {
         var settings = store.state.settings
         guard settings.elevenLabsVoiceID != voice.voiceID else { return }
         settings.elevenLabsVoiceID = voice.voiceID
+        settings.elevenLabsVoiceName = voice.name
         store.updateSettings(settings)
         Haptics.success()
     }

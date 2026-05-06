@@ -175,7 +175,7 @@ struct ElevenLabsSettingsView: View {
                     icon: "waveform.and.mic",
                     tint: AppTheme.Brand.elevenLabsTint,
                     title: "Voice",
-                    value: store.state.settings.elevenLabsVoiceID.isEmpty ? "Not set" : "Selected"
+                    value: voiceDisplayName
                 )
             }
 
@@ -210,6 +210,13 @@ struct ElevenLabsSettingsView: View {
     }
 
     // MARK: - Derived state
+
+    private var voiceDisplayName: String {
+        let id = store.state.settings.elevenLabsVoiceID
+        guard !id.isEmpty else { return "Not set" }
+        let name = store.state.settings.elevenLabsVoiceName
+        return name.isEmpty ? "Selected" : name
+    }
 
     private var connectionState: ElevenLabsConnectionState {
         ElevenLabsConnectionState.derive(
