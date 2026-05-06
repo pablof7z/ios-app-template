@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum HomeLayout {
+    /// Point size of the empty-state hero icon (checkmark circle).
+    static let emptyStateIconSize: CGFloat = 72
+}
+
 struct HomeView: View {
     @Environment(AppStateStore.self) var store
     @Binding var pendingNewItemTitle: String?
@@ -7,7 +14,7 @@ struct HomeView: View {
     @State var showCompose = false
     @State var composeInitialTitle: String = ""
     @State private var completedExpanded: Bool = false
-    @State private var editingItem: Item?
+    @State var editingItem: Item?
     @State private var searchText: String = ""
     @State var completingIDs: Set<UUID> = []
     @State var selectedIDs: Set<UUID> = []
@@ -16,6 +23,7 @@ struct HomeView: View {
     @Environment(\.editMode) var editMode
     @AppStorage(HomeStorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
     @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
+    @AppStorage(HomeStorageKey.todayFilter)  var todayFilterRaw: String = TodayFilter.all.rawValue
 
     private var currentSort: ItemSort {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
@@ -23,6 +31,10 @@ struct HomeView: View {
 
     private var currentSourceFilter: SourceFilter {
         SourceFilter(rawValue: sourceFilterRaw) ?? .all
+    }
+
+    var currentTodayFilter: TodayFilter {
+        TodayFilter(rawValue: todayFilterRaw) ?? .all
     }
 
     private var isSearching: Bool { !searchText.isEmpty }
@@ -53,6 +65,11 @@ struct HomeView: View {
 
     private var filteredActiveItems: [Item] {
         var items = sortedActiveItems
+
+        // Today filter — show only items due or reminding today
+        if currentTodayFilter == .today {
+            items = items.filter { currentTodayFilter.matches($0) }
+        }
 
         // Source filter
         switch currentSourceFilter {
@@ -99,6 +116,7 @@ struct HomeView: View {
         .onChange(of: pendingNewItemTitle) { consumePendingTitle() }
         .onChange(of: sortOrder)        { Haptics.selection() }
         .onChange(of: sourceFilterRaw)  { Haptics.selection() }
+        .onChange(of: todayFilterRaw)   { Haptics.selection() }
         .onChange(of: searchText) { _, new in
             if new.isEmpty { Haptics.light() }
         }
@@ -124,16 +142,19 @@ struct HomeView: View {
         }
         ToolbarItem(placement: .topBarLeading) {
             if !isEditing {
-                Menu {
-                    Picker("Sort by", selection: $sortOrder) {
-                        ForEach(ItemSort.allCases) { sort in
-                            Label(sort.label, systemImage: sort.systemImage)
-                                .tag(sort.rawValue)
+                HStack(spacing: AppTheme.Spacing.sm) {
+                    Menu {
+                        Picker("Sort by", selection: $sortOrder) {
+                            ForEach(ItemSort.allCases) { sort in
+                                Label(sort.label, systemImage: sort.systemImage)
+                                    .tag(sort.rawValue)
+                            }
                         }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .accessibilityLabel("Sort Items")
                     }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .accessibilityLabel("Sort Items")
+                    todayFilterChip
                 }
             }
         }
@@ -150,7 +171,7 @@ struct HomeView: View {
     private var emptyState: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Image(systemName: "checkmark.circle.dashed")
-                .font(.system(size: 72, weight: .light))
+                .font(.system(size: HomeLayout.emptyStateIconSize, weight: .light))
                 .foregroundStyle(.tertiary)
             VStack(spacing: AppTheme.Spacing.xs) {
                 Text("Nothing to do")
@@ -185,6 +206,9 @@ struct HomeView: View {
             }
             if isSearching && filteredActiveItems.isEmpty {
                 ContentUnavailableView.search(text: searchText)
+                    .listRowSeparator(.hidden)
+            } else if currentTodayFilter == .today && filteredActiveItems.isEmpty && !isSearching {
+                todayEmptyState
                     .listRowSeparator(.hidden)
             } else {
                 activeItemsSection
@@ -258,70 +282,4 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func leadingSwipeActions(for item: Item) -> some View {
-        Button {
-            completeItem(item)
-        } label: {
-            Label("Done", systemImage: "checkmark.circle.fill")
-        }
-        .tint(.green)
-    }
-
-    @ViewBuilder
-    private func trailingSwipeActions(for item: Item) -> some View {
-        Button(role: .destructive) {
-            store.deleteItem(item.id)
-            Haptics.medium()
-        } label: {
-            Label("Delete", systemImage: "trash.fill")
-        }
-    }
-
-    @ViewBuilder
-    private func itemContextMenu(for item: Item) -> some View {
-        Button {
-            Haptics.selection()
-            editingItem = item
-        } label: {
-            Label("Edit", systemImage: "pencil")
-        }
-        Button {
-            completeItem(item)
-        } label: {
-            Label("Complete", systemImage: "checkmark.circle")
-        }
-        Button {
-            store.toggleItemPriority(item.id)
-            Haptics.selection()
-        } label: {
-            Label(
-                item.isPriority ? "Unstar" : "Star",
-                systemImage: item.isPriority ? "star.slash" : "star"
-            )
-        }
-        if item.reminderAt != nil {
-            snoozeMenu(for: item)
-        }
-        ShareLink(item: item.shareText) {
-            Label("Share", systemImage: "square.and.arrow.up")
-        }
-        Divider()
-        Button(role: .destructive) {
-            store.deleteItem(item.id)
-            Haptics.medium()
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
-
-    private func snoozeMenu(for item: Item) -> some View {
-        Menu {
-            Button("In 1 hour")     { snoozeItem(item, by: HomeSnooze.oneHour) }
-            Button("In 3 hours")    { snoozeItem(item, by: HomeSnooze.threeHours) }
-            Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
-        } label: {
-            Label("Snooze Reminder", systemImage: "bell.badge.slash")
-        }
-    }
 }

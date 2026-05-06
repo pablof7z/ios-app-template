@@ -15,6 +15,10 @@ private enum AgentIdentityLayout {
     static let cardPadding: CGFloat = 16
     /// Horizontal padding applied to the name and bio fields in the hero section.
     static let heroPadding: CGFloat = 32
+    /// Point size of the initial letter rendered inside the avatar placeholder circle.
+    static let avatarInitialSize: CGFloat = 44
+    /// Point size of the expand-QR icon overlay on the QR tile.
+    static let qrExpandIconSize: CGFloat = 10
 }
 
 struct AgentIdentityView: View {
@@ -128,13 +132,13 @@ struct AgentIdentityView: View {
     private var nameField: some View {
         if nameFocused {
             TextField("Name your agent", text: $settings.nostrProfileName)
-                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .font(AppTheme.Typography.largeTitle)
                 .multilineTextAlignment(.center)
                 .focused($nameFocused)
                 .submitLabel(.done)
         } else {
             Text(settings.nostrProfileName.isEmpty ? "Name your agent" : settings.nostrProfileName)
-                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .font(AppTheme.Typography.largeTitle)
                 .foregroundStyle(settings.nostrProfileName.isEmpty ? .tertiary : .primary)
                 .multilineTextAlignment(.center)
                 .onTapGesture { nameFocused = true }
@@ -185,7 +189,7 @@ struct AgentIdentityView: View {
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
             Text(nameInitial)
-                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .font(.system(size: AgentIdentityLayout.avatarInitialSize, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
         }
     }
@@ -250,7 +254,7 @@ struct AgentIdentityView: View {
 
             Button { showQRFullScreen = true } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: AgentIdentityLayout.qrExpandIconSize, weight: .semibold))
                     .frame(width: 22, height: 22)
             }
             .accessibilityLabel("Expand QR code")
@@ -289,7 +293,7 @@ struct AgentIdentityView: View {
     private var generateKeyCard: some View {
         VStack(spacing: 12) {
             Text("No identity yet")
-                .font(.system(.headline, design: .rounded, weight: .semibold))
+                .font(AppTheme.Typography.headline)
             Text("Generate a key pair to create your Nostr identity.")
                 .font(AppTheme.Typography.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button { generateKeyPair(); Haptics.success() } label: {

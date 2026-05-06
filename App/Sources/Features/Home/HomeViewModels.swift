@@ -49,11 +49,41 @@ enum SourceFilter: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Today Filter
+
+/// Controls whether the list shows all items or only those due / reminding today.
+enum TodayFilter: String, CaseIterable, Identifiable {
+    case all   = "all"
+    case today = "today"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all:   return "All"
+        case .today: return "Today"
+        }
+    }
+
+    /// Returns `true` if `item` passes the filter.
+    func matches(_ item: Item) -> Bool {
+        switch self {
+        case .all: return true
+        case .today:
+            let cal = Calendar.current
+            let dueTodayMatch  = item.dueDate.map  { cal.isDateInToday($0) } ?? false
+            let remTodayMatch  = item.reminderAt.map { cal.isDateInToday($0) } ?? false
+            return dueTodayMatch || remTodayMatch
+        }
+    }
+}
+
 // MARK: - AppStorage keys
 
 enum HomeStorageKey {
     static let itemSort     = "home.itemSort"
     static let sourceFilter = "home.sourceFilter"
+    static let todayFilter  = "home.todayFilter"
 }
 
 // MARK: - Snooze durations
