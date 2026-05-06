@@ -22,6 +22,7 @@ struct DataExportView: View {
     @State private var showShareSheet = false
     @State private var showClearConfirmation = false
     @State private var exportCompletedOnly = false
+    @State private var exportFormat: DataExport.Format = .json
 
     var body: some View {
         ZStack {
@@ -90,6 +91,18 @@ struct DataExportView: View {
 
     private var exportActionSection: some View {
         Section {
+            Picker("Format", selection: $exportFormat) {
+                ForEach(DataExport.Format.allCases, id: \.self) { fmt in
+                    Text(fmt.rawValue).tag(fmt)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: exportFormat) {
+                fileURL = nil
+                fileSize = nil
+                generatedAt = nil
+            }
+
             Toggle(isOn: $exportCompletedOnly) {
                 SettingsRow(
                     icon: "checkmark.circle.fill",
@@ -98,6 +111,7 @@ struct DataExportView: View {
                     subtitle: "Export only items marked as done"
                 )
             }
+
             Button {
                 generate()
             } label: {
@@ -105,12 +119,19 @@ struct DataExportView: View {
                     icon: "square.and.arrow.up",
                     tint: .indigo,
                     title: "Export & Share",
-                    subtitle: "Generates a JSON file and opens the share sheet"
+                    subtitle: exportButtonSubtitle
                 )
             }
             .foregroundStyle(.primary)
         } footer: {
             Text(actionFooterText)
+        }
+    }
+
+    private var exportButtonSubtitle: String {
+        switch exportFormat {
+        case .json: return "Generates a JSON file and opens the share sheet"
+        case .csv:  return "Exports items as a CSV spreadsheet"
         }
     }
 
@@ -136,14 +157,23 @@ struct DataExportView: View {
                 icon: "doc.text",
                 tint: .gray,
                 title: "Format",
-                value: "JSON"
+                value: exportFormat.rawValue
             )
-            SettingsRow(
-                icon: "number",
-                tint: .gray,
-                title: "Schema",
-                value: "v\(DataExport.currentSchemaVersion)"
-            )
+            if exportFormat == .csv {
+                SettingsRow(
+                    icon: "checklist",
+                    tint: .gray,
+                    title: "Contents",
+                    value: "Items only"
+                )
+            } else {
+                SettingsRow(
+                    icon: "number",
+                    tint: .gray,
+                    title: "Schema",
+                    value: "v\(DataExport.currentSchemaVersion)"
+                )
+            }
         }
     }
 
@@ -173,7 +203,13 @@ struct DataExportView: View {
             formatter.timeStyle = .medium
             return "\(base) · \(formatBytes(size)) · Last exported \(formatter.string(from: generatedAt))"
         }
-        return "\(base) · Bundles items, notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
+        switch exportFormat {
+        case .json:
+            return "\(base) · Bundles items, notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
+        case .csv:
+            let itemCount = stats.items
+            return "\(itemCount) item\(itemCount == 1 ? "" : "s") · Exports item list as a spreadsheet-compatible CSV file."
+        }
     }
 
     // MARK: - Actions
@@ -185,7 +221,13 @@ struct DataExportView: View {
             if exportCompletedOnly {
                 exportState.items = exportState.items.filter { $0.status == .done }
             }
-            let url = try DataExport.writeExport(of: exportState, now: now)
+            let url: URL
+            switch exportFormat {
+            case .json:
+                url = try DataExport.writeExport(of: exportState, now: now)
+            case .csv:
+                url = try DataExport.writeCSVExport(of: exportState, now: now)
+            }
             let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
             fileURL = url
             fileSize = (attrs?[.size] as? NSNumber)?.intValue

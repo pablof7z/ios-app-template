@@ -96,6 +96,63 @@ enum DataExport {
         return try writeTemporaryFile(data, filename: filename)
     }
 
+    // MARK: - Format
+
+    /// Supported export file formats.
+    enum Format: String, CaseIterable, Sendable {
+        case json = "JSON"
+        case csv  = "CSV"
+
+        var fileExtension: String {
+            switch self {
+            case .json: return "json"
+            case .csv:  return "csv"
+            }
+        }
+    }
+
+    // MARK: - CSV encoding (items only)
+
+    /// Produces a UTF-8 CSV string with one row per non-deleted item.
+    /// Columns: id, title, status, source, isPriority, createdAt, updatedAt, reminderAt
+    static func encodeItemsCSV(from state: AppState) -> Data {
+        let header = "id,title,status,source,isPriority,createdAt,updatedAt,reminderAt"
+        var rows: [String] = [header]
+        let iso = ISO8601DateFormatter()
+        for item in state.items where !item.deleted {
+            let cols: [String] = [
+                item.id.uuidString,
+                csvEscaped(item.title),
+                item.status.rawValue,
+                item.source.rawValue,
+                item.isPriority ? "true" : "false",
+                iso.string(from: item.createdAt),
+                iso.string(from: item.updatedAt),
+                item.reminderAt.map { iso.string(from: $0) } ?? "",
+            ]
+            rows.append(cols.joined(separator: ","))
+        }
+        // Force-unwrap is safe: UTF-8 encoding never fails on a Swift String.
+        return rows.joined(separator: "\n").data(using: .utf8)!
+    }
+
+    private static func csvEscaped(_ value: String) -> String {
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        return "\"\(escaped)\""
+    }
+
+    /// Suggested CSV filename, e.g. `AppTemplate-Items-2026-05-05-1430.csv`.
+    static func suggestedCSVFilename(at date: Date = Date()) -> String {
+        "AppTemplate-Items-\(filenameDateFormatter.string(from: date)).csv"
+    }
+
+    /// Writes a CSV of items to a temp file and returns its URL.
+    static func writeCSVExport(of state: AppState, now: Date = Date()) throws -> URL {
+        let data = encodeItemsCSV(from: state)
+        let filename = suggestedCSVFilename(at: now)
+        return try writeTemporaryFile(data, filename: filename)
+    }
+
     // MARK: - Stats (UI helpers)
 
     /// Counts of non-deleted records in `state`, used for the export preview.
