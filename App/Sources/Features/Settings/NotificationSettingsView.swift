@@ -93,8 +93,18 @@ struct NotificationSettingsView: View {
                     icon: "bell",
                     tint: .secondary,
                     title: "Not yet requested",
-                    subtitle: "Permission is asked when you set a reminder"
+                    subtitle: "Grant access so the app can deliver reminders"
                 )
+                AsyncButton {
+                    await requestPermission()
+                } label: {
+                    SettingsRow(
+                        icon: "bell.badge",
+                        tint: .orange,
+                        title: "Request Permission"
+                    )
+                }
+                .foregroundStyle(.primary)
             @unknown default:
                 EmptyView()
             }
@@ -172,6 +182,18 @@ struct NotificationSettingsView: View {
     }
 
     // MARK: - Data
+
+    private func requestPermission() async {
+        let center = UNUserNotificationCenter.current()
+        do {
+            let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
+            authStatus = granted ? .authorized : .denied
+            Haptics.selection()
+        } catch {
+            // Authorization errors are non-fatal; reload will surface the real status.
+        }
+        await reload()
+    }
 
     private func reload() async {
         isLoading = true
