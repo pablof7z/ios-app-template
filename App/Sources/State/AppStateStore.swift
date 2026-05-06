@@ -135,6 +135,22 @@ final class AppStateStore {
         NotificationService.cancel(for: id)
     }
 
+    /// Persists a new manual ordering for the items currently visible in the
+    /// drag-enabled "main" section.
+    ///
+    /// `visibleIDs` must be the ordered IDs of the items shown in the draggable
+    /// `ForEach` *after* the move has been applied locally. All other IDs that
+    /// already exist in `manualItemOrder` but are not in `visibleIDs` (e.g. items
+    /// currently filtered out) are preserved at their relative positions so that
+    /// switching filters doesn't reset the ordering of hidden items.
+    func reorderItems(visibleIDs: [UUID]) {
+        // Build a set for O(1) membership tests.
+        let visibleSet = Set(visibleIDs)
+        // Preserve relative order of any IDs not currently in the visible slice.
+        let preserved = state.manualItemOrder.filter { !visibleSet.contains($0) }
+        state.manualItemOrder = visibleIDs + preserved
+    }
+
     /// Clears the stored reminder date on an item without changing its status.
     /// Call this after cancelling a pending notification outside the normal edit flow.
     func clearReminderDate(for id: UUID) {

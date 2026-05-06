@@ -12,6 +12,10 @@ struct AppState: Codable, Sendable {
     var nostrBlockedPubkeys: Set<String> = []
     var nostrPendingApprovals: [NostrPendingApproval] = []
     var agentActivity: [AgentActivityEntry] = []
+    /// Persists user-defined drag-to-reorder sequence for active items.
+    /// Only honoured when sort is "Newest First" with no active filters.
+    /// Stale UUIDs (completed / deleted items) are silently ignored at read time.
+    var manualItemOrder: [UUID] = []
 
     init() {}
 
@@ -19,6 +23,7 @@ struct AppState: Codable, Sendable {
         case items, notes, friends, agentMemories, settings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case agentActivity
+        case manualItemOrder
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -34,5 +39,6 @@ struct AppState: Codable, Sendable {
         nostrBlockedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrBlockedPubkeys) ?? []
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
+        manualItemOrder = try c.decodeIfPresent([UUID].self, forKey: .manualItemOrder) ?? []
     }
 }

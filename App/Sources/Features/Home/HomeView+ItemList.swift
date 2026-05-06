@@ -113,8 +113,24 @@ extension HomeView {
                 ForEach(filteredActiveItems) { item in
                     itemRow(for: item)
                 }
+                .onMove(perform: isManualOrderActive ? { source, dest in
+                    moveItems(from: source, to: dest)
+                } : nil)
             }
         }
+    }
+
+    // MARK: - Drag-to-reorder handler
+
+    /// Applies the move indicated by SwiftUI's `onMove` to the manual item order.
+    /// The closure receives indices into `filteredActiveItems`, which is the array
+    /// bound to the plain `ForEach`. We apply the move locally, then persist the
+    /// resulting ID sequence via `reorderItems(visibleIDs:)`.
+    func moveItems(from source: IndexSet, to destination: Int) {
+        var reordered = filteredActiveItems
+        reordered.move(fromOffsets: source, toOffset: destination)
+        Haptics.selection()
+        store.reorderItems(visibleIDs: reordered.map(\.id))
     }
 
     // MARK: - Individual item row

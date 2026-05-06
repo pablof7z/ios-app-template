@@ -47,6 +47,22 @@ struct HomeView: View {
     var sortedActiveItems: [Item] {
         switch currentSort {
         case .dateAddedDesc:
+            // When manual order is active, respect the user-defined sequence.
+            // Items not yet in manualItemOrder (e.g. newly added) fall through to
+            // createdAt-desc as a tiebreaker, which puts them at the top naturally.
+            if isManualOrderActive {
+                let order = store.state.manualItemOrder
+                let positionOf: (Item) -> Int = { item in
+                    order.firstIndex(of: item.id) ?? Int.max
+                }
+                return store.activeItems.sorted { lhs, rhs in
+                    let lPos = positionOf(lhs)
+                    let rPos = positionOf(rhs)
+                    if lPos != rPos { return lPos < rPos }
+                    // Tiebreaker for items not yet in the order array.
+                    return lhs.createdAt > rhs.createdAt
+                }
+            }
             return store.activeItems.sorted {
                 if $0.isPriority != $1.isPriority { return $0.isPriority }
                 return $0.createdAt > $1.createdAt
@@ -66,6 +82,17 @@ struct HomeView: View {
                 }
             }
         }
+    }
+
+    /// Drag-to-reorder is only active when there are no competing sort signals
+    /// that would fight the persisted manual order. All filters must be clear
+    /// and the sort must be "Newest First" (the natural / default mode).
+    var isManualOrderActive: Bool {
+        currentSort == .dateAddedDesc
+            && !isSearching
+            && currentSourceFilter == .all
+            && currentTodayFilter == .all
+            && currentColorFilter == .all
     }
 
     var filteredActiveItems: [Item] {
