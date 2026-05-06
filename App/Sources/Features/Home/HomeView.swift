@@ -46,6 +46,14 @@ private enum SourceFilter: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Snooze durations
+
+private enum Snooze {
+    static let oneHour: TimeInterval   = 3_600
+    static let threeHours: TimeInterval = 10_800
+    static let tomorrowHour: Int       = 9
+}
+
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
     @Binding var pendingNewItemTitle: String?
@@ -326,8 +334,8 @@ struct HomeView: View {
 
     private func snoozeMenu(for item: Item) -> some View {
         Menu {
-            Button("In 1 hour")     { snoozeItem(item, by: 3600) }
-            Button("In 3 hours")    { snoozeItem(item, by: 10800) }
+            Button("In 1 hour")     { snoozeItem(item, by: Snooze.oneHour) }
+            Button("In 3 hours")    { snoozeItem(item, by: Snooze.threeHours) }
             Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
         } label: {
             Label("Snooze Reminder", systemImage: "bell.badge.slash")
@@ -366,7 +374,7 @@ struct HomeView: View {
     private func snoozeItemTomorrow(_ item: Item) {
         let cal = Calendar.current
         guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()),
-              let date = cal.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)
+              let date = cal.date(bySettingHour: Snooze.tomorrowHour, minute: 0, second: 0, of: tomorrow)
         else { return }
         applySnooze(to: item, date: date)
     }
