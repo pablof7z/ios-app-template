@@ -231,6 +231,7 @@ struct HomeView: View {
         }
         .listStyle(.plain)
         .animation(AppTheme.Animation.spring, value: filteredActiveItems.count)
+        .animation(AppTheme.Animation.spring, value: pinnedItems.count)
         .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
     }
 
@@ -267,6 +268,19 @@ struct HomeView: View {
             } header: {
                 if !overdueItems.isEmpty {
                     Text("Upcoming")
+                        .font(AppTheme.Typography.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } else if showPinnedSection {
+            pinnedSection
+            Section {
+                ForEach(nonPinnedItems) { item in
+                    itemRow(for: item)
+                }
+            } header: {
+                if !nonPinnedItems.isEmpty {
+                    Text("Other")
                         .font(AppTheme.Typography.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
