@@ -159,6 +159,7 @@ struct HomeView: View {
             if new.isEmpty { Haptics.light() }
         }
         .onChange(of: isEditing) { _, editing in
+            if editing { Haptics.light() }
             if !editing { selectedIDs = [] }
         }
     }

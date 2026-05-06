@@ -4,13 +4,6 @@ import SwiftUI
 
 extension HomeView {
 
-    // MARK: - Helpers
-
-    /// Items completed so far today — drives the NextActionHero progress ring.
-    var completedTodayCount: Int {
-        store.completedItems.filter { Calendar.current.isDateInToday($0.updatedAt) }.count
-    }
-
     // MARK: - List container
 
     var itemList: some View {
@@ -22,7 +15,7 @@ extension HomeView {
                         itemCount: sortedActiveItems.count,
                         namespace: rowNamespace,
                         onTap: { editingItem = top },
-                        completedToday: completedTodayCount
+                        completedToday: store.completedTodayCount
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
