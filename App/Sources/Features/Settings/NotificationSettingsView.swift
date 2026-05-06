@@ -12,6 +12,25 @@ import UserNotifications
 // are shown. Each request is matched to its live Item so we can show the
 // item title rather than the raw notification body.
 
+// MARK: - Layout constants
+
+private enum Layout {
+    /// Identifier prefix used by NotificationService to namespace reminder requests.
+    static let reminderIDPrefix = "reminder:"
+    /// Side length of the icon tile shown in each reminder row.
+    static let iconTileSize: CGFloat = 29
+    /// Corner radius of the icon tile shown in each reminder row.
+    static let iconTileCorner: CGFloat = 7
+    /// Point size of the bell icon inside the tile.
+    static let iconSize: CGFloat = 14
+    /// Horizontal spacing between the icon tile and the text in a reminder row.
+    static let rowSpacing: CGFloat = 12
+    /// Vertical spacing between the title and subtitle text.
+    static let textSpacing: CGFloat = 2
+    /// Minimum width of the trailing spacer in a reminder row.
+    static let trailingSpacerMin: CGFloat = 4
+}
+
 struct NotificationSettingsView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.openURL) private var openURL
@@ -123,16 +142,16 @@ struct NotificationSettingsView: View {
     // MARK: - Row
 
     private func reminderRow(_ reminder: PendingReminder) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Layout.rowSpacing) {
             ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: Layout.iconTileCorner, style: .continuous)
                     .fill(Color.orange)
-                    .frame(width: 29, height: 29)
+                    .frame(width: Layout.iconTileSize, height: Layout.iconTileSize)
                 Image(systemName: "bell.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: Layout.iconSize, weight: .semibold))
                     .foregroundStyle(.white)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Layout.textSpacing) {
                 Text(reminder.title)
                     .font(.body)
                     .lineLimit(1)
@@ -141,7 +160,7 @@ struct NotificationSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 4)
+            Spacer(minLength: Layout.trailingSpacerMin)
             if reminder.fireDate > Date() {
                 Text(reminder.fireDate, style: .relative)
                     .font(.caption)
@@ -162,18 +181,17 @@ struct NotificationSettingsView: View {
 
         authStatus = settings.authorizationStatus
 
-        let reminderPrefix = "reminder:"
         let items = store.state.items
 
         pendingReminders = requests
-            .filter { $0.identifier.hasPrefix(reminderPrefix) }
+            .filter { $0.identifier.hasPrefix(Layout.reminderIDPrefix) }
             .compactMap { request -> PendingReminder? in
                 guard
                     let trigger = request.trigger as? UNCalendarNotificationTrigger,
                     let fireDate = trigger.nextTriggerDate()
                 else { return nil }
 
-                let uuidString = String(request.identifier.dropFirst(reminderPrefix.count))
+                let uuidString = String(request.identifier.dropFirst(Layout.reminderIDPrefix.count))
                 let title: String
                 if let uuid = UUID(uuidString: uuidString),
                    let item = items.first(where: { $0.id == uuid }) {

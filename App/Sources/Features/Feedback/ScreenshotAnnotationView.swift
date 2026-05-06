@@ -17,10 +17,39 @@ struct ScreenshotAnnotationView: View {
     @State private var strokes: [Stroke] = []
     @State private var currentStroke: Stroke?
     @State private var strokeColor: Color = .red
-    @State private var strokeWidth: CGFloat = 3.0
+    @State private var strokeWidth: CGFloat = Layout.defaultStrokeWidth
     @State private var canvasWidth: CGFloat = 0
 
     private let palette: [Color] = [.red, .orange, .blue, .yellow, .white]
+
+    private enum Layout {
+        /// Default pen width when the view opens.
+        static let defaultStrokeWidth: CGFloat = 3.0
+        /// Stroke width slider range.
+        static let strokeWidthRange: ClosedRange<CGFloat> = 1.5...8.0
+        /// Diameter of each color-swatch circle in the toolbar.
+        static let swatchSize: CGFloat = 26
+        /// Line width of the selection ring drawn around the active swatch.
+        static let swatchSelectionRing: CGFloat = 2
+        /// Scale factor applied to the selected swatch.
+        static let swatchSelectedScale: CGFloat = 1.18
+        /// Fixed width of the width-picker slider.
+        static let sliderWidth: CGFloat = 72
+        /// Horizontal spacing between toolbar items.
+        static let toolbarSpacing: CGFloat = 12
+        /// Horizontal padding inside the toolbar pill.
+        static let toolbarPaddingH: CGFloat = 16
+        /// Vertical padding inside the toolbar pill.
+        static let toolbarPaddingV: CGFloat = 10
+        /// Extra bottom padding below the toolbar pill.
+        static let toolbarPaddingBottom: CGFloat = 8
+        /// Width of the thin separator lines in the toolbar.
+        static let separatorWidth: CGFloat = 1
+        /// Height of the thin separator lines in the toolbar.
+        static let separatorHeight: CGFloat = 24
+        /// Horizontal gap between the pencil-tip icon and the slider.
+        static let sliderIconSpacing: CGFloat = 6
+    }
 
     var body: some View {
         NavigationStack {
@@ -92,8 +121,8 @@ struct ScreenshotAnnotationView: View {
 
     @ViewBuilder
     private var drawingToolbar: some View {
-        GlassEffectContainer(spacing: 12) {
-            HStack(spacing: 12) {
+        GlassEffectContainer(spacing: Layout.toolbarSpacing) {
+            HStack(spacing: Layout.toolbarSpacing) {
                 // Color palette
                 ForEach(palette, id: \.self) { color in
                     Button {
@@ -103,36 +132,36 @@ struct ScreenshotAnnotationView: View {
                         ZStack {
                             Circle()
                                 .fill(color)
-                                .frame(width: 26, height: 26)
+                                .frame(width: Layout.swatchSize, height: Layout.swatchSize)
                             if strokeColor == color {
                                 Circle()
-                                    .strokeBorder(.white, lineWidth: 2)
-                                    .frame(width: 26, height: 26)
+                                    .strokeBorder(.white, lineWidth: Layout.swatchSelectionRing)
+                                    .frame(width: Layout.swatchSize, height: Layout.swatchSize)
                             }
                         }
                     }
                     .buttonStyle(.plain)
-                    .scaleEffect(strokeColor == color ? 1.18 : 1.0)
+                    .scaleEffect(strokeColor == color ? Layout.swatchSelectedScale : 1.0)
                     .animation(AppTheme.Animation.springFast, value: strokeColor == color)
                 }
 
                 Rectangle()
                     .fill(.separator)
-                    .frame(width: 1, height: 24)
+                    .frame(width: Layout.separatorWidth, height: Layout.separatorHeight)
 
                 // Width slider
-                HStack(spacing: 6) {
+                HStack(spacing: Layout.sliderIconSpacing) {
                     Image(systemName: "pencil.tip")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Slider(value: $strokeWidth, in: 1.5...8.0)
-                        .frame(width: 72)
+                    Slider(value: $strokeWidth, in: Layout.strokeWidthRange)
+                        .frame(width: Layout.sliderWidth)
                         .tint(strokeColor)
                 }
 
                 Rectangle()
                     .fill(.separator)
-                    .frame(width: 1, height: 24)
+                    .frame(width: Layout.separatorWidth, height: Layout.separatorHeight)
 
                 // Undo
                 Button {
@@ -158,9 +187,9 @@ struct ScreenshotAnnotationView: View {
                 .buttonStyle(.glass)
                 .disabled(strokes.isEmpty && currentStroke == nil)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .padding(.bottom, 8)
+            .padding(.horizontal, Layout.toolbarPaddingH)
+            .padding(.vertical, Layout.toolbarPaddingV)
+            .padding(.bottom, Layout.toolbarPaddingBottom)
         }
     }
 

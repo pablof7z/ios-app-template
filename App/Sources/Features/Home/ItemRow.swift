@@ -5,10 +5,15 @@ import SwiftUI
 struct ItemRow: View {
     let item: Item
 
+    private enum Layout {
+        /// Point size of the checkmark circle icon.
+        static let checkmarkSize: CGFloat = 22
+    }
+
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 22, weight: .regular))
+                .font(.system(size: Layout.checkmarkSize, weight: .regular))
                 .foregroundStyle(.green)
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text(item.title)
