@@ -66,6 +66,8 @@ struct CompletionCelebrationView: View {
         static let burstRadius: CGFloat   = 72
         /// Upward offset so burst appears in the upper-middle of the list.
         static let verticalOffset: CGFloat = -80
+        /// Point size of each sparkle particle glyph.
+        static let sparkleSize: CGFloat = 14
     }
 
     var body: some View {
@@ -105,7 +107,7 @@ struct CompletionCelebrationView: View {
         let opacity = Double(1 - state.particleProgress * 0.6)
 
         return Image(systemName: "sparkle")
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: Layout.sparkleSize, weight: .bold))
             .foregroundStyle(palette[index % palette.count])
             .scaleEffect(scale)
             .opacity(opacity)

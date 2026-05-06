@@ -10,8 +10,10 @@ struct HomeView: View {
     @State private var editingItem: Item?
     @State private var searchText: String = ""
     @State var completingIDs: Set<UUID> = []
+    @State var selectedIDs: Set<UUID> = []
     @StateObject var celebration = CompletionCelebrationState()
     @Namespace private var rowNamespace
+    @Environment(\.editMode) var editMode
     @AppStorage(HomeStorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
     @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
 
@@ -62,6 +64,8 @@ struct HomeView: View {
         !store.activeItems.isEmpty || !store.completedItems.isEmpty
     }
 
+    var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
+
     var body: some View {
         Group {
             if !hasAnyItems {
@@ -74,6 +78,7 @@ struct HomeView: View {
         .navigationTitle("Home")
         .searchable(text: $searchText, prompt: "Search items")
         .toolbar { homeToolbar }
+        .toolbar { batchToolbar }
         .sheet(isPresented: $showCompose) {
             ItemComposeSheet(initialTitle: composeInitialTitle)
         }
@@ -87,32 +92,45 @@ struct HomeView: View {
         .onChange(of: searchText) { _, new in
             if new.isEmpty { Haptics.light() }
         }
+        .onChange(of: isEditing) { _, editing in
+            if !editing { selectedIDs = [] }
+        }
     }
 
     @ToolbarContentBuilder
     private var homeToolbar: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                composeInitialTitle = ""
-                showCompose = true
-            } label: {
-                Image(systemName: "plus")
-                    .fontWeight(.semibold)
+            if !isEditing {
+                Button {
+                    composeInitialTitle = ""
+                    showCompose = true
+                } label: {
+                    Image(systemName: "plus")
+                        .fontWeight(.semibold)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+                .accessibilityLabel("Add Item")
             }
-            .keyboardShortcut("n", modifiers: .command)
-            .accessibilityLabel("Add Item")
         }
         ToolbarItem(placement: .topBarLeading) {
-            Menu {
-                Picker("Sort by", selection: $sortOrder) {
-                    ForEach(ItemSort.allCases) { sort in
-                        Label(sort.label, systemImage: sort.systemImage)
-                            .tag(sort.rawValue)
+            if !isEditing {
+                Menu {
+                    Picker("Sort by", selection: $sortOrder) {
+                        ForEach(ItemSort.allCases) { sort in
+                            Label(sort.label, systemImage: sort.systemImage)
+                                .tag(sort.rawValue)
+                        }
                     }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .accessibilityLabel("Sort Items")
                 }
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .accessibilityLabel("Sort Items")
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            if hasAnyItems && !store.activeItems.isEmpty {
+                EditButton()
+                    .accessibilityLabel("Select Items")
             }
         }
     }
@@ -138,8 +156,8 @@ struct HomeView: View {
     // MARK: - Item List
 
     private var itemList: some View {
-        List {
-            if !isSearching, let top = sortedActiveItems.first {
+        List(selection: $selectedIDs) {
+            if !isSearching && !isEditing, let top = sortedActiveItems.first {
                 Section {
                     NextActionHero(
                         item: top,
@@ -152,14 +170,16 @@ struct HomeView: View {
                     .listRowInsets(listRowInsets)
                 }
             }
-            sourceFilterPicker
+            if !isEditing {
+                sourceFilterPicker
+            }
             if isSearching && filteredActiveItems.isEmpty {
                 ContentUnavailableView.search(text: searchText)
                     .listRowSeparator(.hidden)
             } else {
                 activeItemsSection
             }
-            if !isSearching && !store.completedItems.isEmpty {
+            if !isSearching && !isEditing && !store.completedItems.isEmpty {
                 CompletedItemsSection(isExpanded: $completedExpanded)
             }
         }
@@ -202,6 +222,7 @@ struct HomeView: View {
     private func itemRow(for item: Item) -> some View {
         let isCompleting = completingIDs.contains(item.id)
         return Button {
+            guard !isEditing else { return }
             Haptics.selection()
             editingItem = item
         } label: {
@@ -209,20 +230,21 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.title)
-        .accessibilityHint("Double-tap to edit")
+        .accessibilityHint(isEditing ? "Double-tap to select" : "Double-tap to edit")
         .matchedTransitionSource(id: item.id, in: rowNamespace)
         .listRowInsets(listRowInsets)
         .scaleEffect(isCompleting ? 0.92 : 1.0)
         .opacity(isCompleting ? 0 : 1)
+        .tag(item.id)
         .animation(AppTheme.Animation.spring, value: isCompleting)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            leadingSwipeActions(for: item)
+            if !isEditing { leadingSwipeActions(for: item) }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            trailingSwipeActions(for: item)
+            if !isEditing { trailingSwipeActions(for: item) }
         }
         .contextMenu {
-            itemContextMenu(for: item)
+            if !isEditing { itemContextMenu(for: item) }
         }
     }
 

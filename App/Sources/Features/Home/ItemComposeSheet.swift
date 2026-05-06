@@ -5,6 +5,8 @@ import SwiftUI
 private enum ComposeDefaults {
     /// Default offset applied to the current time when the reminder picker first appears.
     static let reminderOffset: TimeInterval = 3_600
+    /// Point size of the row icon in the recurrence and details rows.
+    static let rowIconSize: CGFloat = 16
 }
 
 struct ItemComposeSheet: View {
@@ -89,7 +91,7 @@ struct ItemComposeSheet: View {
     private var detailsField: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             Image(systemName: "text.alignleft")
-                .font(.system(size: 16, weight: .regular))
+                .font(.system(size: ComposeDefaults.rowIconSize, weight: .regular))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
             TextField(
@@ -120,7 +122,7 @@ struct ItemComposeSheet: View {
     private var recurrenceRow: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: Recurrence.daily.systemImage)
-                .font(.system(size: 16, weight: .regular))
+                .font(.system(size: ComposeDefaults.rowIconSize, weight: .regular))
                 .foregroundStyle(recurrence != .none ? Color.teal : .secondary)
             Picker("Repeats", selection: $recurrence) {
                 ForEach(Recurrence.allCases, id: \.self) { period in
