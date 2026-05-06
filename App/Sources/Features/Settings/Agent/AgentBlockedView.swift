@@ -1,11 +1,17 @@
 import SwiftUI
 import UIKit
 
+private enum AgentBlockedConstants {
+    /// How long (in seconds) the "Copied" confirmation badge stays visible.
+    static let copyFeedbackDuration: Duration = .seconds(1.2)
+}
+
 struct AgentBlockedView: View {
     @Environment(AppStateStore.self) private var store
 
     @State private var searchText = ""
     @State private var showAddSheet = false
+    @State private var copiedKey: String?
 
     private var sortedBlocked: [String] {
         store.state.nostrBlockedPubkeys.sorted()
@@ -20,25 +26,32 @@ struct AgentBlockedView: View {
     var body: some View {
         Form {
             if sortedBlocked.isEmpty {
-                ContentUnavailableView(
-                    "No blocked peers",
-                    systemImage: "nosign",
-                    description: Text("Peers you block can never contact your agent.")
-                )
+                ContentUnavailableView {
+                    Label("No blocked peers", systemImage: "nosign")
+                } description: {
+                    Text("Peers you block can never contact your agent.")
+                } actions: {
+                    Button("Block a peer") { showAddSheet = true }
+                        .buttonStyle(.glassProminent)
+                }
                 .listRowBackground(Color.clear)
             } else {
                 Section {
                     ForEach(filteredBlocked, id: \.self) { key in
-                        BlockedRow(key: key)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    store.removeFromNostrBlocklist(key)
-                                    Haptics.selection()
-                                } label: {
-                                    Label("Unblock", systemImage: "checkmark.circle")
-                                }
-                                .tint(.orange)
+                        BlockedRow(
+                            key: key,
+                            isCopied: copiedKey == key,
+                            onTap: { copy(key) }
+                        )
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                store.removeFromNostrBlocklist(key)
+                                Haptics.selection()
+                            } label: {
+                                Label("Unblock", systemImage: "checkmark.circle")
                             }
+                            .tint(.orange)
+                        }
                     }
                 }
             }
@@ -62,32 +75,51 @@ struct AgentBlockedView: View {
             }
         }
     }
+
+    private func copy(_ key: String) {
+        UIPasteboard.general.string = key
+        Haptics.selection()
+        copiedKey = key
+        Task {
+            try? await Task.sleep(for: AgentBlockedConstants.copyFeedbackDuration)
+            await MainActor.run {
+                if copiedKey == key { copiedKey = nil }
+            }
+        }
+    }
 }
 
 // MARK: - BlockedRow
 
 private struct BlockedRow: View {
     let key: String
+    let isCopied: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
-            Image(systemName: "nosign")
-                .foregroundStyle(.red)
-                .padding(.top, 2)
+        Button(action: onTap) {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Image(systemName: "nosign")
+                    .foregroundStyle(.red)
 
-            VStack(alignment: .leading, spacing: 2) {
                 Text("npub1\(key.prefix(NostrPubkeyDisplay.prefixLength))…")
-                    .font(.body)
+                    .font(.callout.monospaced())
+                    .foregroundStyle(.primary)
 
-                Text(key)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.tertiary)
-                    .textSelection(.enabled)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                Spacer()
+
+                if isCopied {
+                    Label("Copied", systemImage: "checkmark")
+                        .labelStyle(.titleAndIcon)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .transition(.opacity)
+                }
             }
         }
-        .padding(.vertical, 2)
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .animation(AppTheme.Animation.easeOut, value: isCopied)
     }
 }
 
