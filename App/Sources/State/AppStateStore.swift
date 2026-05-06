@@ -202,6 +202,14 @@ final class AppStateStore {
         state.items[idx].updatedAt = Date()
     }
 
+    /// Sets the color label on an item, or clears it when `color` is `nil`.
+    /// Triggers the same persist / Spotlight / badge cycle as any other mutation.
+    func setItemColorLabel(_ id: UUID, color: ItemColor?) {
+        guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
+        state.items[idx].colorLabel = color
+        state.items[idx].updatedAt = Date()
+    }
+
     // MARK: - Notes
 
     @discardableResult

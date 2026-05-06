@@ -4,8 +4,8 @@ import SwiftUI
 
 extension HomeView {
 
-    /// Bottom toolbar shown while in edit mode; provides Complete and Delete actions
-    /// for the current selection.
+    /// Bottom toolbar shown while in edit mode; provides Complete, color-label, and Delete
+    /// actions for the current selection.
     @ToolbarContentBuilder
     var batchToolbar: some ToolbarContent {
         if isEditing {
@@ -22,9 +22,7 @@ extension HomeView {
 
                 Spacer()
 
-                Text(selectionLabel)
-                    .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.secondary)
+                batchColorMenu
 
                 Spacer()
 
@@ -39,6 +37,42 @@ extension HomeView {
                 .accessibilityLabel("Delete selected items")
             }
         }
+    }
+
+    // MARK: - Color Menu
+
+    /// A centre-bar Menu that shows the selection count and lets the user bulk-assign
+    /// a color label (or clear it) across all selected items in one tap.
+    private var batchColorMenu: some View {
+        Menu {
+            // Color options
+            ForEach(ItemColor.allCases, id: \.self) { color in
+                Button {
+                    batchSetColor(color)
+                } label: {
+                    Label(color.label, systemImage: "circle.fill")
+                }
+            }
+
+            Divider()
+
+            // Clear label
+            Button {
+                batchSetColor(nil)
+            } label: {
+                Label("No Color", systemImage: "circle.slash")
+            }
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: "circle.hexagonpath")
+                    .font(AppTheme.Typography.body)
+                Text(selectionLabel)
+                    .font(AppTheme.Typography.caption2)
+            }
+            .foregroundStyle(selectedIDs.isEmpty ? Color.secondary : Color.primary)
+        }
+        .disabled(selectedIDs.isEmpty)
+        .accessibilityLabel("Set color label — \(selectionLabel)")
     }
 
     // MARK: - Helpers
@@ -60,6 +94,18 @@ extension HomeView {
         }
         Haptics.success()
         celebration.trigger()
+        exitEditMode()
+    }
+
+    /// Sets the color label on all selected items in a single pass.
+    /// Pass `nil` to clear the label.
+    func batchSetColor(_ color: ItemColor?) {
+        guard !selectedIDs.isEmpty else { return }
+        let ids = selectedIDs
+        for id in ids {
+            store.setItemColorLabel(id, color: color)
+        }
+        Haptics.selection()
         exitEditMode()
     }
 
