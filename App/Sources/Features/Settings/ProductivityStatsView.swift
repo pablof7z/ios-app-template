@@ -131,7 +131,7 @@ struct ProductivityStatsView: View {
         switch stats.currentStreak {
         case 0:       return .secondary
         case 1...2:   return .orange
-        case 3...6:   return .orange
+        case 3...6:   return .yellow
         default:      return .red
         }
     }
