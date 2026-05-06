@@ -52,14 +52,23 @@ enum ElevenLabsVoicesError: LocalizedError {
 }
 
 struct ElevenLabsVoicesService: Sendable {
+
+    private enum Constants {
+        static let voicesURL = "https://api.elevenlabs.io/v1/voices"
+        static let apiKeyHeader = "xi-api-key"
+        static let acceptHeader = "Accept"
+        static let acceptValue = "application/json"
+        static let timeout: TimeInterval = 30
+    }
+
     func fetchVoices(apiKey: String) async throws -> [ElevenLabsVoice] {
-        guard let url = URL(string: "https://api.elevenlabs.io/v1/voices") else {
+        guard let url = URL(string: Constants.voicesURL) else {
             throw ElevenLabsVoicesError.invalidResponse
         }
         var request = URLRequest(url: url)
-        request.setValue(apiKey, forHTTPHeaderField: "xi-api-key")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 30
+        request.setValue(apiKey, forHTTPHeaderField: Constants.apiKeyHeader)
+        request.setValue(Constants.acceptValue, forHTTPHeaderField: Constants.acceptHeader)
+        request.timeoutInterval = Constants.timeout
 
         let data: Data
         let response: URLResponse

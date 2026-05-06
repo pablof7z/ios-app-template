@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum EditDefaults {
+    /// Default offset applied to the current time when the reminder picker first appears.
+    static let reminderOffset: TimeInterval = 3_600
+}
+
 struct ItemEditSheet: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -11,7 +18,7 @@ struct ItemEditSheet: View {
     @State private var title: String = ""
     @State private var isPriority: Bool = false
     @State private var reminderEnabled: Bool = false
-    @State private var reminderDate: Date = Date().addingTimeInterval(3600)
+    @State private var reminderDate: Date = Date().addingTimeInterval(EditDefaults.reminderOffset)
     @State private var notificationDenied: Bool = false
     @FocusState private var isFocused: Bool
 
@@ -42,7 +49,7 @@ struct ItemEditSheet: View {
             title = item.title
             isPriority = item.isPriority
             reminderEnabled = item.reminderAt != nil
-            reminderDate = item.reminderAt ?? Date().addingTimeInterval(3600)
+            reminderDate = item.reminderAt ?? Date().addingTimeInterval(EditDefaults.reminderOffset)
             isFocused = true
         }
     }

@@ -25,6 +25,8 @@ private enum AgentChatLayout {
     static let sendButtonIconSize: CGFloat = 17
     /// Corner radius for suggestion chips and tool-batch pills in the welcome state.
     static let chipCornerRadius: CGFloat = 14
+    /// Corner radius for the resume-session banner glass pill.
+    static let bannerCornerRadius: CGFloat = 12
 }
 
 /// Full-screen chat interface for the AI agent, presented as a sheet.
@@ -151,7 +153,7 @@ struct AgentChatView: View {
         }
         .padding(.horizontal, AgentChatLayout.inputFieldPaddingH)
         .padding(.vertical, AgentChatLayout.inputFieldPaddingV)
-        .glassEffect(.regular.tint(.indigo.opacity(0.10)), in: .rect(cornerRadius: 12))
+        .glassEffect(.regular.tint(.indigo.opacity(0.10)), in: .rect(cornerRadius: AgentChatLayout.bannerCornerRadius))
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.sm)
     }
