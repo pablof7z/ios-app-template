@@ -15,8 +15,14 @@ final class AppStateStore {
             Persistence.save(state)
             SpotlightIndexer.reindex(state: state)
             Task { await BadgeManager.sync(pendingCount: self.activeItems.count) }
+            // Push the current settings to iCloud KV store. The sync service
+            // internally no-ops if an inbound merge is already in progress.
+            iCloudSettingsSync.shared.push(state.settings)
         }
     }
+
+    /// Retained observer token for iCloud external-change notifications.
+    private var iCloudObserver: NSObjectProtocol?
 
     init() {
         var loadedState: AppState
@@ -27,11 +33,37 @@ final class AppStateStore {
             loadedState = AppState()
         }
         Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState)
+        // Start iCloud KV sync before assigning state so that the first
+        // push (triggered by the `didSet` below) reflects the merged values.
+        iCloudSettingsSync.shared.start(mergingInto: &loadedState.settings)
         self.state = loadedState
         // Seed Spotlight with whatever was persisted before this launch — the
         // index can be wiped out independently of our app data (device reset,
         // reinstall, user clearing system search).
         SpotlightIndexer.reindex(state: loadedState)
+        // Observe external iCloud changes so settings stay in sync while the
+        // app is running on multiple devices simultaneously.
+        iCloudObserver = NotificationCenter.default.addObserver(
+            forName: iCloudSettingsSync.settingsDidChangeExternallyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.applyExternalSettingsChange()
+        }
+    }
+
+    /// Pulls the latest iCloud values into `state.settings`.
+    /// Called when `iCloudSettingsSync` reports an external change.
+    private func applyExternalSettingsChange() {
+        let sync = iCloudSettingsSync.shared
+        sync.isApplyingRemoteChange = true
+        defer { sync.isApplyingRemoteChange = false }
+        var updated = state.settings
+        sync.merge(from: NSUbiquitousKeyValueStore.default, into: &updated)
+        guard updated != state.settings else { return }
+        logger.info("iCloudSettingsSync: applying remote settings update")
+        // Assign directly (bypassing updateSettings) to avoid a redundant push.
+        state.settings = updated
     }
 
     private static func migrateLegacyOpenRouterSecretIfNeeded(in state: inout AppState) {
