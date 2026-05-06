@@ -96,6 +96,24 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+// MARK: - Item sharing
+
+extension Item {
+    /// Plain-text summary formatted for sharing (Messages, Mail, Notes, etc.).
+    /// Includes title, optional details, and optional reminder date.
+    var shareText: String {
+        var parts: [String] = [title]
+        if !details.isEmpty {
+            parts.append(details)
+        }
+        if let date = reminderAt {
+            let formatted = date.formatted(.dateTime.month(.wide).day().year().hour().minute())
+            parts.append("Reminder: \(formatted)")
+        }
+        return parts.joined(separator: "\n\n")
+    }
+}
+
 // MARK: - Note
 
 enum NoteKind: String, Codable, Hashable, Sendable {

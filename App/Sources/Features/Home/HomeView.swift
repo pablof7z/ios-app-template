@@ -1,66 +1,5 @@
 import SwiftUI
 
-// MARK: - Sort Order
-
-private enum ItemSort: String, CaseIterable, Identifiable {
-    case dateAddedDesc = "dateAddedDesc"
-    case dateAddedAsc  = "dateAddedAsc"
-    case titleAZ       = "titleAZ"
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .dateAddedDesc: return "Newest First"
-        case .dateAddedAsc:  return "Oldest First"
-        case .titleAZ:       return "Title A–Z"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .dateAddedDesc: return "arrow.down.circle"
-        case .dateAddedAsc:  return "arrow.up.circle"
-        case .titleAZ:       return "textformat.abc"
-        }
-    }
-}
-
-// MARK: - Source Filter
-
-private enum SourceFilter: String, CaseIterable, Identifiable {
-    case all    = "all"
-    case manual = "manual"
-    case agent  = "agent"
-    case voice  = "voice"
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .all:    return "All"
-        case .manual: return "Manual"
-        case .agent:  return "Agent"
-        case .voice:  return "Voice"
-        }
-    }
-}
-
-// MARK: - AppStorage keys
-
-private enum StorageKey {
-    static let itemSort     = "home.itemSort"
-    static let sourceFilter = "home.sourceFilter"
-}
-
-// MARK: - Snooze durations
-
-private enum Snooze {
-    static let oneHour: TimeInterval   = 3_600
-    static let threeHours: TimeInterval = 10_800
-    static let tomorrowHour: Int       = 9
-}
-
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
     @Binding var pendingNewItemTitle: String?
@@ -72,8 +11,8 @@ struct HomeView: View {
     @State private var searchText: String = ""
     @State private var completingIDs: Set<UUID> = []
     @Namespace private var rowNamespace
-    @AppStorage(StorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
-    @AppStorage(StorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
+    @AppStorage(HomeStorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
+    @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
 
     private var currentSort: ItemSort {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
@@ -330,6 +269,9 @@ struct HomeView: View {
         if item.reminderAt != nil {
             snoozeMenu(for: item)
         }
+        ShareLink(item: item.shareText) {
+            Label("Share", systemImage: "square.and.arrow.up")
+        }
         Divider()
         Button(role: .destructive) {
             store.deleteItem(item.id)
@@ -341,8 +283,8 @@ struct HomeView: View {
 
     private func snoozeMenu(for item: Item) -> some View {
         Menu {
-            Button("In 1 hour")     { snoozeItem(item, by: Snooze.oneHour) }
-            Button("In 3 hours")    { snoozeItem(item, by: Snooze.threeHours) }
+            Button("In 1 hour")     { snoozeItem(item, by: HomeSnooze.oneHour) }
+            Button("In 3 hours")    { snoozeItem(item, by: HomeSnooze.threeHours) }
             Button("Tomorrow 9 am") { snoozeItemTomorrow(item) }
         } label: {
             Label("Snooze Reminder", systemImage: "bell.badge.slash")
@@ -381,7 +323,7 @@ struct HomeView: View {
     private func snoozeItemTomorrow(_ item: Item) {
         let cal = Calendar.current
         guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()),
-              let date = cal.date(bySettingHour: Snooze.tomorrowHour, minute: 0, second: 0, of: tomorrow)
+              let date = cal.date(bySettingHour: HomeSnooze.tomorrowHour, minute: 0, second: 0, of: tomorrow)
         else { return }
         applySnooze(to: item, date: date)
     }
