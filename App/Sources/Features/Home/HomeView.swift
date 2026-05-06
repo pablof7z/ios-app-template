@@ -1,15 +1,16 @@
 import SwiftUI
 
 struct HomeView: View {
-    @Environment(AppStateStore.self) private var store
+    @Environment(AppStateStore.self) var store
     @Binding var pendingNewItemTitle: String?
 
-    @State private var showCompose = false
-    @State private var composeInitialTitle: String = ""
+    @State var showCompose = false
+    @State var composeInitialTitle: String = ""
     @State private var completedExpanded: Bool = false
     @State private var editingItem: Item?
     @State private var searchText: String = ""
-    @State private var completingIDs: Set<UUID> = []
+    @State var completingIDs: Set<UUID> = []
+    @StateObject var celebration = CompletionCelebrationState()
     @Namespace private var rowNamespace
     @AppStorage(HomeStorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
     @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
@@ -69,6 +70,7 @@ struct HomeView: View {
                 itemList
             }
         }
+        .overlay(CompletionCelebrationView(state: celebration))
         .navigationTitle("Home")
         .searchable(text: $searchText, prompt: "Search items")
         .toolbar { homeToolbar }
@@ -289,53 +291,5 @@ struct HomeView: View {
         } label: {
             Label("Snooze Reminder", systemImage: "bell.badge.slash")
         }
-    }
-
-    // MARK: - Complete with animation
-
-    private func completeItem(_ item: Item) {
-        guard !completingIDs.contains(item.id) else { return }
-        completingIDs.insert(item.id)
-        Haptics.success()
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(220))
-            store.setItemStatus(item.id, status: .done)
-            completingIDs.remove(item.id)
-        }
-    }
-
-    // MARK: - Deep-Link
-
-    private func consumePendingTitle() {
-        guard let title = pendingNewItemTitle else { return }
-        pendingNewItemTitle = nil
-        composeInitialTitle = title
-        showCompose = true
-    }
-
-    // MARK: - Snooze
-
-    private func snoozeItem(_ item: Item, by seconds: TimeInterval) {
-        let newDate = Date().addingTimeInterval(seconds)
-        applySnooze(to: item, date: newDate)
-    }
-
-    private func snoozeItemTomorrow(_ item: Item) {
-        let cal = Calendar.current
-        guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()),
-              let date = cal.date(bySettingHour: HomeSnooze.tomorrowHour, minute: 0, second: 0, of: tomorrow)
-        else { return }
-        applySnooze(to: item, date: date)
-    }
-
-    private func applySnooze(to item: Item, date: Date) {
-        NotificationService.cancel(for: item.id)
-        var updated = item
-        updated.reminderAt = date
-        store.updateItem(updated)
-        Task {
-            await NotificationService.scheduleReminder(for: item.id, title: item.title, at: date)
-        }
-        Haptics.success()
     }
 }
