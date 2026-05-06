@@ -1,0 +1,79 @@
+import SwiftUI
+
+// MARK: - ElevenLabsVoiceGroup
+
+struct ElevenLabsVoiceGroup: Hashable {
+    let category: String
+    let voices: [ElevenLabsVoice]
+}
+
+// MARK: - State views
+
+/// Full-screen loading placeholder shown while voices are being fetched.
+struct ElevenLabsVoiceBrowserLoadingView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .controlSize(.large)
+            Text("Loading voices")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+/// Full-screen error view with a retry button.
+struct ElevenLabsVoiceBrowserErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 36))
+                .foregroundStyle(.orange)
+            Text(message)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, AppTheme.Spacing.lg)
+            Button(action: onRetry) {
+                Label("Try again", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.glassProminent)
+            .tint(AppTheme.Brand.elevenLabsTint)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+/// Full-screen placeholder shown when no ElevenLabs API key is stored.
+struct ElevenLabsVoiceBrowserMissingKeyView: View {
+    let onBack: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "waveform.slash")
+                .font(.system(size: 44))
+                .foregroundStyle(.secondary)
+            Text("Connect ElevenLabs to browse voices")
+                .font(AppTheme.Typography.headline)
+                .multilineTextAlignment(.center)
+            Text("Add your ElevenLabs API key in the previous screen to load the voice library.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, AppTheme.Spacing.lg)
+            Button(action: onBack) {
+                Label("Back to ElevenLabs Settings", systemImage: "chevron.backward")
+            }
+            .buttonStyle(.glassProminent)
+            .tint(AppTheme.Brand.elevenLabsTint)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+    }
+}

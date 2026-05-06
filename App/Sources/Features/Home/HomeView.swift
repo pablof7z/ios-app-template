@@ -46,6 +46,13 @@ private enum SourceFilter: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - AppStorage keys
+
+private enum StorageKey {
+    static let itemSort     = "home.itemSort"
+    static let sourceFilter = "home.sourceFilter"
+}
+
 // MARK: - Snooze durations
 
 private enum Snooze {
@@ -65,8 +72,8 @@ struct HomeView: View {
     @State private var searchText: String = ""
     @State private var completingIDs: Set<UUID> = []
     @Namespace private var rowNamespace
-    @AppStorage("home.itemSort")     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
-    @AppStorage("home.sourceFilter") private var sourceFilterRaw: String = SourceFilter.all.rawValue
+    @AppStorage(StorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
+    @AppStorage(StorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
 
     private var currentSort: ItemSort {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc

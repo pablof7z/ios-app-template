@@ -13,11 +13,13 @@ struct ElevenLabsVoiceBrowserView: View {
         Group {
             switch viewModel.phase {
             case .needsAPIKey:
-                missingKeyView
+                ElevenLabsVoiceBrowserMissingKeyView { dismiss() }
             case .loading where viewModel.voices.isEmpty:
-                loadingView
+                ElevenLabsVoiceBrowserLoadingView()
             case .error(let message) where viewModel.voices.isEmpty:
-                errorView(message)
+                ElevenLabsVoiceBrowserErrorView(message: message) {
+                    Task { await viewModel.reload() }
+                }
             default:
                 voicesList
             }
@@ -109,6 +111,8 @@ struct ElevenLabsVoiceBrowserView: View {
                 }
             }
 
+            currentSection
+
             if isFiltering {
                 activeFilterBanner
             }
@@ -130,6 +134,20 @@ struct ElevenLabsVoiceBrowserView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.reload() }
+    }
+
+    /// Pins the currently selected voice at the top of the list,
+    /// mirroring the pattern used by `OpenRouterModelSelectorView`.
+    @ViewBuilder
+    private var currentSection: some View {
+        let selectedID = store.state.settings.elevenLabsVoiceID
+        if !selectedID.isEmpty,
+           let current = viewModel.voices.first(where: { $0.voiceID == selectedID }),
+           searchText.isEmpty && !isFiltering {
+            Section("Current") {
+                rowButton(for: current)
+            }
+        }
     }
 
     private var activeFilterBanner: some View {
@@ -167,67 +185,6 @@ struct ElevenLabsVoiceBrowserView: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - State views
-
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .controlSize(.large)
-            Text("Loading voices")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
-    }
-
-    private func errorView(_ message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 36))
-                .foregroundStyle(.orange)
-            Text(message)
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-            Button {
-                Task { await viewModel.reload() }
-            } label: {
-                Label("Try again", systemImage: "arrow.clockwise")
-            }
-            .buttonStyle(.glassProminent)
-            .tint(AppTheme.Brand.elevenLabsTint)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
-    }
-
-    private var missingKeyView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "waveform.slash")
-                .font(.system(size: 44))
-                .foregroundStyle(.secondary)
-            Text("Connect ElevenLabs to browse voices")
-                .font(AppTheme.Typography.headline)
-                .multilineTextAlignment(.center)
-            Text("Add your ElevenLabs API key in the previous screen to load the voice library.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-            Button {
-                dismiss()
-            } label: {
-                Label("Back to ElevenLabs Settings", systemImage: "chevron.backward")
-            }
-            .buttonStyle(.glassProminent)
-            .tint(AppTheme.Brand.elevenLabsTint)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
     }
 
     // MARK: - Filter helpers
@@ -293,7 +250,3 @@ struct ElevenLabsVoiceBrowserView: View {
     }
 }
 
-struct ElevenLabsVoiceGroup: Hashable {
-    let category: String
-    let voices: [ElevenLabsVoice]
-}
