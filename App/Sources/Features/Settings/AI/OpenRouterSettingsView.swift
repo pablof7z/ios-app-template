@@ -118,7 +118,12 @@ struct OpenRouterSettingsView: View {
             // Key info card (shown after successful validation)
             if let keyInfo {
                 OpenRouterKeyInfoCard(info: keyInfo)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowInsets(EdgeInsets(
+                        top: AppTheme.Spacing.xs,
+                        leading: AppTheme.Spacing.md,
+                        bottom: AppTheme.Spacing.xs,
+                        trailing: AppTheme.Spacing.md
+                    ))
                     .listRowBackground(Color.clear)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }

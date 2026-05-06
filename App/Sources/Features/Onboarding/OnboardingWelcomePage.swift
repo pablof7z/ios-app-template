@@ -46,7 +46,7 @@ struct OnboardingWelcomePage: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 148, height: 148)
+                .frame(width: OnboardingLayout.medallionSize, height: OnboardingLayout.medallionSize)
                 .glassEffect(.regular, in: .rect(cornerRadius: OnboardingLayout.medallionCornerRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: OnboardingLayout.medallionCornerRadius, style: .continuous)
@@ -55,7 +55,7 @@ struct OnboardingWelcomePage: View {
                 .appShadow(AppTheme.Shadow.lifted)
 
             Image(systemName: "sparkles")
-                .font(.system(size: 76, weight: .semibold))
+                .font(.system(size: OnboardingLayout.medallionIconSize, weight: .semibold))
                 .foregroundStyle(AppTheme.Gradients.onboardingSparkle)
                 .symbolEffect(.bounce, options: .repeat(3), value: sparkleTrigger)
                 .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)

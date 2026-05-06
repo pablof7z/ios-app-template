@@ -1,5 +1,8 @@
 import SwiftUI
 import UserNotifications
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "NotificationSettingsView")
 
 // MARK: - NotificationSettingsView
 //
@@ -228,7 +231,7 @@ struct NotificationSettingsView: View {
             authStatus = granted ? .authorized : .denied
             Haptics.selection()
         } catch {
-            // Authorization errors are non-fatal; reload will surface the real status.
+            logger.error("requestAuthorization failed: \(error, privacy: .public)")
         }
         await reload()
     }

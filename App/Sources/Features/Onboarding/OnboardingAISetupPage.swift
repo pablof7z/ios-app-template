@@ -78,8 +78,8 @@ struct OnboardingAISetupPage: View {
                 Text(isConnectingBYOK ? "Connecting…" : "Connect with BYOK")
                     .font(AppTheme.Typography.headline)
             }
-            .frame(maxWidth: .infinity, minHeight: 28)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, minHeight: OnboardingLayout.primaryButtonMinHeight)
+            .padding(.vertical, OnboardingLayout.primaryButtonVerticalPadding)
         }
         .buttonStyle(.glassProminent)
         .controlSize(.large)

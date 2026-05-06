@@ -17,6 +17,8 @@ struct OnboardingView: View {
     private enum Layout {
         static let chipHorizontalPadding: CGFloat = 14
         static let chipVerticalPadding: CGFloat = 8
+        /// Height of the top bar (back / skip buttons row).
+        static let topBarHeight: CGFloat = 60
     }
 
     private enum Page {
@@ -83,7 +85,7 @@ struct OnboardingView: View {
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.md)
-        .frame(height: 60)
+        .frame(height: Layout.topBarHeight)
     }
 
     private var backButton: some View {
@@ -135,8 +137,8 @@ struct OnboardingView: View {
                             .font(.headline.weight(.semibold))
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 28)
-                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: OnboardingLayout.primaryButtonMinHeight)
+                .padding(.vertical, OnboardingLayout.primaryButtonVerticalPadding)
             }
             .buttonStyle(.glassProminent)
             .controlSize(.large)

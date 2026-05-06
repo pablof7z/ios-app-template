@@ -152,13 +152,23 @@ struct AgentMemoriesView: View {
 private struct MemoryRow: View {
     let memory: AgentMemory
 
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Top-alignment nudge to optically align the brain icon with the first text line.
+        static let iconTopPadding: CGFloat = 2
+        /// Leading offset of the timestamp — aligns it with the text column next to the icon.
+        /// Approximates icon width (caption font ≈ 14 pt) + spacing (AppTheme.Spacing.xs = 4).
+        static let timestampLeadingOffset: CGFloat = 18
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
             HStack(alignment: .top) {
                 Image(systemName: "brain")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.purple)
-                    .padding(.top, 2)
+                    .padding(.top, Layout.iconTopPadding)
 
                 Text(memory.content)
                     .font(AppTheme.Typography.callout)
@@ -168,7 +178,7 @@ private struct MemoryRow: View {
             Text(memory.createdAt.formatted(date: .abbreviated, time: .shortened))
                 .font(AppTheme.Typography.mono)
                 .foregroundStyle(.tertiary)
-                .padding(.leading, 18)
+                .padding(.leading, Layout.timestampLeadingOffset)
         }
         .padding(.vertical, AppTheme.Spacing.xs)
     }

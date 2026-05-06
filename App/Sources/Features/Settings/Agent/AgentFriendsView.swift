@@ -3,6 +3,24 @@ import SwiftUI
 private enum AgentFriendsConstants {
     /// Diameter of the avatar circle used in friend list rows and initials placeholders.
     static let avatarSize: CGFloat = 40
+    /// Horizontal spacing between avatar and text in a friend row.
+    static let rowSpacing: CGFloat = 12
+    /// Vertical spacing between the display name and the identifier/about lines.
+    static let labelSpacing: CGFloat = 2
+    /// Minimum spacer width between the label block and the trailing date.
+    static let trailingSpacerMin: CGFloat = 8
+    /// Vertical padding applied to each friend row.
+    static let rowVerticalPadding: CGFloat = 2
+    /// Point size of the initial letter rendered inside the initials avatar.
+    static let initialsSize: CGFloat = 16
+    /// Padding applied to the instruction pill in the camera viewfinder overlay.
+    static let pillHorizontalPadding: CGFloat = 16
+    static let pillVerticalPadding: CGFloat = 8
+    static let pillBottomPadding: CGFloat = 32
+    /// Side length of the QR viewfinder guide frame.
+    static let viewfinderSize: CGFloat = 200
+    /// Stroke width of the viewfinder guide frame.
+    static let viewfinderLineWidth: CGFloat = 2
 }
 
 struct AgentFriendsView: View {
@@ -79,10 +97,10 @@ private struct FriendListRow: View {
     let friend: Friend
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: AgentFriendsConstants.rowSpacing) {
             avatar
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: AgentFriendsConstants.labelSpacing) {
                 Text(friend.displayName)
                     .font(AppTheme.Typography.headline)
 
@@ -98,13 +116,13 @@ private struct FriendListRow: View {
                 }
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: AgentFriendsConstants.trailingSpacerMin)
 
             Text(friend.addedAt.formatted(date: .abbreviated, time: .omitted))
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, AgentFriendsConstants.rowVerticalPadding)
     }
 
     @ViewBuilder
@@ -142,7 +160,7 @@ private struct FriendListRow: View {
                     endPoint: .bottomTrailing
                 ))
             Text(String(friend.displayName.prefix(1)).uppercased())
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: AgentFriendsConstants.initialsSize, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
         }
         .frame(width: AgentFriendsConstants.avatarSize, height: AgentFriendsConstants.avatarSize)
@@ -236,8 +254,8 @@ private struct AddFriendSheet: View {
         VStack {
             Spacer()
             RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                .strokeBorder(.white.opacity(0.6), lineWidth: 2)
-                .frame(width: 200, height: 200)
+                .strokeBorder(.white.opacity(0.6), lineWidth: AgentFriendsConstants.viewfinderLineWidth)
+                .frame(width: AgentFriendsConstants.viewfinderSize, height: AgentFriendsConstants.viewfinderSize)
             Spacer()
         }
     }
@@ -248,10 +266,10 @@ private struct AddFriendSheet: View {
             Text("Point at a Nostr QR code")
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, AgentFriendsConstants.pillHorizontalPadding)
+                .padding(.vertical, AgentFriendsConstants.pillVerticalPadding)
                 .background(.ultraThinMaterial, in: Capsule())
-                .padding(.bottom, 32)
+                .padding(.bottom, AgentFriendsConstants.pillBottomPadding)
         }
     }
 

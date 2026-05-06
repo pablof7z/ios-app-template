@@ -104,7 +104,12 @@ struct FeedbackView: View {
         List {
             mineEveryoneSegmentedControl
                 .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowInsets(EdgeInsets(
+                    top: AppTheme.Spacing.sm,
+                    leading: AppTheme.Spacing.md,
+                    bottom: AppTheme.Spacing.sm,
+                    trailing: AppTheme.Spacing.md
+                ))
                 .listRowSeparator(.hidden)
 
             ForEach(visibleThreads) { thread in

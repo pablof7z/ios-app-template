@@ -2,6 +2,15 @@ import SwiftUI
 
 // MARK: - FeedbackComposeView
 
+// MARK: - Layout constants
+
+private enum Layout {
+    /// Point size of the identity avatar icon.
+    static let identityIconSize: CGFloat = 20
+    /// Minimum height of the text editor area.
+    static let textEditorMinHeight: CGFloat = 200
+}
+
 struct FeedbackComposeView: View {
     let store: FeedbackStore
     @Bindable var workflow: FeedbackWorkflow
@@ -55,7 +64,7 @@ struct FeedbackComposeView: View {
     private var identityRow: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: userIdentity.hasIdentity ? "person.crop.circle.fill" : "person.crop.circle")
-                .font(.system(size: 20))
+                .font(.system(size: Layout.identityIconSize))
                 .foregroundStyle(userIdentity.hasIdentity ? Color(.label) : Color(.tertiaryLabel))
 
             if let short = userIdentity.npubShort {
@@ -134,7 +143,7 @@ struct FeedbackComposeView: View {
             }
 
             TextEditor(text: $workflow.draft)
-                .frame(minHeight: 200)
+                .frame(minHeight: Layout.textEditorMinHeight)
                 .scrollContentBackground(.hidden)
                 .padding(AppTheme.Spacing.sm)
         }
