@@ -106,7 +106,10 @@ final class AppStateStore {
             state.items[idx].reminderAt = nil
         }
         if status == .done {
-            ReviewPrompt.recordMeaningfulAction()
+            // Fire smart review prompts at streak milestones and total-completion thresholds.
+            let stats = CompletionStats(items: state.items)
+            ReviewPrompt.recordItemCompleted(totalCompletions: stats.totalCompleted)
+            ReviewPrompt.recordStreakMilestone(stats.currentStreak)
             // Roll forward recurring items: insert a new pending copy advanced by one period.
             spawnRecurringItem(from: completed)
         }

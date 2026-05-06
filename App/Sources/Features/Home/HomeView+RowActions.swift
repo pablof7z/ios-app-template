@@ -52,6 +52,7 @@ extension HomeView {
         ShareLink(item: item.shareText) {
             Label("Share", systemImage: "square.and.arrow.up")
         }
+        .simultaneousGesture(TapGesture().onEnded { ReviewPrompt.recordItemShared() })
         Divider()
         Button(role: .destructive) {
             store.deleteItem(item.id)

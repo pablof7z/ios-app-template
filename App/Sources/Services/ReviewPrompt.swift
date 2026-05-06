@@ -1,22 +1,72 @@
 import StoreKit
 import UIKit
 
+/// Requests an in-app review at meaningful, well-timed moments rather than
+/// after a generic action count. Each trigger fires at most once per install
+/// (regardless of cooldown), and the underlying `SKStoreReviewController` call
+/// is further gated by a 60-day cooldown so users are never pestered.
+///
+/// Trigger moments:
+///   - **10th item completed** — user has established a real usage habit.
+///   - **3-day streak** — first "streak milestone"; also fires at 7 days.
+///   - **First item shared** — strong positive signal; user is proud of something.
 @MainActor
 enum ReviewPrompt {
-    private static let actionCountKey  = "reviewPrompt.actionCount"
-    private static let lastRequestKey  = "reviewPrompt.lastRequestDate"
-    private static let requestCountKey = "reviewPrompt.requestCount"
-    /// Minimum number of meaningful actions before a review prompt may be shown.
-    private static let minimumActionCount = 5
-    private static let cooldownSeconds: Double = 60 * 86_400   // 60 days
 
-    /// Call this after a meaningful positive action (item completed, feedback sent, etc.).
-    /// Gates on: total completions ≥ 5 and a 60-day cooldown between prompts.
-    static func requestIfAppropriate(in scene: UIWindowScene? = nil) {
+    // MARK: - UserDefaults keys
+
+    private static let lastRequestKey    = "reviewPrompt.lastRequestDate"
+    private static let requestCountKey   = "reviewPrompt.requestCount"
+
+    // Per-trigger "has already fired" flags
+    private static let firedAt10Key      = "reviewPrompt.firedAt10Completions"
+    private static let firedAt3StreakKey = "reviewPrompt.firedAt3DayStreak"
+    private static let firedAt7StreakKey = "reviewPrompt.firedAt7DayStreak"
+    private static let firedFirstShareKey = "reviewPrompt.firedFirstShare"
+
+    // MARK: - Configuration
+
+    /// Minimum seconds between successive review prompts (60 days).
+    private static let cooldownSeconds: Double = 60 * 86_400
+
+    // MARK: - Public trigger points
+
+    /// Call when an item is marked done. Pass the *new* total completed count.
+    /// Fires at the 10th completion.
+    static func recordItemCompleted(totalCompletions: Int) {
         let defaults = UserDefaults.standard
-        let actionCount = defaults.integer(forKey: actionCountKey)
-        guard actionCount >= minimumActionCount else { return }
+        guard !defaults.bool(forKey: firedAt10Key) else { return }
+        guard totalCompletions >= 10 else { return }
+        defaults.set(true, forKey: firedAt10Key)
+        requestIfCooldownPassed()
+    }
 
+    /// Call after computing the current streak. Fires at the 3-day and 7-day
+    /// milestones — each at most once per install.
+    static func recordStreakMilestone(_ streak: Int) {
+        let defaults = UserDefaults.standard
+        if streak >= 7, !defaults.bool(forKey: firedAt7StreakKey) {
+            defaults.set(true, forKey: firedAt7StreakKey)
+            requestIfCooldownPassed()
+        } else if streak >= 3, !defaults.bool(forKey: firedAt3StreakKey) {
+            defaults.set(true, forKey: firedAt3StreakKey)
+            requestIfCooldownPassed()
+        }
+    }
+
+    /// Call when the user shares an item. Fires on the very first share.
+    static func recordItemShared() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: firedFirstShareKey) else { return }
+        defaults.set(true, forKey: firedFirstShareKey)
+        requestIfCooldownPassed()
+    }
+
+    // MARK: - Private
+
+    /// Presents the review prompt only if the 60-day cooldown has elapsed.
+    private static func requestIfCooldownPassed(in scene: UIWindowScene? = nil) {
+        let defaults = UserDefaults.standard
         let lastRequest = defaults.double(forKey: lastRequestKey)
         let elapsed = lastRequest == 0 ? Double.infinity : Date().timeIntervalSince1970 - lastRequest
         guard elapsed > cooldownSeconds else { return }
@@ -29,12 +79,5 @@ enum ReviewPrompt {
         } else {
             SKStoreReviewController.requestReview()
         }
-    }
-
-    /// Increments a "meaningful action" counter. Call after item marked done.
-    static func recordMeaningfulAction() {
-        let defaults = UserDefaults.standard
-        defaults.set(defaults.integer(forKey: actionCountKey) + 1, forKey: actionCountKey)
-        requestIfAppropriate()
     }
 }

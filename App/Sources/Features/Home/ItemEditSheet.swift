@@ -42,6 +42,7 @@ struct ItemEditSheet: View {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Share item")
+                    .simultaneousGesture(TapGesture().onEnded { ReviewPrompt.recordItemShared() })
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { Task { await save() } }
