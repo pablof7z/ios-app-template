@@ -10,14 +10,16 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTempl
 struct MarkItemDoneIntent: AppIntent {
     static let title: LocalizedStringResource = "Mark Item Done"
     static let description = IntentDescription(
-        "Mark one of your pending items as done."
+        "Mark one of your pending items as done.",
+        categoryName: "Items",
+        searchKeywords: ["complete", "done", "finish", "mark", "check off"]
     )
     static let openAppWhenRun: Bool = false
 
     @Parameter(
         title: "Item",
-        description: "Which item to complete.",
-        requestValueDialog: "Which one?"
+        description: "The pending item to mark as done. Choose from your list of active items or type a title for Siri to match.",
+        requestValueDialog: "Which pending item should I mark as done?"
     )
     var target: ItemEntity
 

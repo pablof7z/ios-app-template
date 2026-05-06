@@ -21,7 +21,9 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTempl
 struct AddItemIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Item"
     static let description = IntentDescription(
-        "Quickly add a new item to your list."
+        "Quickly add a new item to your list.",
+        categoryName: "Items",
+        searchKeywords: ["add", "create", "capture", "new item", "task"]
     )
 
     /// Stay in Siri / Shortcuts after running — no need to yank the user into
@@ -29,8 +31,8 @@ struct AddItemIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     @Parameter(
-        title: "Item",
-        description: "What you want to add.",
+        title: "Title",
+        description: "The name of the item to add to your list. You'll see this text as the item's title in the app.",
         requestValueDialog: "What should I add?"
     )
     var title: String
@@ -67,9 +69,12 @@ struct AddItemIntent: AppIntent {
 struct PendingItemCountIntent: AppIntent {
     static let title: LocalizedStringResource = "Count Pending Items"
     static let description = IntentDescription(
-        "Returns how many items are still pending."
+        "Returns how many items are still pending.",
+        categoryName: "Items",
+        searchKeywords: ["count", "pending", "how many", "remaining", "tasks"]
     )
     static let openAppWhenRun: Bool = false
+    static let resultValueName: LocalizedStringResource = "Pending Count"
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Int> & ProvidesDialog {
