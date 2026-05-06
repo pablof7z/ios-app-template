@@ -1,10 +1,20 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "AgentTools")
 
 /// Defines the tools the agent can call and dispatches them to AppStateStore.
 /// Add new tools by:
 ///   1. Adding a schema entry to `schema`
 ///   2. Adding a case to `dispatch`
 enum AgentTools {
+
+    // MARK: - Constants
+
+    /// Maximum number of characters used when truncating text in activity summaries.
+    private static let summaryTruncationLength = 40
+    /// Placeholder title used when a matching item cannot be found in the store.
+    private static let unknownItemTitle = "item"
 
     // MARK: - JSON Schema (OpenAI tool format)
 
@@ -51,7 +61,13 @@ enum AgentTools {
 
     @MainActor
     static func dispatch(name: String, argsJSON: String, store: AppStateStore, batchID: UUID) async -> String {
-        let args = (try? JSONSerialization.jsonObject(with: Data(argsJSON.utf8)) as? [String: Any]) ?? [:]
+        let args: [String: Any]
+        do {
+            args = try JSONSerialization.jsonObject(with: Data(argsJSON.utf8)) as? [String: Any] ?? [:]
+        } catch {
+            logger.error("AgentTools: failed to parse argsJSON for tool '\(name)': \(error.localizedDescription)")
+            args = [:]
+        }
 
         switch name {
         case "create_item":
@@ -74,7 +90,7 @@ enum AgentTools {
                 return error("Item not found")
             }
             store.setItemStatus(id, status: .done)
-            let title = store.state.items.first { $0.id == id }?.title ?? "item"
+            let title = store.state.items.first { $0.id == id }?.title ?? Self.unknownItemTitle
             store.recordAgentActivity(.init(
                 batchID: batchID,
                 kind: .itemMarkedDone(itemID: id, priorStatus: prior),
@@ -86,7 +102,7 @@ enum AgentTools {
             guard let idStr = args["id"] as? String, let id = UUID(uuidString: idStr) else {
                 return error("Invalid or missing 'id'")
             }
-            let title = store.state.items.first { $0.id == id }?.title ?? "item"
+            let title = store.state.items.first { $0.id == id }?.title ?? Self.unknownItemTitle
             store.deleteItem(id)
             store.recordAgentActivity(.init(
                 batchID: batchID,
@@ -110,7 +126,7 @@ enum AgentTools {
             store.recordAgentActivity(.init(
                 batchID: batchID,
                 kind: .noteCreated(noteID: note.id),
-                summary: "Saved note \"\(text.prefix(40))\(text.count > 40 ? "…" : "")\""
+                summary: "Saved note \"\(text.prefix(Self.summaryTruncationLength))\(text.count > Self.summaryTruncationLength ? "…" : "")\""
             ))
             return success(["id": note.id.uuidString])
 
@@ -122,7 +138,7 @@ enum AgentTools {
             store.recordAgentActivity(.init(
                 batchID: batchID,
                 kind: .memoryRecorded(memoryID: mem.id),
-                summary: "Remembered \"\(content.prefix(40))\(content.count > 40 ? "…" : "")\""
+                summary: "Remembered \"\(content.prefix(Self.summaryTruncationLength))\(content.count > Self.summaryTruncationLength ? "…" : "")\""
             ))
             return success(["id": mem.id.uuidString])
 
@@ -156,11 +172,21 @@ enum AgentTools {
     private static func success(_ payload: [String: Any] = [:]) -> String {
         var result: [String: Any] = ["success": true]
         result.merge(payload) { _, new in new }
-        return (try? String(data: JSONSerialization.data(withJSONObject: result), encoding: .utf8)) ?? "{\"success\":true}"
+        do {
+            return try String(data: JSONSerialization.data(withJSONObject: result), encoding: .utf8) ?? "{\"success\":true}"
+        } catch {
+            logger.error("AgentTools: failed to serialize success payload: \(error.localizedDescription)")
+            return "{\"success\":true}"
+        }
     }
 
     private static func error(_ message: String) -> String {
         let payload: [String: Any] = ["error": message]
-        return (try? String(data: JSONSerialization.data(withJSONObject: payload), encoding: .utf8)) ?? "{\"error\":\"unknown\"}"
+        do {
+            return try String(data: JSONSerialization.data(withJSONObject: payload), encoding: .utf8) ?? "{\"error\":\"unknown\"}"
+        } catch {
+            logger.error("AgentTools: failed to serialize error payload '\(message)': \(error.localizedDescription)")
+            return "{\"error\":\"unknown\"}"
+        }
     }
 }

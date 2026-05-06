@@ -13,6 +13,9 @@ struct OpenRouterSettingsView: View {
     @State private var credentialMessage: String?
     @State private var credentialError: String?
     @State private var byokConnect = BYOKConnectService()
+    @State private var isValidatingKey = false
+    @State private var keyInfo: OpenRouterKeyInfo?
+    private let validationService = OpenRouterKeyValidationService()
 
     var body: some View {
         Form {
@@ -28,6 +31,7 @@ struct OpenRouterSettingsView: View {
         .onChange(of: settings) { _, new in store.updateSettings(new) }
         .animation(.default, value: credentialMessage)
         .animation(.default, value: credentialError)
+        .animation(.default, value: keyInfo?.label)
     }
 
     // MARK: - Connection section
@@ -90,6 +94,33 @@ struct OpenRouterSettingsView: View {
                 } label: {
                     Label("Disconnect", systemImage: "trash")
                 }
+            }
+
+            // Validate stored key
+            if hasStoredOpenRouterKey {
+                Button {
+                    Task { await validateStoredKey() }
+                } label: {
+                    HStack {
+                        Label(
+                            isValidatingKey ? "Validating…" : "Validate Key",
+                            systemImage: "checkmark.shield"
+                        )
+                        if isValidatingKey {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isValidatingKey)
+            }
+
+            // Key info card (shown after successful validation)
+            if let keyInfo {
+                OpenRouterKeyInfoCard(info: keyInfo)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             // Flash messages
@@ -182,6 +213,7 @@ struct OpenRouterSettingsView: View {
         settings = store.state.settings
         credentialError = nil
         credentialMessage = nil
+        keyInfo = nil
         do {
             try OpenRouterCredentialStore.deleteAPIKey()
             settings.clearOpenRouterCredential()
@@ -197,5 +229,26 @@ struct OpenRouterSettingsView: View {
 
     private func refreshCredentialState() {
         hasStoredOpenRouterKey = OpenRouterCredentialStore.hasAPIKey()
+        if !hasStoredOpenRouterKey { keyInfo = nil }
+    }
+
+    private func validateStoredKey() async {
+        credentialError = nil
+        credentialMessage = nil
+        keyInfo = nil
+        isValidatingKey = true
+        defer { isValidatingKey = false }
+
+        do {
+            guard let apiKey = try OpenRouterCredentialStore.apiKey() else {
+                credentialError = "No stored key found."
+                return
+            }
+            keyInfo = try await validationService.validate(apiKey: apiKey)
+            Haptics.success()
+        } catch {
+            credentialError = error.localizedDescription
+            Haptics.warning()
+        }
     }
 }

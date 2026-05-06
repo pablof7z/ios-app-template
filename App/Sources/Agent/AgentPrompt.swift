@@ -45,10 +45,15 @@ enum AgentPrompt {
         return sections.joined(separator: "\n\n")
     }
 
-    private static var dateString: String {
+    /// Cached formatter — DateFormatter is expensive to allocate and thread-safe for read after setup.
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .full
         f.timeStyle = .short
-        return f.string(from: Date())
+        return f
+    }()
+
+    private static var dateString: String {
+        dateFormatter.string(from: Date())
     }
 }
