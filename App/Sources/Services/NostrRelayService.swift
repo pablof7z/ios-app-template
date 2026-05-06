@@ -3,6 +3,25 @@ import os.log
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "NostrRelayService")
 
+// MARK: - Protocol constants
+
+private enum NostrProtocol {
+    /// NIP-01 client-to-relay subscription command.
+    static let requestCommand = "REQ"
+    /// NIP-01 relay-to-client event envelope type.
+    static let eventMessage = "EVENT"
+    /// Nostr kind for plain-text notes (the only kind this service processes).
+    static let kindTextNote = 1
+    /// Minimum array length for a valid relay EVENT message: ["EVENT", <subID>, <event>].
+    static let minEventArrayCount = 3
+    /// Index of the event object within an EVENT array.
+    static let eventIndex = 2
+    /// Subscription ID used when requesting the agent's incoming DMs.
+    static let subscriptionID = "agent-inbox"
+    /// Seconds to wait before attempting a reconnect after a WebSocket error.
+    static let reconnectDelay: Duration = .seconds(5)
+}
+
 /// Connects to a configured Nostr relay and gates incoming kind:1 messages
 /// through the access-control layer, queuing unknown senders for user approval.
 @MainActor
@@ -60,11 +79,21 @@ final class NostrRelayService {
     }
 
     private func sendSubscription(agentPubkey: String) {
-        let subID = "agent-inbox"
-        let filter: [String: Any] = ["kinds": [1], "#p": [agentPubkey]]
-        guard let data = try? JSONSerialization.data(withJSONObject: ["REQ", subID, filter] as [Any]),
-              let text = String(data: data, encoding: .utf8) else { return }
-        webSocketTask?.send(.string(text)) { _ in }
+        let filter: [String: Any] = [
+            "kinds": [NostrProtocol.kindTextNote],
+            "#p": [agentPubkey],
+        ]
+        let message: [Any] = [NostrProtocol.requestCommand, NostrProtocol.subscriptionID, filter]
+        do {
+            let data = try JSONSerialization.data(withJSONObject: message)
+            guard let text = String(data: data, encoding: .utf8) else {
+                logger.error("sendSubscription: failed to encode REQ as UTF-8 string")
+                return
+            }
+            webSocketTask?.send(.string(text)) { _ in }
+        } catch {
+            logger.error("sendSubscription: JSON serialization failed — \(error, privacy: .public)")
+        }
     }
 
     private func startReceiveLoop(agentPubkey: String) {
@@ -77,8 +106,9 @@ final class NostrRelayService {
                     if case .string(let text) = msg { self.handle(text: text) }
                 } catch {
                     guard !Task.isCancelled else { return }
-                    logger.warning("NostrRelayService: WebSocket error — \(error, privacy: .public); reconnecting in 5s")
-                    try? await Task.sleep(for: .seconds(5))
+                    logger.warning("NostrRelayService: WebSocket error — \(error, privacy: .public); reconnecting in \(NostrProtocol.reconnectDelay)")
+                    // Cancellation is checked immediately after; swallowing the sleep-cancel error is intentional.
+                    try? await Task.sleep(for: NostrProtocol.reconnectDelay)
                     guard !Task.isCancelled else { return }
                     self.start()
                     return
@@ -92,10 +122,10 @@ final class NostrRelayService {
     private func handle(text: String) {
         guard let data = text.data(using: .utf8),
               let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              array.count >= 3,
-              let msgType = array[0] as? String, msgType == "EVENT",
-              let event = array[2] as? [String: Any],
-              let kind = event["kind"] as? Int, kind == 1,
+              array.count >= NostrProtocol.minEventArrayCount,
+              let msgType = array[0] as? String, msgType == NostrProtocol.eventMessage,
+              let event = array[NostrProtocol.eventIndex] as? [String: Any],
+              let kind = event["kind"] as? Int, kind == NostrProtocol.kindTextNote,
               let senderPubkey = event["pubkey"] as? String else { return }
 
         guard senderPubkey != store.state.settings.nostrPublicKeyHex else { return }

@@ -6,6 +6,8 @@ enum ReviewPrompt {
     private static let actionCountKey  = "reviewPrompt.actionCount"
     private static let lastRequestKey  = "reviewPrompt.lastRequestDate"
     private static let requestCountKey = "reviewPrompt.requestCount"
+    /// Minimum number of meaningful actions before a review prompt may be shown.
+    private static let minimumActionCount = 5
     private static let cooldownSeconds: Double = 60 * 86_400   // 60 days
 
     /// Call this after a meaningful positive action (item completed, feedback sent, etc.).
@@ -13,7 +15,7 @@ enum ReviewPrompt {
     static func requestIfAppropriate(in scene: UIWindowScene? = nil) {
         let defaults = UserDefaults.standard
         let actionCount = defaults.integer(forKey: actionCountKey)
-        guard actionCount >= 5 else { return }
+        guard actionCount >= minimumActionCount else { return }
 
         let lastRequest = defaults.double(forKey: lastRequestKey)
         let elapsed = lastRequest == 0 ? Double.infinity : Date().timeIntervalSince1970 - lastRequest

@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "NostrCredentialStore")
 
 /// Stores the Nostr private key (hex) in Keychain.
 /// The matching public key hex is stored in Settings (non-secret).
@@ -21,8 +24,16 @@ enum NostrCredentialStore {
         return trimmed.isEmpty ? nil : trimmed
     }
 
+    /// Returns `true` if a private key is stored in the Keychain.
+    /// Keychain read errors are logged but treated as "no key present" to avoid
+    /// crashing on transient entitlement or accessibility failures.
     static func hasPrivateKey() -> Bool {
-        ((try? privateKey()) ?? nil) != nil
+        do {
+            return try privateKey() != nil
+        } catch {
+            logger.error("hasPrivateKey: Keychain read failed — \(error, privacy: .public)")
+            return false
+        }
     }
 
     static func deletePrivateKey() throws {
