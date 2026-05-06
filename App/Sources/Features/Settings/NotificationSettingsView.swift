@@ -34,25 +34,6 @@ private enum Layout {
     static let trailingSpacerMin: CGFloat = 4
 }
 
-// MARK: - Date bucket
-
-/// Forward-looking date grouping for the pending-reminders list.
-private enum ReminderDateBucket: String, CaseIterable {
-    case today = "Today"
-    case tomorrow = "Tomorrow"
-    case thisWeek = "This Week"
-    case later = "Later"
-
-    /// Assigns a pending reminder to its bucket relative to `now`.
-    static func bucket(for date: Date, now: Date, calendar: Calendar) -> ReminderDateBucket {
-        if calendar.isDateInToday(date) { return .today }
-        if calendar.isDateInTomorrow(date) { return .tomorrow }
-        let weekOut = calendar.date(byAdding: .day, value: 7, to: now) ?? now
-        if date <= weekOut { return .thisWeek }
-        return .later
-    }
-}
-
 struct NotificationSettingsView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.openURL) private var openURL
@@ -292,11 +273,3 @@ struct NotificationSettingsView: View {
     }
 }
 
-// MARK: - PendingReminder
-
-private struct PendingReminder: Identifiable {
-    let id: String
-    let itemID: UUID?
-    let title: String
-    let fireDate: Date
-}
