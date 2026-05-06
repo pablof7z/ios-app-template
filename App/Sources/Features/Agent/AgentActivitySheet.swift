@@ -105,7 +105,7 @@ struct AgentActivitySheet: View {
         HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.md) {
             Image(systemName: entry.kind.icon)
                 .foregroundStyle(entry.undone ? AnyShapeStyle(.tertiary) : AnyShapeStyle(entry.kind.tint))
-                .font(.callout)
+                .font(AppTheme.Typography.callout)
                 .frame(width: Layout.iconColumnWidth)
 
             VStack(alignment: .leading, spacing: Layout.rowVerticalSpacing) {

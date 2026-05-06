@@ -156,7 +156,7 @@ private struct MemoryRow: View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
             HStack(alignment: .top) {
                 Image(systemName: "brain")
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.purple)
                     .padding(.top, 2)
 

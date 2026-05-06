@@ -111,7 +111,7 @@ private struct BlockedRow: View {
                 if isCopied {
                     Label("Copied", systemImage: "checkmark")
                         .labelStyle(.titleAndIcon)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .transition(.opacity)
                 }

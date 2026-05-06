@@ -246,7 +246,7 @@ private struct AddFriendSheet: View {
         VStack {
             Spacer()
             Text("Point at a Nostr QR code")
-                .font(.caption)
+                .font(AppTheme.Typography.caption)
                 .foregroundStyle(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)

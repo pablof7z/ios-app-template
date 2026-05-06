@@ -300,7 +300,7 @@ struct AgentChatView: View {
         } label: {
             HStack {
                 Image(systemName: "wand.and.stars")
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.indigo)
                     .accessibilityHidden(true)
                 Text(text)
@@ -362,7 +362,7 @@ struct AgentChatView: View {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .accessibilityHidden(true)
                 Text(msg)
                     .font(AppTheme.Typography.caption)

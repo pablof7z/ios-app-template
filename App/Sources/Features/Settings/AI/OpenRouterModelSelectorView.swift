@@ -69,7 +69,7 @@ struct OpenRouterModelSelectorView: View {
                     Text(selectedModelID)
                         .font(.subheadline.monospaced())
                     Text("Custom model ID")
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 4)

@@ -52,7 +52,7 @@ struct FriendDetailView: View {
                                     .strikethrough(item.status == .done)
                                     .foregroundStyle(item.status == .done ? .secondary : .primary)
                             }
-                            .font(.callout)
+                            .font(AppTheme.Typography.callout)
                             .opacity(item.status == .done ? 0.55 : 1)
                         }
                     }

@@ -115,7 +115,7 @@ struct AgentSettingsView: View {
                 } label: {
                     Label("Set up identity first", systemImage: "person.crop.circle.badge.exclamationmark")
                         .foregroundStyle(.secondary)
-                        .font(.callout)
+                        .font(AppTheme.Typography.callout)
                 }
             }
         } header: {

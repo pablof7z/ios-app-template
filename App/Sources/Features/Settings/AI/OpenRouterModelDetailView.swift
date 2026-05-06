@@ -138,7 +138,7 @@ struct OpenRouterModelDetailView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: Layout.groupSpacing) {
             Text(title)
-                .font(.headline)
+                .font(AppTheme.Typography.headline)
             VStack(alignment: .leading, spacing: Layout.groupInnerSpacing) {
                 content()
             }

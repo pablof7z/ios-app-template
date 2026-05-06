@@ -122,14 +122,14 @@ struct ElevenLabsSettingsView: View {
 
             if let credentialMessage {
                 Text(credentialMessage)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             if let credentialError {
                 Text(credentialError)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.red)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -197,7 +197,7 @@ struct ElevenLabsSettingsView: View {
 
             if let testVoiceError {
                 Text(testVoiceError)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.red)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }

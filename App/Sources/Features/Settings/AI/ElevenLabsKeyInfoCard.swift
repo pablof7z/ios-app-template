@@ -51,7 +51,7 @@ struct ElevenLabsKeyInfoCard: View {
         VStack(alignment: .leading, spacing: 6) {
             if let label = info.remainingLabel {
                 Text(label)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             }
 

@@ -175,7 +175,7 @@ struct ScreenshotAnnotationView: View {
                     Haptics.selection()
                 } label: {
                     Image(systemName: "arrow.uturn.backward")
-                        .font(.callout)
+                        .font(AppTheme.Typography.callout)
                 }
                 .buttonStyle(.glass)
                 .disabled(strokes.isEmpty)
@@ -188,7 +188,7 @@ struct ScreenshotAnnotationView: View {
                     Haptics.medium()
                 } label: {
                     Image(systemName: "trash")
-                        .font(.callout)
+                        .font(AppTheme.Typography.callout)
                 }
                 .buttonStyle(.glass)
                 .disabled(strokes.isEmpty && currentStroke == nil)

@@ -105,7 +105,7 @@ struct AgentIdentityView: View {
                 .overlay(alignment: .bottomTrailing) {
                     Button { editingPictureURL = true } label: {
                         Image(systemName: "camera.fill")
-                            .font(.caption)
+                            .font(AppTheme.Typography.caption)
                             .frame(width: 28, height: 28)
                     }
                     .accessibilityLabel("Edit profile picture")
@@ -145,7 +145,7 @@ struct AgentIdentityView: View {
     private var bioField: some View {
         if bioFocused {
             TextField("A short bio…", text: $settings.nostrProfileAbout, axis: .vertical)
-                .font(.callout)
+                .font(AppTheme.Typography.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2...5)
@@ -154,7 +154,7 @@ struct AgentIdentityView: View {
                 .frame(maxWidth: 320)
         } else {
             Text(settings.nostrProfileAbout.isEmpty ? "Add a bio…" : settings.nostrProfileAbout)
-                .font(.callout)
+                .font(AppTheme.Typography.callout)
                 .foregroundStyle(settings.nostrProfileAbout.isEmpty ? .tertiary : .secondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2...5)
@@ -277,7 +277,7 @@ struct AgentIdentityView: View {
                 Button { copyPublicKey() } label: {
                     Label(showCopied ? "Copied" : "Copy",
                           systemImage: showCopied ? "checkmark" : "doc.on.doc")
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .padding(.horizontal, 10).padding(.vertical, 6)
                 }
                 .glassEffect(.regular.interactive(), in: .capsule)
@@ -291,7 +291,7 @@ struct AgentIdentityView: View {
             Text("No identity yet")
                 .font(.system(.headline, design: .rounded, weight: .semibold))
             Text("Generate a key pair to create your Nostr identity.")
-                .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .font(AppTheme.Typography.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button { generateKeyPair(); Haptics.success() } label: {
                 Label("Generate Key Pair", systemImage: "key.fill")
                     .font(.system(.body, design: .rounded, weight: .semibold))

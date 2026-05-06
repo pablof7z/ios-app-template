@@ -56,11 +56,11 @@ struct OpenRouterKeyInfoCard: View {
         VStack(alignment: .leading, spacing: 6) {
             if let remaining = info.remainingLabel {
                 Text(remaining)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             } else if info.limitDollars == nil {
                 Text(info.usageDollars.map { String(format: "$%.4f used", $0) } ?? "Unlimited credits")
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -85,7 +85,7 @@ struct OpenRouterKeyInfoCard: View {
             tierChip
             if let requests = info.requestsPerInterval, let interval = info.rateInterval {
                 Text("\(requests) req/\(interval)")
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()

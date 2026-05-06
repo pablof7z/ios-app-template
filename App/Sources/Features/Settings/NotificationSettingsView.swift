@@ -201,17 +201,17 @@ struct NotificationSettingsView: View {
             }
             VStack(alignment: .leading, spacing: Layout.textSpacing) {
                 Text(reminder.title)
-                    .font(.body)
+                    .font(AppTheme.Typography.body)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Text(reminder.fireDate.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: Layout.trailingSpacerMin)
             if reminder.fireDate > Date() {
                 Text(reminder.fireDate, style: .relative)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.trailing)
             }

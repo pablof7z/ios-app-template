@@ -179,14 +179,14 @@ struct FeedbackThreadDetailView: View {
     private func summaryBanner(_ summary: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "sparkles")
-                .font(.callout)
+                .font(AppTheme.Typography.callout)
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Summary")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Text(summary)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.primary)
             }
         }
@@ -203,7 +203,7 @@ struct FeedbackThreadDetailView: View {
         VStack(spacing: 6) {
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)

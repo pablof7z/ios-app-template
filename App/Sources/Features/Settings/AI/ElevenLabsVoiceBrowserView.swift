@@ -211,7 +211,7 @@ struct ElevenLabsVoiceBrowserView: View {
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
             Text("Connect ElevenLabs to browse voices")
-                .font(.headline)
+                .font(AppTheme.Typography.headline)
                 .multilineTextAlignment(.center)
             Text("Add your ElevenLabs API key in the previous screen to load the voice library.")
                 .font(.subheadline)

@@ -36,12 +36,12 @@ struct FeedbackThreadRow: View {
 
                 if let summary = thread.summary, !summary.isEmpty {
                     Text(summary)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 } else if thread.title != nil, !thread.content.isEmpty {
                     Text(thread.content)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }

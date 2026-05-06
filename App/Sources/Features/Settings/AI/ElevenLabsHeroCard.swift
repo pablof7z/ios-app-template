@@ -63,11 +63,11 @@ struct ElevenLabsHeroCard: View {
                 Text("ElevenLabs")
                     .font(AppTheme.Typography.title)
                 Text(heroSubtitle)
-                    .font(.callout)
+                    .font(AppTheme.Typography.callout)
                     .foregroundStyle(isConnected ? .primary : .secondary)
                 if let tertiary = heroTertiary {
                     Text(tertiary)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                 }
             }
