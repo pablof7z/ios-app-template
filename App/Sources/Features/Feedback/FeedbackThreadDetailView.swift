@@ -1,5 +1,14 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum DetailLayout {
+    static let statusPaddingH: CGFloat = 8
+    static let statusPaddingV: CGFloat = 3
+    static let imageCornerRadius: CGFloat = 14
+    static let imageMaxHeight: CGFloat = 240
+}
+
 // MARK: - FeedbackThreadDetailView
 
 struct FeedbackThreadDetailView: View {
@@ -9,6 +18,7 @@ struct FeedbackThreadDetailView: View {
     @State private var replyDraft = ""
     @State private var isSending = false
     @State private var errorMessage: String?
+    @State private var imageFullscreen = false
     @FocusState private var composerFocused: Bool
 
     private var currentThread: FeedbackThread {
@@ -28,20 +38,65 @@ struct FeedbackThreadDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        UIPasteboard.general.string = currentThread.content
-                    } label: {
-                        Label("Copy text", systemImage: "doc.on.doc")
+                HStack(spacing: 4) {
+                    if let status = currentThread.statusLabel, !status.isEmpty {
+                        statusBadge(status)
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .accessibilityLabel("Thread options")
+                    Menu {
+                        Button {
+                            UIPasteboard.general.string = currentThread.content
+                            Haptics.selection()
+                        } label: {
+                            Label("Copy text", systemImage: "doc.on.doc")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .accessibilityLabel("Thread options")
+                    }
                 }
             }
         }
         .safeAreaInset(edge: .bottom) {
             replyComposer
+        }
+        .fullScreenCover(isPresented: $imageFullscreen) {
+            if let image = currentThread.attachedImage {
+                imageViewer(image)
+            }
+        }
+    }
+
+    // MARK: - Status badge
+
+    private func statusBadge(_ status: String) -> some View {
+        Text(status.uppercased())
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, DetailLayout.statusPaddingH)
+            .padding(.vertical, DetailLayout.statusPaddingV)
+            .background(Color.accentColor.opacity(0.15), in: .capsule)
+            .foregroundStyle(Color.accentColor)
+            .accessibilityLabel("Status: \(status)")
+    }
+
+    // MARK: - Full-screen image viewer
+
+    private func imageViewer(_ image: UIImage) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Button {
+                imageFullscreen = false
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 28))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+                    .padding(20)
+            }
+            .accessibilityLabel("Close image")
         }
     }
 
@@ -63,6 +118,11 @@ struct FeedbackThreadDetailView: View {
                         createdAt: currentThread.createdAt
                     )
                     .id("root")
+
+                    // Attached screenshot (if any)
+                    if let image = currentThread.attachedImage {
+                        attachedImageBubble(image)
+                    }
 
                     // Reply bubbles
                     ForEach(currentThread.replies) { reply in
@@ -87,6 +147,32 @@ struct FeedbackThreadDetailView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Attached image bubble
+
+    private func attachedImageBubble(_ image: UIImage) -> some View {
+        HStack {
+            Spacer(minLength: 60)
+            Button {
+                Haptics.selection()
+                imageFullscreen = true
+            } label: {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: DetailLayout.imageMaxHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: DetailLayout.imageCornerRadius))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DetailLayout.imageCornerRadius)
+                            .strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 0.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Attached screenshot — tap to expand")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 2)
     }
 
     @ViewBuilder
@@ -225,6 +311,13 @@ struct FeedbackBubble: View {
             .glassEffect(.regular.tint(.accentColor), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
             .foregroundStyle(.white)
             .multilineTextAlignment(.leading)
+            .contextMenu {
+                Button {
+                    UIPasteboard.general.string = content
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+            }
     }
 
     private var theirBubble: some View {

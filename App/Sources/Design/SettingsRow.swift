@@ -4,12 +4,30 @@ import SwiftUI
 ///
 /// - Parameters:
 ///   - icon: SF Symbol name
-///   - tint: Fill color of the 29x29 rounded icon badge
+///   - tint: Fill color of the `iconBadgeSize` × `iconBadgeSize` rounded icon badge
 ///   - title: Primary label
 ///   - subtitle: Optional secondary label shown below title
 ///   - value: Optional trailing value text
 ///   - badge: When > 0, shows an orange `StatBadge` trailing
 struct SettingsRow: View {
+
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Side length of the icon badge square.
+        static let iconBadgeSize: CGFloat = 29
+        /// Corner radius of the icon badge — matches the iOS Settings app.
+        static let iconBadgeCornerRadius: CGFloat = 7
+        /// Point size of the SF Symbol inside the icon badge.
+        static let iconFontSize: CGFloat = 15
+        /// Horizontal gap between icon badge and label stack.
+        static let rowSpacing: CGFloat = 12
+        /// Sub-label spacing inside `labelStack`.
+        static let labelSpacing: CGFloat = 2
+        /// Minimum gap between label stack and trailing content.
+        static let spacerMinLength: CGFloat = 4
+    }
+
     let icon: String
     let tint: Color
     let title: String
@@ -18,12 +36,12 @@ struct SettingsRow: View {
     var badge: Int = 0
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Layout.rowSpacing) {
             iconBadge
 
             labelStack
 
-            Spacer(minLength: 4)
+            Spacer(minLength: Layout.spacerMinLength)
 
             trailingContent
         }
@@ -33,30 +51,31 @@ struct SettingsRow: View {
 
     private var iconBadge: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: Layout.iconBadgeCornerRadius, style: .continuous)
                 .fill(tint)
-                .frame(width: 29, height: 29)
+                .frame(width: Layout.iconBadgeSize, height: Layout.iconBadgeSize)
             Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: Layout.iconFontSize, weight: .semibold))
                 .foregroundStyle(.white)
         }
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
     private var labelStack: some View {
         if let subtitle {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Layout.labelSpacing) {
                 Text(title)
-                    .font(.body)
+                    .font(AppTheme.Typography.body)
                 Text(subtitle)
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
         } else {
             Text(title)
-                .font(.body)
+                .font(AppTheme.Typography.body)
         }
     }
 
@@ -66,7 +85,7 @@ struct SettingsRow: View {
             StatBadge(value: badge, label: nil, color: .orange)
         } else if let value {
             Text(value)
-                .font(.body)
+                .font(AppTheme.Typography.body)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)

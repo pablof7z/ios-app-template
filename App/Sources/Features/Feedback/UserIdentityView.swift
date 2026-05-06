@@ -1,8 +1,24 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "UserIdentityView")
 
 /// Lets the user log in with an nsec key for posting feedback under their
 /// Nostr identity. Completely separate from the agent's identity.
 struct UserIdentityView: View {
+
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Horizontal padding for the "Coming soon" chip.
+        static let chipHorizontalPadding: CGFloat = 8
+        /// Vertical padding for the "Coming soon" chip.
+        static let chipVerticalPadding: CGFloat = 3
+        /// Duration (seconds) for which the "Copied!" confirmation stays visible.
+        static let copiedFeedbackDuration: TimeInterval = 1.5
+        /// Point size of the hero identity icon.
+        static let heroIconSize: CGFloat = 56
+    }
     @Environment(UserIdentityStore.self) private var identity
     @Environment(\.dismiss) private var dismiss
 
@@ -51,7 +67,7 @@ struct UserIdentityView: View {
     private var heroSection: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: identity.hasIdentity ? "person.crop.circle.fill.badge.checkmark" : "person.crop.circle.badge.plus")
-                .font(.system(size: 56))
+                .font(.system(size: Layout.heroIconSize))
                 .foregroundStyle(identity.hasIdentity ? Color.accentColor : Color(.tertiaryLabel))
                 .symbolRenderingMode(.hierarchical)
 
@@ -105,7 +121,11 @@ struct UserIdentityView: View {
             Haptics.selection()
             showCopied = true
             Task {
-                try? await Task.sleep(for: .seconds(1.5))
+                do {
+                    try await Task.sleep(for: .seconds(Layout.copiedFeedbackDuration))
+                } catch {
+                    logger.debug("copyNpubButton sleep cancelled: \(error, privacy: .public)")
+                }
                 await MainActor.run { showCopied = false }
             }
         } label: {
@@ -191,10 +211,11 @@ struct UserIdentityView: View {
                 Spacer()
                 Text("Coming soon")
                     .font(AppTheme.Typography.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
+                    .padding(.horizontal, Layout.chipHorizontalPadding)
+                    .padding(.vertical, Layout.chipVerticalPadding)
                     .background(Color(.tertiarySystemBackground), in: Capsule())
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Coming soon")
             }
             Text("Connect with nsecBunker, Amber, or any NIP-46 compatible signer. Sign in with nsec for now.")
                 .font(AppTheme.Typography.caption)

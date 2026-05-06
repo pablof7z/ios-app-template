@@ -8,6 +8,26 @@ import SwiftUI
 /// The view reads `store.state.agentActivity` directly so per-row toggles
 /// flow back through the existing @Observable pipeline.
 struct AgentActivitySheet: View {
+
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Width reserved for each row's leading icon column.
+        static let iconColumnWidth: CGFloat = 22
+        /// Size of the empty-state icon.
+        static let emptyStateIconSize: CGFloat = 44
+        /// Tight spacing between a summary and its timestamp sub-label.
+        static let rowVerticalSpacing: CGFloat = 2
+    }
+
+    // MARK: - Time-display thresholds (seconds)
+
+    private enum Threshold {
+        static let justNow: TimeInterval = 5
+        static let minutes: TimeInterval = 60
+        static let hours: TimeInterval = 3_600
+    }
+
     let batchID: UUID
 
     @Environment(AppStateStore.self) private var store
@@ -86,9 +106,9 @@ struct AgentActivitySheet: View {
             Image(systemName: entry.kind.icon)
                 .foregroundStyle(entry.undone ? AnyShapeStyle(.tertiary) : AnyShapeStyle(entry.kind.tint))
                 .font(.callout)
-                .frame(width: 22)
+                .frame(width: Layout.iconColumnWidth)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Layout.rowVerticalSpacing) {
                 Text(entry.summary)
                     .font(AppTheme.Typography.body)
                     .foregroundStyle(entry.undone ? .secondary : .primary)
@@ -128,7 +148,7 @@ struct AgentActivitySheet: View {
     private var emptyState: some View {
         VStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "sparkle")
-                .font(.system(size: 44))
+                .font(.system(size: Layout.emptyStateIconSize))
                 .foregroundStyle(.secondary)
                 .symbolEffect(.pulse, options: .repeating)
             Text("Nothing changed")
@@ -144,10 +164,10 @@ struct AgentActivitySheet: View {
 
     private func relativeTimestamp(_ date: Date) -> String {
         let interval = Date().timeIntervalSince(date)
-        if interval < 5 { return "just now" }
-        if interval < 60 { return "\(Int(interval))s ago" }
-        if interval < 3600 { return "\(Int(interval / 60))m ago" }
-        return "\(Int(interval / 3600))h ago"
+        if interval < Threshold.justNow { return "just now" }
+        if interval < Threshold.minutes { return "\(Int(interval))s ago" }
+        if interval < Threshold.hours   { return "\(Int(interval / Threshold.minutes))m ago" }
+        return "\(Int(interval / Threshold.hours))h ago"
     }
 }
 
