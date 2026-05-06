@@ -88,7 +88,7 @@ struct AddFriendSheet: View {
         VStack {
             Spacer()
             RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                .strokeBorder(.white.opacity(0.6), lineWidth: AgentFriendsConstants.viewfinderLineWidth)
+                .strokeBorder(.white.opacity(AgentFriendsConstants.viewfinderBorderOpacity), lineWidth: AgentFriendsConstants.viewfinderLineWidth)
                 .frame(width: AgentFriendsConstants.viewfinderSize, height: AgentFriendsConstants.viewfinderSize)
             Spacer()
         }

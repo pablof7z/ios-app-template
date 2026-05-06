@@ -122,7 +122,7 @@ struct ProductivityStatsView: View {
             Text("Streak")
         } footer: {
             Text("A streak counts consecutive calendar days where you completed at least one item.")
-                .font(.caption)
+                .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
         }
     }
@@ -138,7 +138,7 @@ struct ProductivityStatsView: View {
             Text("By Source")
         } footer: {
             Text("Items created manually, by the AI agent, or via voice input.")
-                .font(.caption)
+                .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
         }
     }

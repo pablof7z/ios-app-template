@@ -21,6 +21,8 @@ enum AgentFriendsConstants {
     static let viewfinderSize: CGFloat = 200
     /// Stroke width of the viewfinder guide frame.
     static let viewfinderLineWidth: CGFloat = 2
+    /// Opacity of the viewfinder guide frame border.
+    static let viewfinderBorderOpacity: Double = 0.6
 }
 
 struct AgentFriendsView: View {

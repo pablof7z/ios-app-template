@@ -17,6 +17,8 @@ struct StreakHeroCard: View {
         static let pulseDuration: Double     = 1.4
         /// Denominator used to normalise the flame-size ramp (reaches max at this streak length).
         static let flameSizeRampDays: CGFloat = 14
+        /// Fill opacity of the milestone badge capsule background.
+        static let badgeFillOpacity: Double = 0.12
     }
 
     let currentStreak: Int
@@ -101,7 +103,7 @@ struct StreakHeroCard: View {
     private func milestoneBadgeRow(_ badge: String) -> some View {
         HStack {
             Image(systemName: "flame.fill")
-                .font(.caption2)
+                .font(AppTheme.Typography.caption2)
                 .foregroundStyle(tint)
             Text(badge)
                 .font(AppTheme.Typography.caption.weight(.semibold))
@@ -110,13 +112,13 @@ struct StreakHeroCard: View {
         }
         .padding(.horizontal, AppTheme.Spacing.sm)
         .padding(.vertical, AppTheme.Spacing.xs)
-        .background(Capsule().fill(tint.opacity(0.12)))
+        .background(Capsule().fill(tint.opacity(Layout.badgeFillOpacity)))
     }
 
     private var personalBestRow: some View {
         HStack {
             Image(systemName: "trophy.fill")
-                .font(.caption2)
+                .font(AppTheme.Typography.caption2)
                 .foregroundStyle(.secondary)
             Text("Personal best: \(longestStreak) day\(longestStreak == 1 ? "" : "s")")
                 .font(AppTheme.Typography.caption)
