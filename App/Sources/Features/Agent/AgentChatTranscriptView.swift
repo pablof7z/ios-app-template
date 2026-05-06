@@ -1,5 +1,10 @@
 import SwiftUI
 
+// MARK: - Constants
+
+/// Stable scroll ID assigned to the typing indicator row.
+private let typingIndicatorID = "typing-indicator"
+
 /// Scrollable message transcript with a jump-to-bottom button.
 struct AgentChatTranscriptView: View {
     let session: AgentChatSession
@@ -10,7 +15,7 @@ struct AgentChatTranscriptView: View {
         ScrollViewReader { proxy in
             let isAtBottom = scrolledMessageID == nil
                 || scrolledMessageID == session.messages.last?.id
-                || scrolledMessageID == AnyHashable("typing-indicator")
+                || scrolledMessageID == AnyHashable(typingIndicatorID)
 
             ScrollView {
                 messageList
@@ -30,7 +35,7 @@ struct AgentChatTranscriptView: View {
             .onChange(of: session.phase) {
                 if case .sending = session.phase {
                     withAnimation(AppTheme.Animation.spring) {
-                        proxy.scrollTo("typing-indicator", anchor: .bottom)
+                        proxy.scrollTo(typingIndicatorID, anchor: .bottom)
                     }
                 }
             }
@@ -71,7 +76,7 @@ struct AgentChatTranscriptView: View {
             }
             if case .sending = session.phase {
                 AgentTypingIndicator()
-                    .id("typing-indicator")
+                    .id(typingIndicatorID)
                     .transition(.opacity)
             }
         }
