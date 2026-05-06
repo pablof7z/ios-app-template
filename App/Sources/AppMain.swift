@@ -4,6 +4,7 @@ import SwiftUI
 /// and wires the Nostr relay service to relevant settings changes.
 @main
 struct AppTemplateApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var store = AppStateStore()
     @State private var userIdentity = UserIdentityStore()
     @State private var relayService: NostrRelayService?

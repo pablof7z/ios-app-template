@@ -46,6 +46,11 @@ struct RootView: View {
                 OnboardingView()
             }
             .onOpenURL { handleDeepLink($0) }
+            .onReceive(
+                NotificationCenter.default.publisher(for: AppDelegate.shortcutURLNotification)
+            ) { note in
+                if let url = note.object as? URL { handleDeepLink(url) }
+            }
     }
 
     private var tabBar: some View {
@@ -76,7 +81,10 @@ struct RootView: View {
         case .feedback:
             showFeedback = true
         case .newItem(let title):
+            selectedTab = .home
             pendingNewItemTitle = title
+        case .overdue:
+            selectedTab = .home
         }
     }
 

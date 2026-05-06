@@ -12,6 +12,8 @@ enum DeepLinkHandler {
         case feedback
         /// Creates a new item, optionally pre-filling its title from the query string.
         case newItem(title: String?)
+        /// Navigates to Home and scrolls/focuses the Overdue section.
+        case overdue
     }
 
     /// Converts a URL into a ``Link``, or returns `nil` if the URL is not a recognised deep-link.
@@ -24,6 +26,7 @@ enum DeepLinkHandler {
             let title = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first(where: { $0.name == "title" })?.value
             return .newItem(title: title)
+        case "overdue": return .overdue
         default: return nil
         }
     }
