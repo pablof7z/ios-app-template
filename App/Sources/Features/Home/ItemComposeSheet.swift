@@ -7,6 +7,7 @@ struct ItemComposeSheet: View {
     var initialTitle: String = ""
 
     @State private var title: String = ""
+    @State private var isPriority: Bool = false
     @State private var reminderDate: Date = Date().addingTimeInterval(3600)
     @State private var reminderEnabled: Bool = false
     @State private var notificationDenied: Bool = false
@@ -34,7 +35,7 @@ struct ItemComposeSheet: View {
                 }
             }
         }
-        .presentationDetents([.height(reminderEnabled ? 320 : 220), .medium])
+        .presentationDetents([.height(reminderEnabled ? 360 : 260), .medium])
         .presentationDragIndicator(.visible)
         .onAppear {
             if !initialTitle.isEmpty { title = initialTitle }
@@ -47,6 +48,7 @@ struct ItemComposeSheet: View {
     private var editor: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             titleField
+            priorityRow
             reminderRow
             if notificationDenied {
                 deniedBanner
@@ -69,6 +71,17 @@ struct ItemComposeSheet: View {
                 .submitLabel(.done)
                 .onSubmit { Task { await save() } }
         }
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var priorityRow: some View {
+        Toggle(isOn: $isPriority) {
+            Label("Priority", systemImage: isPriority ? "star.fill" : "star")
+                .font(AppTheme.Typography.body)
+                .foregroundStyle(isPriority ? .yellow : .secondary)
+        }
+        .tint(.yellow)
         .padding(AppTheme.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
     }
@@ -126,6 +139,10 @@ struct ItemComposeSheet: View {
         guard !trimmed.isEmpty else { return }
 
         var item = store.addItem(title: trimmed, source: .manual)
+        if isPriority {
+            item.isPriority = true
+            store.updateItem(item)
+        }
 
         if reminderEnabled {
             let scheduled = await NotificationService.scheduleReminder(
