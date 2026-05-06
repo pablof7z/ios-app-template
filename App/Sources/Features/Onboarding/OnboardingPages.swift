@@ -225,17 +225,17 @@ struct OnboardingIdentityPage: View {
     @Binding var agentName: String
     @Binding var profilePicture: String
 
+    private enum Layout {
+        static let avatarSize: CGFloat = 90
+        static let avatarIconSize: CGFloat = 36
+        static let avatarFontSize: CGFloat = 32
+    }
+
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Spacer()
 
-            Image(systemName: "person.crop.circle.badge.plus")
-                .font(.system(size: OnboardingLayout.pageIconSize, weight: .semibold))
-                .foregroundStyle(.white)
-                .symbolEffect(.bounce, options: .repeat(2))
-                .padding(OnboardingLayout.pageIconPadding)
-                .glassEffect(.regular, in: .circle)
-                .overlay(Circle().strokeBorder(.white.opacity(OnboardingLayout.pageIconStroke), lineWidth: 1))
+            avatarPreview
 
             VStack(spacing: AppTheme.Spacing.sm) {
                 Text("Name your agent")
@@ -259,7 +259,70 @@ struct OnboardingIdentityPage: View {
 
             Spacer()
         }
+        .animation(AppTheme.Animation.springFast, value: validPictureURL)
+        .animation(AppTheme.Animation.springFast, value: nameInitial)
     }
+
+    // MARK: - Avatar Preview
+
+    private var validPictureURL: URL? {
+        let trimmed = profilePicture.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https"
+        else { return nil }
+        return url
+    }
+
+    private var nameInitial: String {
+        agentName.trimmingCharacters(in: .whitespacesAndNewlines).first.map(String.init) ?? ""
+    }
+
+    @ViewBuilder
+    private var avatarPreview: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.12))
+                .frame(width: Layout.avatarSize, height: Layout.avatarSize)
+                .glassEffect(.regular, in: .circle)
+                .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
+
+            if let url = validPictureURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    case .failure:
+                        initialsOrPlaceholder
+                    default:
+                        ProgressView().tint(.white)
+                    }
+                }
+                .frame(width: Layout.avatarSize, height: Layout.avatarSize)
+                .clipShape(Circle())
+            } else {
+                initialsOrPlaceholder
+            }
+        }
+        .appShadow(AppTheme.Shadow.lifted)
+        .accessibilityLabel(validPictureURL != nil ? "Profile picture preview" : "Default profile placeholder")
+    }
+
+    @ViewBuilder
+    private var initialsOrPlaceholder: some View {
+        if nameInitial.isEmpty {
+            Image(systemName: "person.crop.circle.badge.plus")
+                .font(.system(size: Layout.avatarIconSize, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.8))
+        } else {
+            Text(nameInitial.uppercased())
+                .font(.system(size: Layout.avatarFontSize, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+        }
+    }
+
+    // MARK: - Field
 
     private func fieldRow(icon: String, placeholder: String, text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         HStack(spacing: AppTheme.Spacing.sm) {
