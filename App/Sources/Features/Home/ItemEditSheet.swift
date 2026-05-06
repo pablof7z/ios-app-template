@@ -35,6 +35,7 @@ struct ItemEditSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .keyboardShortcut(.cancelAction)
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     ShareLink(item: item.shareText) {
@@ -47,6 +48,7 @@ struct ItemEditSheet: View {
                         .buttonStyle(.glassProminent)
                         .disabled(!canSave)
                         .fontWeight(.semibold)
+                        .keyboardShortcut(.return, modifiers: .command)
                 }
             }
             .applyZoomTransition(sourceID: sourceID, namespace: namespace)

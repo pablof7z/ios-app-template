@@ -41,7 +41,7 @@ extension HomeView {
             Section {
                 ForEach(overdueItems) { item in
                     itemRow(for: item)
-                        .listRowBackground(Color.red.opacity(0.06))
+                        .listRowBackground(Color.red.opacity(AppTheme.Opacity.sectionRowTint))
                 }
             } header: {
                 overdueSectionHeader
@@ -58,7 +58,9 @@ extension HomeView {
                 .foregroundStyle(.red)
             Text("(\(overdueItems.count))")
                 .font(AppTheme.Typography.caption)
-                .foregroundStyle(.red.opacity(0.7))
+                .foregroundStyle(.red.opacity(AppTheme.Opacity.sectionAccentDim))
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Overdue, \(overdueItems.count) item\(overdueItems.count == 1 ? "" : "s")")
     }
 }

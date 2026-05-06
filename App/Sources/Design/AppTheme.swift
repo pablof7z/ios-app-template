@@ -197,6 +197,20 @@ enum AppTheme {
         static let feedbackReplyDelay: Duration = .milliseconds(300)
     }
 
+    // MARK: - Opacity
+
+    /// Named opacity tokens for consistent translucency across sections and surfaces.
+    ///
+    /// Use these instead of hardcoding raw `opacity(_:)` values in view modifiers.
+    enum Opacity {
+        /// 0.06 — very subtle tint for list-row backgrounds in colour-coded sections
+        /// (e.g. Overdue / Pinned). Low enough to stay legible in both light and dark mode.
+        static let sectionRowTint: Double = 0.06
+        /// 0.70 — dimmed accent text; used for secondary labels that share the section
+        /// accent colour but should be visually subordinate to the primary label.
+        static let sectionAccentDim: Double = 0.70
+    }
+
     // MARK: - Shadows
 
     /// Drop-shadow presets for elevating surfaces above the background.

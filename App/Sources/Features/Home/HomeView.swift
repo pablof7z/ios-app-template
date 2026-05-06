@@ -232,6 +232,7 @@ struct HomeView: View {
         .listStyle(.plain)
         .animation(AppTheme.Animation.spring, value: filteredActiveItems.count)
         .animation(AppTheme.Animation.spring, value: pinnedItems.count)
+        .animation(AppTheme.Animation.spring, value: overdueItems.count)
         .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
     }
 

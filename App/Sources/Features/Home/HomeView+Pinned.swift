@@ -40,7 +40,7 @@ extension HomeView {
             Section {
                 ForEach(pinnedItems) { item in
                     itemRow(for: item)
-                        .listRowBackground(Color.yellow.opacity(0.06))
+                        .listRowBackground(Color.yellow.opacity(AppTheme.Opacity.sectionRowTint))
                 }
             } header: {
                 pinnedSectionHeader
@@ -59,5 +59,7 @@ extension HomeView {
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.tertiary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Pinned, \(pinnedItems.count) item\(pinnedItems.count == 1 ? "" : "s")")
     }
 }
