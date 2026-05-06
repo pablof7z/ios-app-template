@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum HomeItemListLayout {
+    /// Scale factor applied to a row while its completion animation plays.
+    static let completingRowScale: CGFloat = 0.92
+}
+
 // MARK: - Item list & row building
 
 extension HomeView {
@@ -142,7 +149,7 @@ extension HomeView {
         .accessibilityHint(isEditing ? "Double-tap to select" : "Double-tap to edit")
         .matchedTransitionSource(id: item.id, in: rowNamespace)
         .listRowInsets(listRowInsets)
-        .scaleEffect(isCompleting ? 0.92 : 1.0)
+        .scaleEffect(isCompleting ? HomeItemListLayout.completingRowScale : 1.0)
         .opacity(isCompleting ? 0 : 1)
         .tag(item.id)
         .animation(AppTheme.Animation.spring, value: isCompleting)
