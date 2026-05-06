@@ -11,6 +11,7 @@ struct AgentSettingsView: View {
                 .ignoresSafeArea()
 
             List {
+                setupSection
                 agentSection
                 nostrSection
             }
@@ -30,6 +31,17 @@ struct AgentSettingsView: View {
     }
 
     // MARK: - Sections
+
+    private var setupSection: some View {
+        Section {
+            AgentSetupStatusCard(
+                hasNostrKey: hasNostrKey,
+                nostrEnabled: settings.nostrEnabled
+            )
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+        }
+    }
 
     private var agentSection: some View {
         Section("Agent") {
