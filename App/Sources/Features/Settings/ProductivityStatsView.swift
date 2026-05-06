@@ -55,7 +55,7 @@ struct ProductivityStatsView: View {
         List {
             heroSection
             weekSection
-            streakSection
+            streakHeroSection
             sourceSection
         }
         .listStyle(.insetGrouped)
@@ -102,22 +102,22 @@ struct ProductivityStatsView: View {
         }
     }
 
-    // MARK: - Streak
+    // MARK: - Streak hero
 
-    private var streakSection: some View {
+    private var streakHeroSection: some View {
         Section {
-            LabeledStatRow(
-                icon: "flame.fill",
-                tint: streakTint,
-                label: "Current Streak",
-                value: streakLabel(stats.currentStreak)
+            StreakHeroCard(
+                currentStreak: stats.currentStreak,
+                longestStreak: stats.longestStreak
             )
-            LabeledStatRow(
-                icon: "trophy.fill",
-                tint: .yellow,
-                label: "Longest Streak",
-                value: streakLabel(stats.longestStreak)
-            )
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(
+                top: AppTheme.Spacing.xs,
+                leading: AppTheme.Spacing.md,
+                bottom: AppTheme.Spacing.xs,
+                trailing: AppTheme.Spacing.md
+            ))
         } header: {
             Text("Streak")
         } footer: {
@@ -125,19 +125,6 @@ struct ProductivityStatsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private var streakTint: Color {
-        switch stats.currentStreak {
-        case 0:       return .secondary
-        case 1...2:   return .orange
-        case 3...6:   return .yellow
-        default:      return .red
-        }
-    }
-
-    private func streakLabel(_ days: Int) -> String {
-        days == 1 ? "1 day" : "\(days) days"
     }
 
     // MARK: - Source breakdown
