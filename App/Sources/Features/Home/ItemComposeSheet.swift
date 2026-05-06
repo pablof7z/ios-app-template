@@ -21,6 +21,7 @@ struct ItemComposeSheet: View {
     @State private var reminderEnabled: Bool = false
     @State private var notificationDenied: Bool = false
     @FocusState private var isFocused: Bool
+    @State private var showTemplatePicker: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -35,12 +36,25 @@ struct ItemComposeSheet: View {
                     Button("Cancel") { dismiss() }
                         .keyboardShortcut(.cancelAction)
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showTemplatePicker = true
+                    } label: {
+                        Label("Templates", systemImage: "doc.badge.plus")
+                    }
+                    .accessibilityLabel("Choose a template")
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") { Task { await save() } }
                         .buttonStyle(.glassProminent)
                         .disabled(!canSave)
                         .fontWeight(.semibold)
                         .keyboardShortcut(.return, modifiers: .command)
+                }
+            }
+            .sheet(isPresented: $showTemplatePicker) {
+                ItemTemplatePicker { template in
+                    applyTemplate(template)
                 }
             }
         }
@@ -78,6 +92,20 @@ struct ItemComposeSheet: View {
 
     private var canSave: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Applies all fields from a template, overwriting any previously typed values.
+    /// Reminder state is intentionally not templated — a time-sensitive field
+    /// should always be set deliberately by the user.
+    private func applyTemplate(_ template: ItemTemplate) {
+        withAnimation(AppTheme.Animation.spring) {
+            title = template.title
+            details = template.details
+            isPriority = template.isPriority
+            colorLabel = template.colorLabel
+            recurrence = template.recurrence
+        }
+        Haptics.success()
     }
 
     private func save() async {
