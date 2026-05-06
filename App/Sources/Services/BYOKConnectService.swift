@@ -76,6 +76,8 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
         let codeChallenge = Self.sha256Base64URL(codeVerifier)
         let redirectURI = "\(redirectScheme)://\(redirectHost)"
 
+        // Force-unwrap is safe: authorizationBaseURL is a hardcoded literal URL that
+        // URLComponents can always decompose successfully.
         var components = URLComponents(url: authorizationBaseURL, resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),

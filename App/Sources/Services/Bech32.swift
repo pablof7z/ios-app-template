@@ -9,6 +9,8 @@ enum Bech32 {
     private static let checksumLength = 6
 
     static func encode(hrp: String, data: Data) -> String {
+        // Force-unwrap is safe: convertBits returns nil only when pad==false and trailing bits
+        // are non-zero; with pad==true it always appends the remaining bits and returns a value.
         let values = convertBits(data: Array(data), fromBits: 8, toBits: 5, pad: true)!
         let checksum = createChecksum(hrp: hrp, data: values)
         let combined = values + checksum
