@@ -1,7 +1,8 @@
 import SwiftUI
 
-// Layout constants live in ItemSheetLayout (HomeViewModels.swift) and are
-// shared with ItemEditSheet to keep icon sizes and reminder defaults in sync.
+// Layout constants live in ItemLayout (HomeViewModels.swift) and are
+// shared with ItemEditSheet, ItemRow, and CompletedItemRow to keep icon sizes
+// and reminder defaults consistent across all item surfaces.
 
 struct ItemComposeSheet: View {
     @Environment(AppStateStore.self) private var store
@@ -16,7 +17,7 @@ struct ItemComposeSheet: View {
     @State private var colorLabel: ItemColor? = nil
     @State private var dueDateEnabled: Bool = false
     @State private var dueDate: Date = Calendar.current.startOfDay(for: Date())
-    @State private var reminderDate: Date = Date().addingTimeInterval(ItemSheetLayout.defaultReminderOffset)
+    @State private var reminderDate: Date = Date().addingTimeInterval(ItemLayout.defaultReminderOffset)
     @State private var reminderEnabled: Bool = false
     @State private var notificationDenied: Bool = false
     @FocusState private var isFocused: Bool

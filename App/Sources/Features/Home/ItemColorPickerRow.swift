@@ -20,7 +20,7 @@ struct ItemColorPickerRow: View {
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "circle.lefthalf.filled")
-                .font(.system(size: ItemSheetLayout.rowIconSize, weight: .regular))
+                .font(.system(size: ItemLayout.rowIconSize, weight: .regular))
                 .foregroundStyle(selection.map { $0.swiftUIColor } ?? Color.secondary)
             Text("Color")
                 .font(AppTheme.Typography.body)

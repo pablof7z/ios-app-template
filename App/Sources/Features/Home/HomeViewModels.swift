@@ -160,5 +160,3 @@ enum ItemLayout {
     static let defaultReminderOffset: TimeInterval = 3_600
 }
 
-/// Backwards-compatible alias so callers can be migrated incrementally.
-typealias ItemSheetLayout = ItemLayout
