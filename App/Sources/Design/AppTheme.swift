@@ -168,6 +168,12 @@ enum AppTheme {
     enum Tint {
         /// Soft red used for inline error messages on dark backgrounds.
         static let errorOnDark = SwiftUI.Color(red: 1.0, green: 0.7, blue: 0.7)
+        /// Soft lavender used for the AI-agent feature chip on the onboarding ready page.
+        static let onboardingChipAI = SwiftUI.Color(red: 0.80, green: 0.70, blue: 1.0)
+        /// Ice-blue used for the friends feature chip on the onboarding ready page.
+        static let onboardingChipFriends = SwiftUI.Color(red: 0.60, green: 0.88, blue: 1.0)
+        /// Mint-green used for the feedback feature chip on the onboarding ready page.
+        static let onboardingChipFeedback = SwiftUI.Color(red: 0.70, green: 1.0, blue: 0.85)
     }
 
     // MARK: - Shadows

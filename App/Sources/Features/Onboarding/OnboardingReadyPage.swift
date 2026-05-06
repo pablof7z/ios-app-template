@@ -21,9 +21,9 @@ struct OnboardingReadyPage: View {
     /// The four headline features surfaced to the user on completion.
     private let features: [(icon: String, label: String, color: Color)] = [
         ("checklist", "Track items & reminders", .white),
-        ("sparkles", "Chat with your AI agent", Color(red: 0.80, green: 0.70, blue: 1.0)),
-        ("person.2.fill", "Connect with friends", Color(red: 0.60, green: 0.88, blue: 1.0)),
-        ("hand.tap.fill", "Shake to send feedback", Color(red: 0.70, green: 1.0, blue: 0.85)),
+        ("sparkles", "Chat with your AI agent", AppTheme.Tint.onboardingChipAI),
+        ("person.2.fill", "Connect with friends", AppTheme.Tint.onboardingChipFriends),
+        ("hand.tap.fill", "Shake to send feedback", AppTheme.Tint.onboardingChipFeedback),
     ]
 
     var body: some View {
