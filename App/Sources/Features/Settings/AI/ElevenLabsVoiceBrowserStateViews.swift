@@ -1,5 +1,16 @@
 import SwiftUI
 
+// MARK: - Layout
+
+private enum Layout {
+    /// Vertical spacing between elements in all state views.
+    static let stateSpacing: CGFloat = 16
+    /// Icon size for the error state view.
+    static let errorIconSize: CGFloat = 36
+    /// Icon size for the missing-key state view.
+    static let missingKeyIconSize: CGFloat = 44
+}
+
 // MARK: - ElevenLabsVoiceGroup
 
 struct ElevenLabsVoiceGroup: Hashable {
@@ -12,7 +23,7 @@ struct ElevenLabsVoiceGroup: Hashable {
 /// Full-screen loading placeholder shown while voices are being fetched.
 struct ElevenLabsVoiceBrowserLoadingView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Layout.stateSpacing) {
             ProgressView()
                 .controlSize(.large)
             Text("Loading voices")
@@ -30,9 +41,9 @@ struct ElevenLabsVoiceBrowserErrorView: View {
     let onRetry: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Layout.stateSpacing) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 36))
+                .font(.system(size: Layout.errorIconSize))
                 .foregroundStyle(.orange)
             Text(message)
                 .font(.subheadline)
@@ -55,9 +66,9 @@ struct ElevenLabsVoiceBrowserMissingKeyView: View {
     let onBack: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Layout.stateSpacing) {
             Image(systemName: "waveform.slash")
-                .font(.system(size: 44))
+                .font(.system(size: Layout.missingKeyIconSize))
                 .foregroundStyle(.secondary)
             Text("Connect ElevenLabs to browse voices")
                 .font(AppTheme.Typography.headline)

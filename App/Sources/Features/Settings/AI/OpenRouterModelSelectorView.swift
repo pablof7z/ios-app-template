@@ -6,6 +6,14 @@ import SwiftUI
 private enum SelectorLayout {
     /// Maximum number of providers to show in the filter menu.
     static let maxProviderCount: Int = 24
+    /// Vertical spacing inside the current-section fallback VStack.
+    static let currentFallbackSpacing: CGFloat = 6
+    /// Vertical padding on the current-section fallback row and error row.
+    static let rowVerticalPadding: CGFloat = 4
+    /// Horizontal spacing between the loading spinner and label.
+    static let loadingSpacing: CGFloat = 12
+    /// Vertical spacing inside the error section VStack.
+    static let errorSpacing: CGFloat = 10
 }
 
 struct OpenRouterModelSelectorView: View {
@@ -69,14 +77,14 @@ struct OpenRouterModelSelectorView: View {
                     OpenRouterModelRow(model: current, isSelected: true)
                 }
             } else {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: SelectorLayout.currentFallbackSpacing) {
                     Text(selectedModelID)
                         .font(.subheadline.monospaced())
                     Text("Custom model ID")
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, SelectorLayout.rowVerticalPadding)
             }
         }
     }
@@ -110,7 +118,7 @@ struct OpenRouterModelSelectorView: View {
     private var loadingSection: some View {
         if viewModel.isLoading && viewModel.models.isEmpty {
             Section {
-                HStack(spacing: 12) {
+                HStack(spacing: SelectorLayout.loadingSpacing) {
                     ProgressView()
                     Text("Loading models")
                         .foregroundStyle(.secondary)
@@ -120,7 +128,7 @@ struct OpenRouterModelSelectorView: View {
 
         if let error = viewModel.errorMessage {
             Section {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: SelectorLayout.errorSpacing) {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .font(.subheadline)
                         .foregroundStyle(.orange)
@@ -131,7 +139,7 @@ struct OpenRouterModelSelectorView: View {
                         Label("Try again", systemImage: "arrow.clockwise")
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, SelectorLayout.rowVerticalPadding)
             }
         }
     }

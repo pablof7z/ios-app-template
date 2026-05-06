@@ -13,6 +13,20 @@ struct ElevenLabsKeyInfoCard: View {
         static let chipHPadding: CGFloat = 8
         static let chipVPadding: CGFloat = 4
         static let barHeight: CGFloat = 6
+        /// Horizontal spacing between icon and text in the header row and tier row.
+        static let headerSpacing: CGFloat = 8
+        /// Font size for the validated checkmark icon.
+        static let headerIconSize: CGFloat = 16
+        /// Vertical spacing inside the quota VStack.
+        static let quotaSpacing: CGFloat = 6
+        /// Horizontal spacing between chip icon and label.
+        static let chipInnerSpacing: CGFloat = 4
+        /// Font size for the chip icon.
+        static let chipIconSize: CGFloat = 10
+        /// Font size for the chip label text.
+        static let chipLabelSize: CGFloat = 11
+        /// Background tint opacity for the tier chip.
+        static let chipBackgroundOpacity: Double = 0.12
     }
 
     var body: some View {
@@ -35,10 +49,10 @@ struct ElevenLabsKeyInfoCard: View {
     // MARK: - Sub-views
 
     private var headerRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Layout.headerSpacing) {
             Image(systemName: "checkmark.seal.fill")
                 .foregroundStyle(AppTheme.Brand.elevenLabsTint)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: Layout.headerIconSize, weight: .semibold))
             Text("Key validated")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
@@ -48,7 +62,7 @@ struct ElevenLabsKeyInfoCard: View {
 
     @ViewBuilder
     private var quotaSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Layout.quotaSpacing) {
             if let label = info.remainingLabel {
                 Text(label)
                     .font(AppTheme.Typography.caption)
@@ -72,7 +86,7 @@ struct ElevenLabsKeyInfoCard: View {
     }
 
     private var tierRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Layout.headerSpacing) {
             if let tier = info.tier {
                 tierChip(tier: tier)
             }
@@ -82,17 +96,17 @@ struct ElevenLabsKeyInfoCard: View {
 
     private func tierChip(tier: String) -> some View {
         let isFreeTier = tier.lowercased() == "free"
-        return HStack(spacing: 4) {
+        return HStack(spacing: Layout.chipInnerSpacing) {
             Image(systemName: isFreeTier ? "gift" : "creditcard")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: Layout.chipIconSize, weight: .semibold))
             Text(tier.capitalized)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: Layout.chipLabelSize, weight: .medium))
         }
         .foregroundStyle(isFreeTier ? Color.orange : AppTheme.Brand.elevenLabsTint)
         .padding(.horizontal, Layout.chipHPadding)
         .padding(.vertical, Layout.chipVPadding)
         .background(
-            (isFreeTier ? Color.orange : AppTheme.Brand.elevenLabsTint).opacity(0.12),
+            (isFreeTier ? Color.orange : AppTheme.Brand.elevenLabsTint).opacity(Layout.chipBackgroundOpacity),
             in: RoundedRectangle(cornerRadius: Layout.chipCornerRadius, style: .continuous)
         )
     }
