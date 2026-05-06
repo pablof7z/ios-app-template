@@ -6,12 +6,26 @@ struct OpenRouterModelRow: View {
     var model: OpenRouterModelOption
     var isSelected: Bool
 
+    private enum Layout {
+        static let outerSpacing: CGFloat = 12
+        static let innerSpacing: CGFloat = 6
+        static let badgeSpacing: CGFloat = 6
+        static let spacerMinLength: CGFloat = 8
+        static let pricingColumnWidth: CGFloat = 86
+        static let pricingColumnSpacing: CGFloat = 3
+        static let rowVerticalPadding: CGFloat = 4
+        /// Maximum number of capability badges to show per row.
+        static let maxBadgeCount: Int = 4
+        /// Accessibility: "image" modality key in OpenRouter API responses.
+        static let imageModality = "image"
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Layout.outerSpacing) {
             ProviderLogoView(providerID: model.providerID, providerName: model.providerName, iconURL: model.providerIconURL)
 
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+            VStack(alignment: .leading, spacing: Layout.innerSpacing) {
+                HStack(alignment: .firstTextBaseline, spacing: Layout.innerSpacing) {
                     Text(model.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
@@ -31,17 +45,17 @@ struct OpenRouterModelRow: View {
                     .truncationMode(.middle)
 
                 if !badges.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(badges.prefix(4), id: \.self) { badge in
+                    HStack(spacing: Layout.badgeSpacing) {
+                        ForEach(badges.prefix(Layout.maxBadgeCount), id: \.self) { badge in
                             ModelBadge(kind: badge)
                         }
                     }
                 }
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: Layout.spacerMinLength)
 
-            VStack(alignment: .trailing, spacing: 3) {
+            VStack(alignment: .trailing, spacing: Layout.pricingColumnSpacing) {
                 Text(model.compactPricing)
                     .font(.caption.weight(.semibold))
                     .multilineTextAlignment(.trailing)
@@ -53,9 +67,9 @@ struct OpenRouterModelRow: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .frame(width: 86, alignment: .trailing)
+            .frame(width: Layout.pricingColumnWidth, alignment: .trailing)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Layout.rowVerticalPadding)
     }
 
     private var badges: [ModelBadgeKind] {
@@ -63,7 +77,7 @@ struct OpenRouterModelRow: View {
         if !model.isCompatible { result.append(.noJSON) }
         if model.supportsTools { result.append(.tools) }
         if model.supportsReasoning { result.append(.reasoning) }
-        if model.inputModalities.contains("image") { result.append(.vision) }
+        if model.inputModalities.contains(Layout.imageModality) { result.append(.vision) }
         if model.openWeights { result.append(.openWeights) }
         if model.isFree { result.append(.free) }
         return result

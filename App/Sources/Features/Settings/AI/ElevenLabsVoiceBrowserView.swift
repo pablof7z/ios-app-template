@@ -1,9 +1,4 @@
-import AVFoundation
-import Observation
 import SwiftUI
-import os.log
-
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "ElevenLabsPreviewPlayer")
 
 struct ElevenLabsVoiceBrowserView: View {
     @Environment(AppStateStore.self) private var store
@@ -11,6 +6,8 @@ struct ElevenLabsVoiceBrowserView: View {
 
     @State private var viewModel = ElevenLabsVoiceBrowserViewModel()
     @State private var searchText = ""
+    @State private var genderFilter: String?
+    @State private var accentFilter: String?
 
     var body: some View {
         Group {
@@ -30,13 +27,16 @@ struct ElevenLabsVoiceBrowserView: View {
         .searchable(text: $searchText, prompt: "Search voices")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task { await viewModel.reload() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
+                HStack(spacing: 12) {
+                    filterMenu
+                    Button {
+                        Task { await viewModel.reload() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .disabled(viewModel.phase == .loading)
+                    .accessibilityLabel("Refresh voices")
                 }
-                .disabled(viewModel.phase == .loading)
-                .accessibilityLabel("Refresh voices")
             }
         }
         .task {
@@ -47,6 +47,58 @@ struct ElevenLabsVoiceBrowserView: View {
         }
     }
 
+    // MARK: - Filter menu
+
+    private var filterMenu: some View {
+        Menu {
+            genderPicker
+            if !availableAccents.isEmpty {
+                accentPicker
+            }
+            if isFiltering {
+                Divider()
+                Button(role: .destructive) {
+                    genderFilter = nil
+                    accentFilter = nil
+                } label: {
+                    Label("Clear Filters", systemImage: "xmark.circle")
+                }
+            }
+        } label: {
+            Image(systemName: isFiltering ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(isFiltering ? Color.accentColor : .secondary)
+        }
+        .accessibilityLabel("Filter voices")
+        .disabled(viewModel.voices.isEmpty)
+    }
+
+    @ViewBuilder
+    private var genderPicker: some View {
+        if !availableGenders.isEmpty {
+            Picker("Gender", selection: $genderFilter) {
+                Text("Any Gender").tag(String?.none)
+                ForEach(availableGenders, id: \.self) { gender in
+                    Text(gender).tag(Optional(gender))
+                }
+            }
+            .pickerStyle(.inline)
+        }
+    }
+
+    @ViewBuilder
+    private var accentPicker: some View {
+        Picker("Accent", selection: $accentFilter) {
+            Text("Any Accent").tag(String?.none)
+            ForEach(availableAccents, id: \.self) { accent in
+                Text(accent).tag(Optional(accent))
+            }
+        }
+        .pickerStyle(.inline)
+    }
+
+    // MARK: - Voices list
+
     private var voicesList: some View {
         List {
             if case .error(let message) = viewModel.phase {
@@ -55,6 +107,10 @@ struct ElevenLabsVoiceBrowserView: View {
                         .font(.subheadline)
                         .foregroundStyle(.orange)
                 }
+            }
+
+            if isFiltering {
+                activeFilterBanner
             }
 
             ForEach(filteredGroups, id: \.category) { group in
@@ -76,6 +132,27 @@ struct ElevenLabsVoiceBrowserView: View {
         .refreshable { await viewModel.reload() }
     }
 
+    private var activeFilterBanner: some View {
+        Section {
+            HStack(spacing: 8) {
+                Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+                Text(activeFilterDescription)
+                    .font(.subheadline)
+                Spacer()
+                Button {
+                    genderFilter = nil
+                    accentFilter = nil
+                } label: {
+                    Text("Clear")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     private func rowButton(for voice: ElevenLabsVoice) -> some View {
         Button {
             select(voice)
@@ -91,6 +168,8 @@ struct ElevenLabsVoiceBrowserView: View {
         }
         .buttonStyle(.plain)
     }
+
+    // MARK: - State views
 
     private var loadingView: some View {
         VStack(spacing: 16) {
@@ -151,16 +230,46 @@ struct ElevenLabsVoiceBrowserView: View {
         .background(Color(.systemGroupedBackground))
     }
 
+    // MARK: - Filter helpers
+
+    private var isFiltering: Bool { genderFilter != nil || accentFilter != nil }
+
+    private var activeFilterDescription: String {
+        [genderFilter, accentFilter]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+    }
+
+    private var availableGenders: [String] {
+        let genders = viewModel.voices.compactMap { $0.gender }.filter { !$0.isEmpty }
+        return Array(Set(genders)).map { $0.capitalized }.sorted()
+    }
+
+    private var availableAccents: [String] {
+        let accents = viewModel.voices.compactMap { $0.accent }.filter { !$0.isEmpty }
+        return Array(Set(accents)).map { $0.capitalized }.sorted()
+    }
+
     private var filteredGroups: [ElevenLabsVoiceGroup] {
         let terms = searchText.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
-        let filtered: [ElevenLabsVoice]
-        if terms.isEmpty {
-            filtered = viewModel.voices
-        } else {
-            filtered = viewModel.voices.filter { voice in
+        var filtered = viewModel.voices
+
+        if !terms.isEmpty {
+            filtered = filtered.filter { voice in
                 terms.allSatisfy { voice.searchText.contains($0) }
             }
         }
+        if let genderFilter {
+            filtered = filtered.filter {
+                $0.gender?.caseInsensitiveCompare(genderFilter) == .orderedSame
+            }
+        }
+        if let accentFilter {
+            filtered = filtered.filter {
+                $0.accent?.caseInsensitiveCompare(accentFilter) == .orderedSame
+            }
+        }
+
         let grouped = Dictionary(grouping: filtered, by: \.category)
         return grouped
             .map { ElevenLabsVoiceGroup(category: $0.key, voices: $0.value.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) }
@@ -171,6 +280,8 @@ struct ElevenLabsVoiceBrowserView: View {
                 return lhs.category.localizedCaseInsensitiveCompare(rhs.category) == .orderedAscending
             }
     }
+
+    // MARK: - Selection
 
     private func select(_ voice: ElevenLabsVoice) {
         var settings = store.state.settings
@@ -184,118 +295,4 @@ struct ElevenLabsVoiceBrowserView: View {
 struct ElevenLabsVoiceGroup: Hashable {
     let category: String
     let voices: [ElevenLabsVoice]
-}
-
-@MainActor
-@Observable
-final class ElevenLabsVoiceBrowserViewModel {
-    enum Phase: Equatable {
-        case idle
-        case loading
-        case loaded
-        case error(String)
-        case needsAPIKey
-    }
-
-    private(set) var phase: Phase = .idle
-    private(set) var voices: [ElevenLabsVoice] = []
-    private(set) var playingVoiceID: String?
-    private(set) var loadingPreviewVoiceID: String?
-
-    private let service = ElevenLabsVoicesService()
-    private let player = ElevenLabsPreviewPlayer()
-
-    init() {
-        Task { @MainActor [weak self] in
-            let stream = NotificationCenter.default.notifications(named: .AVPlayerItemDidPlayToEndTime)
-            for await _ in stream {
-                guard let self else { return }
-                self.handlePlaybackEnded()
-            }
-        }
-    }
-
-    func loadIfNeeded() async {
-        guard voices.isEmpty, phase != .loading else { return }
-        await reload()
-    }
-
-    func reload() async {
-        let apiKey: String?
-        do {
-            apiKey = try ElevenLabsCredentialStore.apiKey()
-        } catch {
-            apiKey = nil
-        }
-        guard let apiKey, !apiKey.isEmpty else {
-            phase = .needsAPIKey
-            voices = []
-            return
-        }
-
-        phase = .loading
-        do {
-            let result = try await service.fetchVoices(apiKey: apiKey)
-            voices = result
-            phase = .loaded
-        } catch ElevenLabsVoicesError.unauthorized {
-            phase = .needsAPIKey
-            voices = []
-        } catch {
-            phase = .error(error.localizedDescription)
-        }
-    }
-
-    func togglePreview(for voice: ElevenLabsVoice) {
-        if playingVoiceID == voice.voiceID {
-            stopPreview()
-            return
-        }
-        guard let url = voice.previewURL else { return }
-        player.play(url: url)
-        playingVoiceID = voice.voiceID
-        loadingPreviewVoiceID = nil
-        Haptics.light()
-    }
-
-    func stopPreview() {
-        player.stop()
-        playingVoiceID = nil
-        loadingPreviewVoiceID = nil
-    }
-
-    private func handlePlaybackEnded() {
-        playingVoiceID = nil
-        loadingPreviewVoiceID = nil
-    }
-}
-
-@MainActor
-final class ElevenLabsPreviewPlayer {
-    private var player: AVPlayer?
-
-    func play(url: URL) {
-        player?.pause()
-        configureAudioSession()
-        let item = AVPlayerItem(url: url)
-        let newPlayer = AVPlayer(playerItem: item)
-        newPlayer.automaticallyWaitsToMinimizeStalling = false
-        player = newPlayer
-        newPlayer.play()
-    }
-
-    func stop() {
-        player?.pause()
-        player = nil
-    }
-
-    private func configureAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playback, mode: .default, options: [])
-            try session.setActive(true, options: [])
-        } catch {
-            logger.error("AVAudioSession configuration failed: \(error, privacy: .public)")
-        }
-    }
 }

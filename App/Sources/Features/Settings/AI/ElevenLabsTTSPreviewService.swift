@@ -7,17 +7,19 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTempl
 enum ElevenLabsTTSPreviewError: LocalizedError {
     case missingAPIKey
     case missingVoiceID
+    case bodyEncoding(String)
     case server(Int)
     case transport(String)
     case playback(String)
 
     var errorDescription: String? {
         switch self {
-        case .missingAPIKey:    return "No ElevenLabs API key. Connect first."
-        case .missingVoiceID:   return "No voice selected. Pick a voice first."
-        case .server(let code): return "ElevenLabs error (HTTP \(code))."
-        case .transport(let m): return m
-        case .playback(let m):  return "Playback failed: \(m)"
+        case .missingAPIKey:       return "No ElevenLabs API key. Connect first."
+        case .missingVoiceID:      return "No voice selected. Pick a voice first."
+        case .bodyEncoding(let m): return "Could not encode request body: \(m)"
+        case .server(let code):    return "ElevenLabs error (HTTP \(code))."
+        case .transport(let m):    return m
+        case .playback(let m):     return "Playback failed: \(m)"
         }
     }
 }
@@ -26,7 +28,19 @@ enum ElevenLabsTTSPreviewError: LocalizedError {
 final class ElevenLabsTTSPreviewService {
     private var audioPlayer: AVAudioPlayer?
 
+    // MARK: - Constants
+
     static let samplePhrase = "Hello! This is a preview of the selected ElevenLabs voice."
+
+    private enum API {
+        static let defaultModel = "eleven_turbo_v2_5"
+        static let voiceStability: Double = 0.5
+        static let voiceSimilarityBoost: Double = 0.75
+        static let timeoutInterval: TimeInterval = 20
+        static func endpointURL(voiceID: String) -> URL? {
+            URL(string: "https://api.elevenlabs.io/v1/text-to-speech/\(voiceID)")
+        }
+    }
 
     func speak(voiceID: String, model: String) async throws {
         guard !voiceID.isEmpty else { throw ElevenLabsTTSPreviewError.missingVoiceID }
@@ -43,10 +57,10 @@ final class ElevenLabsTTSPreviewService {
             throw ElevenLabsTTSPreviewError.missingAPIKey
         }
 
-        let effectiveModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty ? "eleven_turbo_v2_5" : model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveModel = trimmedModel.isEmpty ? API.defaultModel : trimmedModel
 
-        guard let url = URL(string: "https://api.elevenlabs.io/v1/text-to-speech/\(voiceID)") else {
+        guard let url = API.endpointURL(voiceID: voiceID) else {
             throw ElevenLabsTTSPreviewError.transport("Invalid voice URL.")
         }
 
@@ -55,14 +69,22 @@ final class ElevenLabsTTSPreviewService {
         request.setValue(apiKey, forHTTPHeaderField: "xi-api-key")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("audio/mpeg", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 20
+        request.timeoutInterval = API.timeoutInterval
 
         let body: [String: Any] = [
             "text": Self.samplePhrase,
             "model_id": effectiveModel,
-            "voice_settings": ["stability": 0.5, "similarity_boost": 0.75]
+            "voice_settings": [
+                "stability": API.voiceStability,
+                "similarity_boost": API.voiceSimilarityBoost
+            ]
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            logger.error("Failed to encode TTS request body: \(error, privacy: .public)")
+            throw ElevenLabsTTSPreviewError.bodyEncoding(error.localizedDescription)
+        }
 
         let data: Data
         let response: URLResponse

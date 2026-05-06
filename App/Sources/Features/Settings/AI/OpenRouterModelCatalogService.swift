@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "OpenRouterModelCatalogService")
 
 // MARK: - Catalog service
 
@@ -54,6 +57,7 @@ struct OpenRouterModelCatalogService: Sendable {
             let providers = try JSONDecoder().decode([String: ModelsDevProvider].self, from: data)
             return ModelsDevCatalog(providers: providers)
         } catch {
+            logger.warning("models.dev metadata fetch failed (non-fatal): \(error, privacy: .public)")
             return nil
         }
     }

@@ -7,9 +7,20 @@ struct OpenRouterModelDetailView: View {
     @Binding var selectedModelID: String
     @Environment(\.dismiss) private var dismiss
 
+    enum Layout {
+        static let contentPadding: CGFloat = 20
+        static let sectionSpacing: CGFloat = 18
+        static let heroSpacing: CGFloat = 14
+        static let heroLogoSize: CGFloat = 52
+        static let heroInnerSpacing: CGFloat = 6
+        static let groupSpacing: CGFloat = 10
+        static let groupInnerSpacing: CGFloat = 8
+        static let detailLineMinSpacing: CGFloat = 12
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 heroSection
                 selectButton
 
@@ -77,7 +88,7 @@ struct OpenRouterModelDetailView: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(Layout.contentPadding)
         }
         .navigationTitle("Model")
         .navigationBarTitleDisplayMode(.inline)
@@ -86,10 +97,10 @@ struct OpenRouterModelDetailView: View {
     // MARK: - Sub-views
 
     private var heroSection: some View {
-        HStack(alignment: .top, spacing: 14) {
-            ProviderLogoView(providerID: model.providerID, providerName: model.providerName, size: 52)
+        HStack(alignment: .top, spacing: Layout.heroSpacing) {
+            ProviderLogoView(providerID: model.providerID, providerName: model.providerName, size: Layout.heroLogoSize)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Layout.heroInnerSpacing) {
                 Text(model.name)
                     .font(.title3.weight(.semibold))
                 Text(model.id)
@@ -125,10 +136,10 @@ struct OpenRouterModelDetailView: View {
         _ title: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Layout.groupSpacing) {
             Text(title)
                 .font(.headline)
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Layout.groupInnerSpacing) {
                 content()
             }
         }
@@ -156,7 +167,7 @@ struct DetailLine: View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
                 .foregroundStyle(.secondary)
-            Spacer(minLength: 12)
+            Spacer(minLength: OpenRouterModelDetailView.Layout.detailLineMinSpacing)
             Text(value)
                 .multilineTextAlignment(.trailing)
                 .textSelection(.enabled)

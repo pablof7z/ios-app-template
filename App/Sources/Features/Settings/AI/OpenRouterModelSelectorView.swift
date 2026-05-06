@@ -2,6 +2,12 @@ import SwiftUI
 
 /// Full model browser presented as a sheet.
 /// Wrap in a `NavigationStack` at the call site.
+
+private enum SelectorLayout {
+    /// Maximum number of providers to show in the filter menu.
+    static let maxProviderCount: Int = 24
+}
+
 struct OpenRouterModelSelectorView: View {
     @Binding var selectedModelID: String
     @Environment(\.dismiss) private var dismiss
@@ -222,7 +228,7 @@ struct OpenRouterModelSelectorView: View {
             if lhs.count != rhs.count { return lhs.count > rhs.count }
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
-        return Array(sorted.prefix(24))
+        return Array(sorted.prefix(SelectorLayout.maxProviderCount))
     }
 }
 
