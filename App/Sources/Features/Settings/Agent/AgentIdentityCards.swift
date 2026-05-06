@@ -36,7 +36,7 @@ struct AgentRelayCard: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(16)
+        .padding(AppTheme.Spacing.md)
         .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 }
@@ -92,7 +92,7 @@ struct AgentKeyManagementCard: View {
             Label("Key Management", systemImage: "key.fill")
                 .font(AppTheme.Typography.body)
         }
-        .padding(16)
+        .padding(AppTheme.Spacing.md)
         .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 

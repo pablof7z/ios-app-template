@@ -73,6 +73,17 @@ struct SettingsView: View {
     private var dataSection: some View {
         Section {
             NavigationLink {
+                ProductivityStatsView()
+            } label: {
+                SettingsRow(
+                    icon: "chart.bar.fill",
+                    tint: .green,
+                    title: "Productivity",
+                    value: productivitySummary
+                )
+            }
+
+            NavigationLink {
                 DataExportView()
             } label: {
                 SettingsRow(
@@ -110,6 +121,11 @@ struct SettingsView: View {
     }
 
     // MARK: - Derived values
+
+    private var productivitySummary: String {
+        let done = store.state.items.filter { !$0.deleted && $0.status == .done }.count
+        return done == 0 ? "No completions yet" : "\(done) completed"
+    }
 
     private var itemsWithReminders: Int {
         store.state.items.filter { !$0.deleted && $0.status == .pending && $0.reminderAt != nil }.count

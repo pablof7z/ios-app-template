@@ -139,7 +139,7 @@ struct FeedbackThreadDetailView: View {
                         .id(reply.id)
                     }
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, AppTheme.Spacing.sm)
             }
             .onChange(of: currentThread.replies.count) { _, _ in
                 if let last = currentThread.replies.last {
@@ -173,7 +173,7 @@ struct FeedbackThreadDetailView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Attached screenshot — tap to expand")
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, 2)
     }
 
@@ -195,8 +195,8 @@ struct FeedbackThreadDetailView: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassSurface(cornerRadius: AppTheme.Corner.lg)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppTheme.Spacing.md)
+        .padding(.vertical, AppTheme.Spacing.sm)
     }
 
     // MARK: - Reply composer
@@ -208,7 +208,7 @@ struct FeedbackThreadDetailView: View {
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppTheme.Spacing.md)
             }
             HStack(alignment: .bottom, spacing: 8) {
                 TextField("Reply\u{2026}", text: $replyDraft, axis: .vertical)
@@ -233,7 +233,7 @@ struct FeedbackThreadDetailView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, AppTheme.Spacing.sm)
     }
 
     // MARK: - Quote reply
@@ -302,7 +302,7 @@ struct FeedbackBubble: View {
 
             if !isFromMe { Spacer(minLength: Layout.spacerMinLength) }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, 2)
     }
 

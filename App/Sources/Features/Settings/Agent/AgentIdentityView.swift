@@ -243,7 +243,7 @@ struct AgentIdentityView: View {
         ZStack(alignment: .topTrailing) {
             ZStack {
                 Color.white.clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg))
-                QRCodeView(content: npubFull).padding(8)
+                QRCodeView(content: npubFull).padding(AppTheme.Spacing.sm)
             }
             .frame(width: AgentIdentityLayout.avatarSize, height: AgentIdentityLayout.avatarSize)
             .onTapGesture { showQRFullScreen = true }
@@ -299,7 +299,7 @@ struct AgentIdentityView: View {
             }
             .buttonStyle(.borderedProminent)
         }
-        .padding(16)
+        .padding(AppTheme.Spacing.md)
         .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 
