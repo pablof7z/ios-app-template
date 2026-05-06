@@ -9,6 +9,8 @@ private enum AgentIdentityQRConstants {
     static let cardCornerRadius: CGFloat = 24
     static let actionButtonHeight: CGFloat = 48
     static let horizontalPadding: CGFloat = 24
+    /// Inset between the QR image (260 pt) and the card border (300 pt).
+    static let qrInset: CGFloat = 20
 }
 
 // MARK: - QRCodeView
@@ -106,7 +108,7 @@ struct AgentIdentityQRView: View {
 
             QRCodeView(content: npub)
                 .frame(width: 260, height: 260)
-                .padding(20)
+                .padding(AgentIdentityQRConstants.qrInset)
 
             if copied {
                 copiedOverlay

@@ -7,6 +7,8 @@ private enum DetailLayout {
     static let statusPaddingV: CGFloat = 3
     static let imageCornerRadius: CGFloat = 14
     static let imageMaxHeight: CGFloat = 240
+    /// Uniform padding around the close button in the fullscreen image overlay.
+    static let closeButtonPadding: CGFloat = 20
 }
 
 // MARK: - FeedbackThreadDetailView
@@ -94,7 +96,7 @@ struct FeedbackThreadDetailView: View {
                     .font(.system(size: 28))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(.white)
-                    .padding(20)
+                    .padding(DetailLayout.closeButtonPadding)
             }
             .accessibilityLabel("Close image")
         }

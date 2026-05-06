@@ -269,7 +269,7 @@ struct AgentIdentityView: View {
                 .foregroundStyle(.secondary).lineLimit(3)
             HStack(spacing: 8) {
                 Button { showQRFullScreen = true } label: {
-                    Label("QR", systemImage: "qrcode").font(.caption)
+                    Label("QR", systemImage: "qrcode").font(AppTheme.Typography.caption)
                         .padding(.horizontal, 10).padding(.vertical, 6)
                 }
                 .glassEffect(.regular.interactive(), in: .capsule)

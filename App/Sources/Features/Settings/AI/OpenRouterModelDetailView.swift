@@ -5,6 +5,9 @@ import SwiftUI
 struct OpenRouterModelDetailView: View {
     var model: OpenRouterModelOption
     @Binding var selectedModelID: String
+    /// Human-readable role label (e.g. "Agent", "Memory Compilation").
+    /// Used in the select button so users know which role they are configuring.
+    var role: String = "Model"
     @Environment(\.dismiss) private var dismiss
 
     enum Layout {
@@ -121,7 +124,7 @@ struct OpenRouterModelDetailView: View {
             dismiss()
         } label: {
             Label(
-                alreadySelected ? "Selected" : "Use Model",
+                alreadySelected ? "Selected for \(role)" : "Use as \(role)",
                 systemImage: "checkmark.circle.fill"
             )
             .frame(maxWidth: .infinity)

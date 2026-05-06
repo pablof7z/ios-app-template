@@ -23,13 +23,13 @@ struct LLMSettingsView: View {
         .task { await catalog.loadIfNeeded() }
         .sheet(isPresented: $agentSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: agentModelBinding)
+                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, role: "Agent")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $memorySelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding)
+                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, role: "Memory Compilation")
             }
             .presentationDragIndicator(.visible)
         }

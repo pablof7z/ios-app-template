@@ -10,6 +10,8 @@ private enum SelectorLayout {
 
 struct OpenRouterModelSelectorView: View {
     @Binding var selectedModelID: String
+    /// Human-readable role label forwarded to the detail view (e.g. "Agent", "Memory Compilation").
+    var role: String = "Model"
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var viewModel = OpenRouterModelSelectorViewModel()
@@ -28,7 +30,7 @@ struct OpenRouterModelSelectorView: View {
             customSection
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("OpenRouter Models")
+        .navigationTitle("\(role) Model")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "Search models, providers, ids")
         .refreshable { await viewModel.reload() }
@@ -37,7 +39,7 @@ struct OpenRouterModelSelectorView: View {
             await viewModel.loadIfNeeded()
         }
         .navigationDestination(for: OpenRouterModelOption.self) { model in
-            OpenRouterModelDetailView(model: model, selectedModelID: $selectedModelID)
+            OpenRouterModelDetailView(model: model, selectedModelID: $selectedModelID, role: role)
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
