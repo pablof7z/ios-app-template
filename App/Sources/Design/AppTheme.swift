@@ -87,6 +87,18 @@ enum AppTheme {
         static let elevenLabsTint = SwiftUI.Color(red: 0, green: 0.78, blue: 0.62)
     }
 
+    // MARK: - Layout sizes
+
+    /// Fixed-size tokens for icons, avatars, and circular buttons.
+    ///
+    /// Use these instead of hardcoding `frame(width:height:)` values.
+    enum Layout {
+        /// 36 pt — small circular avatar or icon-only button tap target.
+        static let iconSm: CGFloat = 36
+        /// 64 pt — medium profile avatar.
+        static let iconLg: CGFloat = 64
+    }
+
     // MARK: - Gradients
 
     /// Shared gradient definitions for brand surfaces.

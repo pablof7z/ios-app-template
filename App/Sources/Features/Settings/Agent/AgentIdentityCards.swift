@@ -182,11 +182,11 @@ struct AgentPictureURLSheet: View {
                     placeholderCircle
                 }
             }
-            .frame(width: 64, height: 64)
+            .frame(width: AppTheme.Layout.iconLg, height: AppTheme.Layout.iconLg)
             .clipShape(Circle())
         } else {
             placeholderCircle
-                .frame(width: 64, height: 64)
+                .frame(width: AppTheme.Layout.iconLg, height: AppTheme.Layout.iconLg)
         }
     }
 

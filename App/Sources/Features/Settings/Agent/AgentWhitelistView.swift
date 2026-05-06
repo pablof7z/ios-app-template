@@ -178,7 +178,7 @@ private struct PendingApprovalRow: View {
                     Image(systemName: "person.fill")
                         .foregroundStyle(.orange)
                 }
-                .frame(width: 36, height: 36)
+                .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(approval.displayName ?? "Unknown")

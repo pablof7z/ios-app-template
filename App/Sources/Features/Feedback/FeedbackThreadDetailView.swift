@@ -221,7 +221,7 @@ struct FeedbackThreadDetailView: View {
                 } label: {
                     Image(systemName: "paperplane.fill")
                         .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
+                        .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
                         .background(Color.accentColor.opacity(canSend ? 1 : 0.4), in: .circle)
                 }
                 .accessibilityLabel("Send reply")

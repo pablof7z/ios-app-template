@@ -61,7 +61,7 @@ struct ElevenLabsVoiceRow: View {
             ZStack {
                 Circle()
                     .fill(buttonFill)
-                    .frame(width: 36, height: 36)
+                    .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
 
                 if isLoadingPreview {
                     ProgressView()
