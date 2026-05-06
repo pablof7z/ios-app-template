@@ -282,5 +282,6 @@ final class AppStateStore {
         state.settings = preserved
         Persistence.save(state)
         SpotlightIndexer.clearAll()
+        RecentSearchStore.shared.clearAll()
     }
 }

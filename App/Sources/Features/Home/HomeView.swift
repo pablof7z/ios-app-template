@@ -13,6 +13,7 @@ struct HomeView: View {
     /// Item ID set by a Handoff continuation; consumed on appear to open the edit sheet.
     @Binding var pendingEditItemID: UUID?
 
+    @State var recentSearches = RecentSearchStore.shared
     @State var showCompose = false
     @State var composeInitialTitle: String = ""
     @State var completedExpanded: Bool = false
@@ -143,6 +144,8 @@ struct HomeView: View {
         .overlay(CompletionCelebrationView(state: celebration))
         .navigationTitle("Home")
         .searchable(text: $searchText, prompt: "Search items")
+        .searchSuggestions { searchSuggestions }
+        .onSubmit(of: .search) { recordSearch() }
         .toolbar { homeToolbar }
         .toolbar { batchToolbar }
         .sheet(isPresented: $showCompose) {
