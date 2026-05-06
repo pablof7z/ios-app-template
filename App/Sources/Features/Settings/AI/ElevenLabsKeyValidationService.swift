@@ -23,12 +23,17 @@ struct ElevenLabsKeyInfo: Sendable {
     var remainingLabel: String? {
         guard let limit = characterLimit, let count = characterCount else { return nil }
         let remaining = max(0, limit - count)
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        let remainStr = formatter.string(from: NSNumber(value: remaining)) ?? "\(remaining)"
-        let limitStr = formatter.string(from: NSNumber(value: limit)) ?? "\(limit)"
+        let remainStr = Self.decimalFormatter.string(from: NSNumber(value: remaining)) ?? "\(remaining)"
+        let limitStr = Self.decimalFormatter.string(from: NSNumber(value: limit)) ?? "\(limit)"
         return "\(remainStr) of \(limitStr) chars remaining"
     }
+
+    /// Cached decimal formatter — `NumberFormatter` is expensive to allocate and thread-safe for reads after setup.
+    private static let decimalFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        return f
+    }()
 }
 
 // MARK: - Service

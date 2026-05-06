@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 // MARK: - DataExportView
 //
@@ -13,6 +14,15 @@ import SwiftUI
 // Secrets are never exported — see `DataExport.redactedState(from:)`.
 
 struct DataExportView: View {
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "DataExportView")
+    /// Cached time formatter — `DateFormatter` is expensive to allocate and thread-safe for reads after setup.
+    private static let exportTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .none
+        f.timeStyle = .medium
+        return f
+    }()
+
     @Environment(AppStateStore.self) private var store
 
     @State private var fileURL: URL?
@@ -198,10 +208,7 @@ struct DataExportView: View {
         let records = stats.totalRecords
         let base = "\(records) record\(records == 1 ? "" : "s")"
         if let size = fileSize, let generatedAt {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .none
-            formatter.timeStyle = .medium
-            return "\(base) · \(formatBytes(size)) · Last exported \(formatter.string(from: generatedAt))"
+            return "\(base) · \(formatBytes(size)) · Last exported \(Self.exportTimeFormatter.string(from: generatedAt))"
         }
         switch exportFormat {
         case .json:
@@ -228,7 +235,13 @@ struct DataExportView: View {
             case .csv:
                 url = try DataExport.writeCSVExport(of: exportState, now: now)
             }
-            let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+            let attrs: [FileAttributeKey: Any]?
+            do {
+                attrs = try FileManager.default.attributesOfItem(atPath: url.path)
+            } catch {
+                Self.logger.warning("DataExportView: could not read file attributes for \(url.lastPathComponent, privacy: .public): \(error, privacy: .public)")
+                attrs = nil
+            }
             fileURL = url
             fileSize = (attrs?[.size] as? NSNumber)?.intValue
             generatedAt = now
