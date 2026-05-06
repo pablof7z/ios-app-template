@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 
 /// The tabs available at the root navigation level.
@@ -22,7 +23,7 @@ struct RootView: View {
     @State private var showFeedback = false
     @State private var lastShakeTime: Date = .distantPast
     @State private var pendingNewItemTitle: String?
-    /// Item ID received from a Handoff continuation; HomeView opens the edit sheet.
+    /// Item ID received from a Handoff or Spotlight continuation; HomeView opens the edit sheet.
     @State private var pendingEditItemID: UUID?
 
     var body: some View {
@@ -54,6 +55,7 @@ struct RootView: View {
                 if let url = note.object as? URL { handleDeepLink(url) }
             }
             .onContinueUserActivity(HandoffActivityType.editItem, perform: handleHandoff)
+            .onContinueUserActivity(CSSearchableItemActionType, perform: handleSpotlight)
     }
 
     private var tabBar: some View {
@@ -93,6 +95,24 @@ struct RootView: View {
             pendingNewItemTitle = title
         case .overdue:
             selectedTab = .home
+        }
+    }
+
+    /// Routes a Spotlight continuation activity to the correct in-app screen.
+    ///
+    /// - Items:    switches to Home and opens the item's edit sheet via `pendingEditItemID`.
+    /// - Notes:    switches to Home so the user can search for the note.
+    /// - Memories: switches to Settings; the agent memories live under Agent → Memories.
+    private func handleSpotlight(_ activity: NSUserActivity) {
+        guard let link = SpotlightIndexer.deepLink(from: activity) else { return }
+        switch link {
+        case .item(let id):
+            selectedTab = .home
+            pendingEditItemID = id
+        case .note:
+            selectedTab = .home
+        case .memory:
+            selectedTab = .settings
         }
     }
 

@@ -9,15 +9,16 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTempl
 /// surfaced from system search and from Siri. Tapping a result deep-links
 /// back into the app via `NSUserActivity` of type `CSSearchableItemActionType`.
 ///
-/// Strategy: a full idempotent re-index of `activeItems + activeNotes` driven
-/// from `AppStateStore.init` and from each mutating store method. The data set
+/// Strategy: a full idempotent re-index of `activeItems + activeNotes + activeMemories`
+/// driven from `AppStateStore.init` and from each mutating store method. The data set
 /// is small (UI-bounded by what fits in a single user's task list / journal),
 /// so the cost of rebuilding the index per mutation is negligible compared to
 /// the complexity of an incremental indexer.
 ///
-/// Index lives in two domains:
-///   - `Domain.items`  — todos / tasks (only `pending` items appear)
-///   - `Domain.notes`  — journal-style notes (only non-deleted)
+/// Index lives in three domains:
+///   - `Domain.items`    — todos / tasks (only `pending` items appear)
+///   - `Domain.notes`    — journal-style notes (only non-deleted)
+///   - `Domain.memories` — agent memories (only non-deleted)
 ///
 /// Each domain is fully replaced on every reindex, so soft-deleted or completed
 /// records disappear from search automatically.
@@ -27,8 +28,9 @@ enum SpotlightIndexer {
     // MARK: - Domains
 
     enum Domain: String, CaseIterable {
-        case items = "com.apptemplate.spotlight.items"
-        case notes = "com.apptemplate.spotlight.notes"
+        case items    = "com.apptemplate.spotlight.items"
+        case notes    = "com.apptemplate.spotlight.notes"
+        case memories = "com.apptemplate.spotlight.memories"
     }
 
     // MARK: - Identifier scheme
@@ -37,16 +39,19 @@ enum SpotlightIndexer {
     // continuation handler can route back to the correct screen without
     // consulting Spotlight's own domain identifier.
 
-    private static let itemPrefix = "item:"
-    private static let notePrefix = "note:"
+    private static let itemPrefix   = "item:"
+    private static let notePrefix   = "note:"
+    private static let memoryPrefix = "memory:"
 
-    static func itemIdentifier(_ id: UUID) -> String { itemPrefix + id.uuidString }
-    static func noteIdentifier(_ id: UUID) -> String { notePrefix + id.uuidString }
+    static func itemIdentifier(_ id: UUID)   -> String { itemPrefix   + id.uuidString }
+    static func noteIdentifier(_ id: UUID)   -> String { notePrefix   + id.uuidString }
+    static func memoryIdentifier(_ id: UUID) -> String { memoryPrefix + id.uuidString }
 
     /// Decoded result from a Spotlight continuation activity.
     enum DeepLink: Equatable {
         case item(UUID)
         case note(UUID)
+        case memory(UUID)
     }
 
     /// Parses an identifier produced by this indexer back into a `DeepLink`.
@@ -59,6 +64,10 @@ enum SpotlightIndexer {
         if identifier.hasPrefix(notePrefix) {
             let raw = String(identifier.dropFirst(notePrefix.count))
             return UUID(uuidString: raw).map(DeepLink.note)
+        }
+        if identifier.hasPrefix(memoryPrefix) {
+            let raw = String(identifier.dropFirst(memoryPrefix.count))
+            return UUID(uuidString: raw).map(DeepLink.memory)
         }
         return nil
     }
@@ -74,7 +83,7 @@ enum SpotlightIndexer {
 
     // MARK: - Reindex
 
-    /// Replaces the contents of both Spotlight domains with current state.
+    /// Replaces the contents of all three Spotlight domains with current state.
     /// Safe to call from any mutation site — idempotent, and the underlying
     /// `CSSearchableIndex` calls are non-blocking.
     static func reindex(state: AppState) {
@@ -83,6 +92,10 @@ enum SpotlightIndexer {
             .map(makeSearchable(from:))
 
         let notes = state.notes
+            .filter { !$0.deleted }
+            .map(makeSearchable(from:))
+
+        let memories = state.agentMemories
             .filter { !$0.deleted }
             .map(makeSearchable(from:))
 
@@ -101,6 +114,14 @@ enum SpotlightIndexer {
             guard !notes.isEmpty else { return }
             index.indexSearchableItems(notes) { error in
                 if let error { logger.error("Failed to index notes: \(error, privacy: .public)") }
+            }
+        }
+
+        index.deleteSearchableItems(withDomainIdentifiers: [Domain.memories.rawValue]) { error in
+            if let error { logger.error("Failed to delete memories domain: \(error, privacy: .public)") }
+            guard !memories.isEmpty else { return }
+            index.indexSearchableItems(memories) { error in
+                if let error { logger.error("Failed to index memories: \(error, privacy: .public)") }
             }
         }
     }
@@ -198,5 +219,40 @@ enum SpotlightIndexer {
         case .free: break
         }
         return keywords
+    }
+
+    /// Builds a Spotlight entry for an agent memory.
+    ///
+    /// Memories have no title — the first sentence (up to the first period or 60
+    /// characters, whichever comes first) is used as the title so results are
+    /// scannable, with the full content in the description for full-text matching.
+    private static func makeSearchable(from memory: AgentMemory) -> CSSearchableItem {
+        let attrs = CSSearchableItemAttributeSet(contentType: UTType.text)
+        attrs.title = memoryTitle(for: memory)
+        attrs.contentDescription = memory.content
+        attrs.contentCreationDate = memory.createdAt
+        attrs.keywords = ["memory", "agent", "remember"]
+
+        return CSSearchableItem(
+            uniqueIdentifier: memoryIdentifier(memory.id),
+            domainIdentifier: Domain.memories.rawValue,
+            attributeSet: attrs
+        )
+    }
+
+    /// Derives a short Spotlight headline from a memory's content.
+    ///
+    /// Prefers the text up to the first sentence-ending punctuation so the
+    /// Spotlight card reads naturally. Falls back to a 60-character truncation
+    /// when the content has no sentence boundary.
+    private static func memoryTitle(for memory: AgentMemory) -> String {
+        let content = memory.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sentenceEnd = content.firstIndex(where: { ".!?".contains($0) })
+        if let end = sentenceEnd {
+            let candidate = String(content[...end])
+            if candidate.count <= 80 { return candidate }
+        }
+        if content.count <= 60 { return content }
+        return String(content.prefix(60)) + "…"
     }
 }
