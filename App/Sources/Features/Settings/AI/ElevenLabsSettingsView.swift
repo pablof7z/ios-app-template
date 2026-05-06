@@ -14,6 +14,9 @@ struct ElevenLabsSettingsView: View {
     @State private var ttsPreview = ElevenLabsTTSPreviewService()
     @State private var isTestingVoice = false
     @State private var testVoiceError: String?
+    @State private var isValidatingKey = false
+    @State private var keyInfo: ElevenLabsKeyInfo?
+    private let validationService = ElevenLabsKeyValidationService()
 
     var body: some View {
         Form {
@@ -91,6 +94,32 @@ struct ElevenLabsSettingsView: View {
                 }
             }
 
+            if hasStoredKey {
+                Button {
+                    Task { await validateStoredKey() }
+                } label: {
+                    HStack {
+                        Label(
+                            isValidatingKey ? "Validating…" : "Validate Key",
+                            systemImage: "checkmark.shield"
+                        )
+                        if isValidatingKey {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isValidatingKey)
+                .tint(AppTheme.Brand.elevenLabsTint)
+            }
+
+            if let keyInfo {
+                ElevenLabsKeyInfoCard(info: keyInfo)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             if let credentialMessage {
                 Text(credentialMessage)
                     .font(.caption)
@@ -111,6 +140,7 @@ struct ElevenLabsSettingsView: View {
         }
         .animation(.default, value: credentialMessage)
         .animation(.default, value: credentialError)
+        .animation(.default, value: keyInfo?.tier)
     }
 
     private var modelsSection: some View {
@@ -251,6 +281,7 @@ struct ElevenLabsSettingsView: View {
     private func disconnectElevenLabs() {
         credentialError = nil
         credentialMessage = nil
+        keyInfo = nil
         do {
             try ElevenLabsCredentialStore.deleteAPIKey()
             settings.clearElevenLabsCredential()
@@ -266,6 +297,27 @@ struct ElevenLabsSettingsView: View {
 
     private func refreshCredentialState() {
         hasStoredKey = ElevenLabsCredentialStore.hasAPIKey()
+        if !hasStoredKey { keyInfo = nil }
+    }
+
+    private func validateStoredKey() async {
+        credentialError = nil
+        credentialMessage = nil
+        keyInfo = nil
+        isValidatingKey = true
+        defer { isValidatingKey = false }
+
+        do {
+            guard let apiKey = try ElevenLabsCredentialStore.apiKey() else {
+                credentialError = "No stored key found."
+                return
+            }
+            keyInfo = try await validationService.validate(apiKey: apiKey)
+            Haptics.success()
+        } catch {
+            credentialError = error.localizedDescription
+            Haptics.warning()
+        }
     }
 
     private func testVoice() async {
