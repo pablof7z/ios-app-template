@@ -155,5 +155,10 @@ extension HomeView {
         .contextMenu {
             if !isEditing { itemContextMenu(for: item) }
         }
+        .accessibilityAction(named: "Complete") { completeItem(item) }
+        .accessibilityAction(named: "Delete") {
+            store.deleteItem(item.id)
+            Haptics.medium()
+        }
     }
 }

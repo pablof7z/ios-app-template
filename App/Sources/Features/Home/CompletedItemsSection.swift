@@ -44,6 +44,14 @@ struct CompletedItemsSection: View {
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     deleteAction(for: item)
                 }
+                .accessibilityAction(named: "Restore") {
+                    store.setItemStatus(item.id, status: .pending)
+                    Haptics.success()
+                }
+                .accessibilityAction(named: "Delete") {
+                    store.deleteItem(item.id)
+                    Haptics.medium()
+                }
                 .transition(.opacity.combined(with: .move(edge: .top)))
         }
     }
