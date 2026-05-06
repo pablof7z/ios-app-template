@@ -23,7 +23,7 @@ final class FeedbackStore {
         } catch CocoaError.fileNoSuchFile {
             threads = []
         } catch {
-            Self.logger.error("Failed to load threads from disk: \(error)")
+            Self.logger.error("Failed to load threads from disk: \(error, privacy: .public)")
             threads = []
         }
         isLoading = false
@@ -34,7 +34,7 @@ final class FeedbackStore {
         try await Task.sleep(for: AppTheme.Timing.feedbackPublishDelay)
         let thread = FeedbackThread(category: category, content: content, attachedImage: image)
         threads.insert(thread, at: 0)
-        do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishThread: \(error)") }
+        do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishThread: \(error, privacy: .public)") }
         return thread
     }
 
@@ -42,12 +42,12 @@ final class FeedbackStore {
         try await Task.sleep(for: AppTheme.Timing.feedbackReplyDelay)
         guard let idx = threads.firstIndex(where: { $0.id == threadID }) else { return }
         threads[idx].replies.append(FeedbackReply(content: content, isFromMe: true))
-        do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishReply: \(error)") }
+        do { try saveToDisk() } catch { Self.logger.error("Failed to save after publishReply: \(error, privacy: .public)") }
     }
 
     func deleteThread(id: UUID) {
         threads.removeAll { $0.id == id }
-        do { try saveToDisk() } catch { Self.logger.error("Failed to save after deleteThread: \(error)") }
+        do { try saveToDisk() } catch { Self.logger.error("Failed to save after deleteThread: \(error, privacy: .public)") }
     }
 
     // MARK: - Private persistence helpers

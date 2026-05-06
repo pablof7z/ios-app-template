@@ -65,7 +65,7 @@ enum AgentTools {
         do {
             args = try JSONSerialization.jsonObject(with: Data(argsJSON.utf8)) as? [String: Any] ?? [:]
         } catch {
-            logger.error("AgentTools: failed to parse argsJSON for tool '\(name)': \(error.localizedDescription)")
+            logger.error("AgentTools: failed to parse argsJSON for tool '\(name, privacy: .public)': \(error.localizedDescription, privacy: .public)")
             args = [:]
         }
 
@@ -175,7 +175,7 @@ enum AgentTools {
         do {
             return try String(data: JSONSerialization.data(withJSONObject: result), encoding: .utf8) ?? "{\"success\":true}"
         } catch {
-            logger.error("AgentTools: failed to serialize success payload: \(error.localizedDescription)")
+            logger.error("AgentTools: failed to serialize success payload: \(error.localizedDescription, privacy: .public)")
             return "{\"success\":true}"
         }
     }
@@ -185,7 +185,7 @@ enum AgentTools {
         do {
             return try String(data: JSONSerialization.data(withJSONObject: payload), encoding: .utf8) ?? "{\"error\":\"unknown\"}"
         } catch {
-            logger.error("AgentTools: failed to serialize error payload '\(message)': \(error.localizedDescription)")
+            logger.error("AgentTools: failed to serialize error payload '\(message, privacy: .public)': \(error.localizedDescription, privacy: .public)")
             return "{\"error\":\"unknown\"}"
         }
     }
