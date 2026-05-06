@@ -58,6 +58,15 @@ struct ModelBadge: View {
     var text: String
     var color: Color
 
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Horizontal padding inside the badge capsule.
+        static let paddingH: CGFloat = 7
+        /// Vertical padding inside the badge capsule.
+        static let paddingV: CGFloat = 3
+    }
+
     /// Typed initializer for OpenRouter model capability badges.
     init(kind: ModelBadgeKind) {
         self.text = kind.text
@@ -75,8 +84,8 @@ struct ModelBadge: View {
             .font(.caption2.weight(.medium))
             .foregroundStyle(color)
             .lineLimit(1)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
+            .padding(.horizontal, Layout.paddingH)
+            .padding(.vertical, Layout.paddingV)
             .background(
                 Capsule(style: .continuous)
                     .fill(Color(.tertiarySystemFill))

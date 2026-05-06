@@ -28,6 +28,8 @@ private enum SetupCardLayout {
     static let headerHSpacing: CGFloat = 10
     /// Point size of the header icon.
     static let headerIconSize: CGFloat = 18
+    /// Tight vertical gap between step title and description text.
+    static let stepTextSpacing: CGFloat = 2
 }
 
 // MARK: - AgentSetupStatusCard
@@ -125,7 +127,7 @@ struct AgentSetupStatusCard: View {
         HStack(alignment: .top, spacing: SetupCardLayout.rowHSpacing) {
             statusBadge(done: step.isDone)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: SetupCardLayout.stepTextSpacing) {
                 Text(step.title)
                     .font(AppTheme.Typography.callout)
                     .foregroundStyle(step.isDone ? .secondary : .primary)

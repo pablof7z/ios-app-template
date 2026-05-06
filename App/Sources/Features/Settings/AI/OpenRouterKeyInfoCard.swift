@@ -14,6 +14,18 @@ struct OpenRouterKeyInfoCard: View {
         static let chipVPadding: CGFloat = 4
         static let barHeight: CGFloat = 6
         static let barCornerRadius: CGFloat = 3
+        /// Horizontal spacing in headerRow and tierRow HStacks.
+        static let hStackSpacing: CGFloat = 8
+        /// Vertical spacing inside the credit section.
+        static let creditSpacing: CGFloat = 6
+        /// Horizontal spacing inside the tier chip HStack.
+        static let chipInnerSpacing: CGFloat = 4
+        /// Point size for the header row check icon.
+        static let headerIconSize: CGFloat = 16
+        /// Point size for the tier chip icon.
+        static let chipIconSize: CGFloat = 10
+        /// Point size for the tier chip label text.
+        static let chipFontSize: CGFloat = 11
     }
 
     var body: some View {
@@ -34,10 +46,10 @@ struct OpenRouterKeyInfoCard: View {
     // MARK: - Sub-views
 
     private var headerRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Layout.hStackSpacing) {
             Image(systemName: "checkmark.seal.fill")
                 .foregroundStyle(.green)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: Layout.headerIconSize, weight: .semibold))
             Text("Key validated")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
@@ -53,7 +65,7 @@ struct OpenRouterKeyInfoCard: View {
 
     @ViewBuilder
     private var creditSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Layout.creditSpacing) {
             if let remaining = info.remainingLabel {
                 Text(remaining)
                     .font(AppTheme.Typography.caption)
@@ -81,7 +93,7 @@ struct OpenRouterKeyInfoCard: View {
     }
 
     private var tierRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Layout.hStackSpacing) {
             tierChip
             if let requests = info.requestsPerInterval, let interval = info.rateInterval {
                 Text("\(requests) req/\(interval)")
@@ -93,11 +105,11 @@ struct OpenRouterKeyInfoCard: View {
     }
 
     private var tierChip: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Layout.chipInnerSpacing) {
             Image(systemName: info.isFreeTier ? "gift" : "creditcard")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: Layout.chipIconSize, weight: .semibold))
             Text(info.isFreeTier ? "Free tier" : "Paid")
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: Layout.chipFontSize, weight: .medium))
         }
         .foregroundStyle(info.isFreeTier ? Color.orange : Color.green)
         .padding(.horizontal, Layout.chipHPadding)
