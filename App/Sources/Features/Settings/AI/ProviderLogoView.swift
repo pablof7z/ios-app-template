@@ -8,6 +8,25 @@ struct ProviderLogoView: View {
     var iconURL: URL? = nil
     var size: CGFloat = 36
 
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Padding applied inside the remote icon image, as a fraction of total size.
+        static let iconPaddingRatio: CGFloat = 0.12
+        /// Monogram font size as a fraction of the tile size.
+        static let monogramFontRatio: CGFloat = 0.4
+        /// Opacity of the lighter gradient stop in the fallback letter tile.
+        static let gradientStartOpacity: Double = 0.9
+        /// HSB saturation of the generated tile color.
+        static let tileSaturation: Double = 0.6
+        /// HSB brightness of the generated tile color.
+        static let tileBrightness: Double = 0.75
+        /// Divisor for converting a hash-derived hue integer (0–359) into a 0–1 Double.
+        static let hueDivisor: Double = 360.0
+        /// Modulus used to keep the hash-derived hue value within 0–359.
+        static let hueMod: Int = 360
+    }
+
     var body: some View {
         Group {
             if let url = iconURL {
@@ -17,7 +36,7 @@ struct ProviderLogoView: View {
                         image
                             .resizable()
                             .scaledToFit()
-                            .padding(size * 0.12)
+                            .padding(size * Layout.iconPaddingRatio)
                     default:
                         letterTile
                     }
@@ -36,20 +55,20 @@ struct ProviderLogoView: View {
             Circle()
                 .fill(
                     LinearGradient(
-                        colors: [tileColor.opacity(0.9), tileColor],
+                        colors: [tileColor.opacity(Layout.gradientStartOpacity), tileColor],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
             Text(monogram)
-                .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
+                .font(.system(size: size * Layout.monogramFontRatio, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
         }
     }
 
     private var tileColor: Color {
-        let hue = abs(providerID.hashValue) % 360
-        return Color(hue: Double(hue) / 360.0, saturation: 0.6, brightness: 0.75)
+        let hue = abs(providerID.hashValue) % Layout.hueMod
+        return Color(hue: Double(hue) / Layout.hueDivisor, saturation: Layout.tileSaturation, brightness: Layout.tileBrightness)
     }
 
     private var monogram: String {

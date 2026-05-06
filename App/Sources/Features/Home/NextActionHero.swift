@@ -13,6 +13,21 @@ struct NextActionHero: View {
     let namespace: Namespace.ID
     let onTap: () -> Void
 
+    // MARK: - Layout constants
+
+    private enum Layout {
+        /// Letter-spacing applied to the "NEXT" eyebrow label.
+        static let eyebrowTracking: CGFloat = 1.6
+        /// Opacity of the multi-item chevron icon beside the "NEXT" label.
+        static let chevronOpacity: Double = 0.7
+        /// Maximum number of lines allowed for the item title.
+        static let titleLineLimit: Int = 3
+        /// Opacity of the accent-color border around the card.
+        static let borderOpacity: Double = 0.18
+        /// Width of the accent-color border stroke.
+        static let borderLineWidth: CGFloat = 1
+    }
+
     var body: some View {
         Button(action: onTap) {
             card
@@ -41,12 +56,12 @@ struct NextActionHero: View {
         HStack(spacing: AppTheme.Spacing.xs) {
             Text("NEXT")
                 .font(.caption2.weight(.bold))
-                .tracking(1.6)
+                .tracking(Layout.eyebrowTracking)
                 .foregroundStyle(Color.accentColor)
             if itemCount > 1 {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Color.accentColor.opacity(0.7))
+                    .foregroundStyle(Color.accentColor.opacity(Layout.chevronOpacity))
             }
             Spacer(minLength: 0)
             if item.isPriority {
@@ -62,7 +77,7 @@ struct NextActionHero: View {
             .font(AppTheme.Typography.title)
             .foregroundStyle(.primary)
             .multilineTextAlignment(.leading)
-            .lineLimit(3)
+            .lineLimit(Layout.titleLineLimit)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -78,7 +93,7 @@ struct NextActionHero: View {
             .fill(Color(.secondarySystemGroupedBackground))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(0.18), lineWidth: 1)
+                    .strokeBorder(Color.accentColor.opacity(Layout.borderOpacity), lineWidth: Layout.borderLineWidth)
             )
     }
 }
