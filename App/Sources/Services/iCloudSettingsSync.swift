@@ -68,7 +68,7 @@ final class iCloudSettingsSync {
             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
             object: kvs,
             queue: .main
-        ) { [weak self] _ in
+        ) { _ in
             // Re-post on the main queue under our own notification name so
             // AppStateStore can observe it without importing Foundation's KVS.
             logger.info("iCloudSettingsSync: external change received")
@@ -159,6 +159,6 @@ final class iCloudSettingsSync {
 extension iCloudSettingsSync {
     /// Posted on the main thread when an external iCloud change arrives.
     /// `AppStateStore` observes this to pull the latest values into `state`.
-    static let settingsDidChangeExternallyNotification =
+    nonisolated static let settingsDidChangeExternallyNotification =
         Notification.Name("iCloudSettingsSync.settingsDidChangeExternally")
 }

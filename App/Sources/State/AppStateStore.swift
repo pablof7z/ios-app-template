@@ -48,7 +48,9 @@ final class AppStateStore {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.applyExternalSettingsChange()
+            MainActor.assumeIsolated {
+                self?.applyExternalSettingsChange()
+            }
         }
     }
 
