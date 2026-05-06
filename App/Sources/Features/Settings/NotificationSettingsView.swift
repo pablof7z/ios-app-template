@@ -31,6 +31,25 @@ private enum Layout {
     static let trailingSpacerMin: CGFloat = 4
 }
 
+// MARK: - Date bucket
+
+/// Forward-looking date grouping for the pending-reminders list.
+private enum ReminderDateBucket: String, CaseIterable {
+    case today = "Today"
+    case tomorrow = "Tomorrow"
+    case thisWeek = "This Week"
+    case later = "Later"
+
+    /// Assigns a pending reminder to its bucket relative to `now`.
+    static func bucket(for date: Date, now: Date, calendar: Calendar) -> ReminderDateBucket {
+        if calendar.isDateInToday(date) { return .today }
+        if calendar.isDateInTomorrow(date) { return .tomorrow }
+        let weekOut = calendar.date(byAdding: .day, value: 7, to: now) ?? now
+        if date <= weekOut { return .thisWeek }
+        return .later
+    }
+}
+
 struct NotificationSettingsView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.openURL) private var openURL
@@ -38,6 +57,21 @@ struct NotificationSettingsView: View {
     @State private var authStatus: UNAuthorizationStatus = .notDetermined
     @State private var pendingReminders: [PendingReminder] = []
     @State private var isLoading = true
+
+    /// Reminders grouped by relative-date bucket (Today / Tomorrow / This Week / Later).
+    private var groupedReminders: [(bucket: ReminderDateBucket, reminders: [PendingReminder])] {
+        let now = Date()
+        let calendar = Calendar.current
+        var dict: [ReminderDateBucket: [PendingReminder]] = [:]
+        for reminder in pendingReminders {
+            let key = ReminderDateBucket.bucket(for: reminder.fireDate, now: now, calendar: calendar)
+            dict[key, default: []].append(reminder)
+        }
+        return ReminderDateBucket.allCases.compactMap { bucket in
+            guard let reminders = dict[bucket], !reminders.isEmpty else { return nil }
+            return (bucket, reminders)
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -113,37 +147,41 @@ struct NotificationSettingsView: View {
 
     @ViewBuilder
     private var remindersSection: some View {
-        Section {
-            if isLoading {
+        if isLoading {
+            Section("Scheduled Reminders") {
                 HStack {
                     Spacer()
                     ProgressView()
                     Spacer()
                 }
                 .listRowBackground(Color.clear)
-            } else if pendingReminders.isEmpty {
+            }
+        } else if pendingReminders.isEmpty {
+            Section("Scheduled Reminders") {
                 ContentUnavailableView {
                     Label("No pending reminders", systemImage: "bell.slash")
                 } description: {
                     Text("Set a reminder when adding or editing an item.")
                 }
                 .listRowBackground(Color.clear)
-            } else {
-                ForEach(pendingReminders) { reminder in
-                    reminderRow(reminder)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                cancel(reminder)
-                            } label: {
-                                Label("Cancel", systemImage: "bell.slash")
+            }
+        } else {
+            ForEach(groupedReminders, id: \.bucket) { group in
+                Section(group.bucket.rawValue) {
+                    ForEach(group.reminders) { reminder in
+                        reminderRow(reminder)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    cancel(reminder)
+                                } label: {
+                                    Label("Cancel", systemImage: "bell.slash")
+                                }
                             }
-                        }
+                    }
                 }
             }
-        } header: {
-            Text("Scheduled Reminders")
-        } footer: {
-            if !isLoading && !pendingReminders.isEmpty {
+            Section {
+            } footer: {
                 Text("\(pendingReminders.count) reminder\(pendingReminders.count == 1 ? "" : "s") pending · Swipe left to cancel.")
             }
         }

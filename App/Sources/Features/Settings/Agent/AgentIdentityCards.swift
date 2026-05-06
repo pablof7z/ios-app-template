@@ -37,7 +37,7 @@ struct AgentRelayCard: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(16)
-        .glassSurface(cornerRadius: 24)
+        .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 }
 
@@ -93,7 +93,7 @@ struct AgentKeyManagementCard: View {
                 .font(AppTheme.Typography.body)
         }
         .padding(16)
-        .glassSurface(cornerRadius: 24)
+        .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 
     private var importSection: some View {
@@ -144,7 +144,7 @@ struct AgentPictureURLSheet: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .padding(12)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
                     .padding(.horizontal)
 
                 HStack(spacing: 12) {

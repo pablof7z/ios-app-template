@@ -126,6 +126,28 @@ enum AppTheme {
             startPoint: .top,
             endPoint: .bottom
         )
+
+        /// Subtle green-teal tint used as the item compose/edit sheet background.
+        static let itemSheetBackground = LinearGradient(
+            colors: [
+                Color(.systemBackground),
+                Color.green.opacity(0.05),
+                Color.teal.opacity(0.04)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+
+        /// Subtle indigo-blue tint used as the agent chat view background.
+        static let agentChatBackground = LinearGradient(
+            colors: [
+                Color(.systemBackground),
+                Color.indigo.opacity(0.05),
+                Color.blue.opacity(0.04),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 
     // MARK: - Semantic tints

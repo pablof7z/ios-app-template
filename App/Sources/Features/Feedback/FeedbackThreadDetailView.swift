@@ -192,7 +192,7 @@ struct FeedbackThreadDetailView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassSurface(cornerRadius: 16)
+        .glassSurface(cornerRadius: AppTheme.Corner.lg)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }

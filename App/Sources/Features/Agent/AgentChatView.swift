@@ -427,15 +427,7 @@ struct AgentChatView: View {
     }
 
     private var background: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(.systemBackground),
-                Color.indigo.opacity(0.05),
-                Color.blue.opacity(0.04),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        AppTheme.Gradients.agentChatBackground
     }
 }
 

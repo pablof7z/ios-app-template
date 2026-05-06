@@ -235,7 +235,7 @@ private struct AddFriendSheet: View {
     private var viewfinderFrame: some View {
         VStack {
             Spacer()
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
                 .strokeBorder(.white.opacity(0.6), lineWidth: 2)
                 .frame(width: 200, height: 200)
             Spacer()

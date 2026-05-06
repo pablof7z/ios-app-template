@@ -236,13 +236,13 @@ struct AgentIdentityView: View {
             Spacer(minLength: 0)
         }
         .padding(AgentIdentityLayout.cardPadding)
-        .glassSurface(cornerRadius: 24, interactive: true)
+        .glassSurface(cornerRadius: AppTheme.Corner.xl, interactive: true)
     }
 
     private var identityCardQRTile: some View {
         ZStack(alignment: .topTrailing) {
             ZStack {
-                Color.white.clipShape(RoundedRectangle(cornerRadius: 16))
+                Color.white.clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg))
                 QRCodeView(content: npubFull).padding(8)
             }
             .frame(width: AgentIdentityLayout.avatarSize, height: AgentIdentityLayout.avatarSize)
@@ -300,7 +300,7 @@ struct AgentIdentityView: View {
             .buttonStyle(.borderedProminent)
         }
         .padding(16)
-        .glassSurface(cornerRadius: 24)
+        .glassSurface(cornerRadius: AppTheme.Corner.xl)
     }
 
     private var footerNote: some View {

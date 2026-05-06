@@ -188,15 +188,7 @@ struct ItemEditSheet: View {
     // MARK: - Background
 
     private var background: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(.systemBackground),
-                Color.green.opacity(0.05),
-                Color.teal.opacity(0.04)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        AppTheme.Gradients.itemSheetBackground
     }
 }
 
