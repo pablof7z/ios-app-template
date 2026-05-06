@@ -5,23 +5,19 @@ import SwiftUI
 struct ItemRow: View {
     let item: Item
 
-    private enum Layout {
-        /// Point size of the checkmark circle icon.
-        static let checkmarkSize: CGFloat = 22
-        /// Diameter of the color label dot shown at the leading edge.
-        static let colorDotSize: CGFloat = 8
-    }
+    /// Diameter of the color label dot shown at the leading edge.
+    private static let colorDotSize: CGFloat = 8
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             if let color = item.colorLabel {
                 Circle()
                     .fill(color.swiftUIColor)
-                    .frame(width: Layout.colorDotSize, height: Layout.colorDotSize)
+                    .frame(width: Self.colorDotSize, height: Self.colorDotSize)
                     .accessibilityLabel("\(color.label) label")
             }
             Image(systemName: "checkmark.circle")
-                .font(.system(size: Layout.checkmarkSize, weight: .regular))
+                .font(.system(size: ItemLayout.checkmarkSize, weight: .regular))
                 .foregroundStyle(.green)
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text(item.title)

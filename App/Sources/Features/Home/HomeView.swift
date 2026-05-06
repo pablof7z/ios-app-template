@@ -24,6 +24,7 @@ struct HomeView: View {
     @AppStorage(HomeStorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
     @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
     @AppStorage(HomeStorageKey.todayFilter)  var todayFilterRaw: String = TodayFilter.all.rawValue
+    @AppStorage(HomeStorageKey.colorFilter)  var colorFilterRaw: String = ColorFilter.all.rawValue
 
     var currentSort: ItemSort {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
@@ -35,6 +36,10 @@ struct HomeView: View {
 
     var currentTodayFilter: TodayFilter {
         TodayFilter(rawValue: todayFilterRaw) ?? .all
+    }
+
+    var currentColorFilter: ColorFilter {
+        ColorFilter(rawValue: colorFilterRaw) ?? .all
     }
 
     var isSearching: Bool { !searchText.isEmpty }
@@ -79,6 +84,11 @@ struct HomeView: View {
         case .voice:  items = items.filter { $0.source == .voice }
         }
 
+        // Color label filter
+        if currentColorFilter != .all {
+            items = items.filter { currentColorFilter.matches($0) }
+        }
+
         // Text search
         if isSearching {
             items = items.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
@@ -117,6 +127,7 @@ struct HomeView: View {
         .onChange(of: sortOrder)        { Haptics.selection() }
         .onChange(of: sourceFilterRaw)  { Haptics.selection() }
         .onChange(of: todayFilterRaw)   { Haptics.selection() }
+        .onChange(of: colorFilterRaw)   { Haptics.selection() }
         .onChange(of: searchText) { _, new in
             if new.isEmpty { Haptics.light() }
         }
@@ -154,6 +165,7 @@ struct HomeView: View {
                         Image(systemName: "arrow.up.arrow.down")
                             .accessibilityLabel("Sort Items")
                     }
+                    colorFilterButton
                     todayFilterChip
                 }
             }

@@ -120,15 +120,10 @@ struct CompletedItemsSection: View {
 private struct CompletedItemRow: View {
     let item: Item
 
-    private enum Layout {
-        /// Point size of the filled checkmark circle icon.
-        static let checkmarkSize: CGFloat = 22
-    }
-
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: Layout.checkmarkSize, weight: .regular))
+                .font(.system(size: ItemLayout.checkmarkSize, weight: .regular))
                 .foregroundStyle(.green.opacity(0.6))
 
             Text(item.title)

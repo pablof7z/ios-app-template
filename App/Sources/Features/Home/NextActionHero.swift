@@ -28,13 +28,27 @@ struct NextActionHero: View {
         static let borderLineWidth: CGFloat = 1
     }
 
+    // MARK: - Accessibility
+
+    /// Combined label read by VoiceOver — appends the reminder time when one exists
+    /// because `.accessibilityLabel` overrides child element labels.
+    private var accessibilityLabel: String {
+        var parts = ["Next action: \(item.title)"]
+        if item.isPriority { parts.append("Priority") }
+        if let reminder = item.reminderAt {
+            parts.append("Reminder: \(ReminderLabel.from(reminder).text)")
+        }
+        return parts.joined(separator: ". ")
+    }
+
     var body: some View {
         Button(action: onTap) {
             card
         }
         .buttonStyle(.plain)
         .matchedTransitionSource(id: item.id, in: namespace)
-        .accessibilityLabel("Next action: \(item.title). Double-tap to edit.")
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Double-tap to edit")
     }
 
     private var card: some View {

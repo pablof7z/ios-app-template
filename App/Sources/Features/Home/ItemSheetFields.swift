@@ -2,8 +2,9 @@ import SwiftUI
 
 // MARK: - Shared field-row views for ItemComposeSheet and ItemEditSheet
 //
-// These views are identical in both sheets. Extracting them here means
+// These views are used in both sheets. Extracting them here means
 // field-level changes only need to be made in one place.
+// Layout constants come from ItemLayout (HomeViewModels.swift).
 
 // MARK: - Title field
 
@@ -16,7 +17,7 @@ struct ItemTitleField: View {
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "checkmark.circle")
-                .font(.system(size: ItemSheetLayout.checkmarkSize, weight: .regular))
+                .font(.system(size: ItemLayout.checkmarkSize, weight: .regular))
                 .foregroundStyle(.green)
             TextField("What needs doing?", text: $title)
                 .font(AppTheme.Typography.body)
@@ -38,9 +39,9 @@ struct ItemDetailsField: View {
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             Image(systemName: "text.alignleft")
-                .font(.system(size: ItemSheetLayout.rowIconSize, weight: .regular))
+                .font(.system(size: ItemLayout.rowIconSize, weight: .regular))
                 .foregroundStyle(.secondary)
-                .padding(.top, 2)
+                .padding(.top, AppTheme.Spacing.xs / 2)
             TextField(
                 "Add details…",
                 text: $details,
@@ -83,7 +84,7 @@ struct ItemRecurrenceRow: View {
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: Recurrence.daily.systemImage)
-                .font(.system(size: ItemSheetLayout.rowIconSize, weight: .regular))
+                .font(.system(size: ItemLayout.rowIconSize, weight: .regular))
                 .foregroundStyle(recurrence != .none ? Color.teal : .secondary)
             Picker("Repeats", selection: $recurrence) {
                 ForEach(Recurrence.allCases, id: \.self) { period in

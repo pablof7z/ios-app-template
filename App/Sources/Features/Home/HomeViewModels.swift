@@ -78,12 +78,65 @@ enum TodayFilter: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Color Filter
+
+/// Restricts the active-items list to items with a specific color label (or no label).
+enum ColorFilter: String, CaseIterable, Identifiable {
+    case all       = "all"
+    case uncolored = "uncolored"
+    case red       = "red"
+    case orange    = "orange"
+    case yellow    = "yellow"
+    case green     = "green"
+    case blue      = "blue"
+    case purple    = "purple"
+
+    var id: String { rawValue }
+
+    /// Human-readable name used in the Menu.
+    var label: String {
+        switch self {
+        case .all:       return "All Colors"
+        case .uncolored: return "No Label"
+        case .red:       return ItemColor.red.label
+        case .orange:    return ItemColor.orange.label
+        case .yellow:    return ItemColor.yellow.label
+        case .green:     return ItemColor.green.label
+        case .blue:      return ItemColor.blue.label
+        case .purple:    return ItemColor.purple.label
+        }
+    }
+
+    /// The `ItemColor` this filter matches, or `nil` for `.all` and `.uncolored`.
+    var itemColor: ItemColor? {
+        switch self {
+        case .all, .uncolored: return nil
+        case .red:    return .red
+        case .orange: return .orange
+        case .yellow: return .yellow
+        case .green:  return .green
+        case .blue:   return .blue
+        case .purple: return .purple
+        }
+    }
+
+    /// Returns `true` if `item` passes this filter.
+    func matches(_ item: Item) -> Bool {
+        switch self {
+        case .all:       return true
+        case .uncolored: return item.colorLabel == nil
+        default:         return item.colorLabel == itemColor
+        }
+    }
+}
+
 // MARK: - AppStorage keys
 
 enum HomeStorageKey {
     static let itemSort     = "home.itemSort"
     static let sourceFilter = "home.sourceFilter"
     static let todayFilter  = "home.todayFilter"
+    static let colorFilter  = "home.colorFilter"
 }
 
 // MARK: - Snooze durations
@@ -94,16 +147,18 @@ enum HomeSnooze {
     static let tomorrowHour: Int        = 9
 }
 
-// MARK: - Item sheet layout constants
-// Shared by ItemComposeSheet, ItemEditSheet, and ItemRow to keep the
-// checkmark icon and row-icon sizes consistent across all three surfaces.
+// MARK: - Item layout constants
+// Shared by ItemComposeSheet, ItemEditSheet, ItemRow, and CompletedItemRow to keep
+// the checkmark icon and row-icon sizes consistent across all item surfaces.
 
-enum ItemSheetLayout {
-    /// Point size of the leading checkmark circle icon in compose/edit title fields.
-    /// Matches `ItemRow.Layout.checkmarkSize` so the icon reads the same in list and sheet.
+enum ItemLayout {
+    /// Point size of the leading checkmark circle icon in list rows and compose/edit sheets.
     static let checkmarkSize: CGFloat = 22
-    /// Point size of the small leading icon in detail/recurrence rows.
+    /// Point size of the small leading icon in detail/recurrence sheet rows.
     static let rowIconSize: CGFloat = 16
     /// Default look-ahead applied to `Date()` when a reminder picker first appears.
     static let defaultReminderOffset: TimeInterval = 3_600
 }
+
+/// Backwards-compatible alias so callers can be migrated incrementally.
+typealias ItemSheetLayout = ItemLayout
