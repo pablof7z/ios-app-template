@@ -1,5 +1,8 @@
 import AVFoundation
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "ElevenLabsTTSPreviewService")
 
 enum ElevenLabsTTSPreviewError: LocalizedError {
     case missingAPIKey
@@ -91,7 +94,11 @@ final class ElevenLabsTTSPreviewService {
 
     private func configureAudioSession() {
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .default, options: [])
-        try? session.setActive(true, options: [])
+        do {
+            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setActive(true, options: [])
+        } catch {
+            logger.error("AVAudioSession configuration failed: \(error, privacy: .public)")
+        }
     }
 }
