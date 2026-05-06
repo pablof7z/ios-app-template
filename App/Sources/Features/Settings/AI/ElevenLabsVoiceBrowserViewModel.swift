@@ -44,6 +44,7 @@ final class ElevenLabsVoiceBrowserViewModel {
         do {
             apiKey = try ElevenLabsCredentialStore.apiKey()
         } catch {
+            logger.error("ElevenLabsVoiceBrowserViewModel: Keychain read failed — \(error, privacy: .public)")
             apiKey = nil
         }
         guard let apiKey, !apiKey.isEmpty else {

@@ -13,16 +13,16 @@ struct HomeView: View {
 
     @State var showCompose = false
     @State var composeInitialTitle: String = ""
-    @State private var completedExpanded: Bool = false
+    @State var completedExpanded: Bool = false
     @State var editingItem: Item?
-    @State private var searchText: String = ""
+    @State var searchText: String = ""
     @State var completingIDs: Set<UUID> = []
     @State var selectedIDs: Set<UUID> = []
     @StateObject var celebration = CompletionCelebrationState()
-    @Namespace private var rowNamespace
+    @Namespace var rowNamespace
     @Environment(\.editMode) var editMode
-    @AppStorage(HomeStorageKey.itemSort)     private var sortOrder: String = ItemSort.dateAddedDesc.rawValue
-    @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
+    @AppStorage(HomeStorageKey.itemSort)     var sortOrder: String = ItemSort.dateAddedDesc.rawValue
+    @AppStorage(HomeStorageKey.sourceFilter) var sourceFilterRaw: String = SourceFilter.all.rawValue
     @AppStorage(HomeStorageKey.todayFilter)  var todayFilterRaw: String = TodayFilter.all.rawValue
     @AppStorage(HomeStorageKey.colorFilter)  var colorFilterRaw: String = ColorFilter.all.rawValue
 
@@ -30,7 +30,7 @@ struct HomeView: View {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
     }
 
-    private var currentSourceFilter: SourceFilter {
+    var currentSourceFilter: SourceFilter {
         SourceFilter(rawValue: sourceFilterRaw) ?? .all
     }
 
@@ -44,7 +44,7 @@ struct HomeView: View {
 
     var isSearching: Bool { !searchText.isEmpty }
 
-    private var sortedActiveItems: [Item] {
+    var sortedActiveItems: [Item] {
         switch currentSort {
         case .dateAddedDesc:
             return store.activeItems.sorted {
@@ -97,7 +97,7 @@ struct HomeView: View {
         return items
     }
 
-    private var hasAnyItems: Bool {
+    var hasAnyItems: Bool {
         !store.activeItems.isEmpty || !store.completedItems.isEmpty
     }
 
@@ -137,7 +137,7 @@ struct HomeView: View {
     }
 
     @ToolbarContentBuilder
-    private var homeToolbar: some ToolbarContent {
+    var homeToolbar: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             if !isEditing {
                 Button {
@@ -180,7 +180,7 @@ struct HomeView: View {
 
     // MARK: - Empty State
 
-    private var emptyState: some View {
+    var emptyState: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Image(systemName: "checkmark.circle.dashed")
                 .font(.system(size: HomeLayout.emptyStateIconSize, weight: .light))
@@ -194,134 +194,6 @@ struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Item List
-
-    private var itemList: some View {
-        List(selection: $selectedIDs) {
-            if !isSearching && !isEditing, let top = sortedActiveItems.first {
-                Section {
-                    NextActionHero(
-                        item: top,
-                        itemCount: sortedActiveItems.count,
-                        namespace: rowNamespace,
-                        onTap: { editingItem = top }
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(listRowInsets)
-                }
-            }
-            if !isEditing {
-                sourceFilterPicker
-            }
-            if isSearching && filteredActiveItems.isEmpty {
-                ContentUnavailableView.search(text: searchText)
-                    .listRowSeparator(.hidden)
-            } else if currentTodayFilter == .today && filteredActiveItems.isEmpty && !isSearching {
-                todayEmptyState
-                    .listRowSeparator(.hidden)
-            } else {
-                activeItemsSection
-            }
-            if !isSearching && !isEditing && !store.completedItems.isEmpty {
-                CompletedItemsSection(isExpanded: $completedExpanded)
-            }
-        }
-        .listStyle(.plain)
-        .animation(AppTheme.Animation.spring, value: filteredActiveItems.count)
-        .animation(AppTheme.Animation.spring, value: pinnedItems.count)
-        .animation(AppTheme.Animation.spring, value: overdueItems.count)
-        .animation(AppTheme.Animation.spring, value: store.completedItems.isEmpty)
-    }
-
-    private var listRowInsets: EdgeInsets {
-        EdgeInsets(
-            top: AppTheme.Spacing.xs,
-            leading: AppTheme.Spacing.md,
-            bottom: AppTheme.Spacing.xs,
-            trailing: AppTheme.Spacing.md
-        )
-    }
-
-    private var sourceFilterPicker: some View {
-        Section {
-            Picker("Source", selection: $sourceFilterRaw) {
-                ForEach(SourceFilter.allCases) { filter in
-                    Text(filter.label).tag(filter.rawValue)
-                }
-            }
-            .pickerStyle(.segmented)
-            .listRowBackground(Color.clear)
-            .listRowInsets(listRowInsets)
-        }
-    }
-
-    @ViewBuilder
-    private var activeItemsSection: some View {
-        if showOverdueSection {
-            overdueSection
-            Section {
-                ForEach(nonOverdueItems) { item in
-                    itemRow(for: item)
-                }
-            } header: {
-                if !overdueItems.isEmpty {
-                    Text("Upcoming")
-                        .font(AppTheme.Typography.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } else if showPinnedSection {
-            pinnedSection
-            Section {
-                ForEach(nonPinnedItems) { item in
-                    itemRow(for: item)
-                }
-            } header: {
-                if !nonPinnedItems.isEmpty {
-                    Text("Other")
-                        .font(AppTheme.Typography.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } else {
-            Section {
-                ForEach(filteredActiveItems) { item in
-                    itemRow(for: item)
-                }
-            }
-        }
-    }
-
-    func itemRow(for item: Item) -> some View {
-        let isCompleting = completingIDs.contains(item.id)
-        return Button {
-            guard !isEditing else { return }
-            Haptics.selection()
-            editingItem = item
-        } label: {
-            ItemRow(item: item)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(item.title)
-        .accessibilityHint(isEditing ? "Double-tap to select" : "Double-tap to edit")
-        .matchedTransitionSource(id: item.id, in: rowNamespace)
-        .listRowInsets(listRowInsets)
-        .scaleEffect(isCompleting ? 0.92 : 1.0)
-        .opacity(isCompleting ? 0 : 1)
-        .tag(item.id)
-        .animation(AppTheme.Animation.spring, value: isCompleting)
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            if !isEditing { leadingSwipeActions(for: item) }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            if !isEditing { trailingSwipeActions(for: item) }
-        }
-        .contextMenu {
-            if !isEditing { itemContextMenu(for: item) }
-        }
     }
 
 }

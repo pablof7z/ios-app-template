@@ -12,6 +12,8 @@ struct NextActionHero: View {
     let itemCount: Int
     let namespace: Namespace.ID
     let onTap: () -> Void
+    /// Number of items completed today — drives the progress ring.
+    let completedToday: Int
 
     // MARK: - Layout constants
 
@@ -37,6 +39,10 @@ struct NextActionHero: View {
         if item.isPriority { parts.append("Priority") }
         if let reminder = item.reminderAt {
             parts.append("Reminder: \(ReminderLabel.from(reminder).text)")
+        }
+        let total = completedToday + itemCount
+        if total > 0 {
+            parts.append("\(completedToday) of \(total) done today")
         }
         return parts.joined(separator: ". ")
     }
@@ -83,6 +89,7 @@ struct NextActionHero: View {
                     .font(.caption2)
                     .foregroundStyle(.yellow)
             }
+            TodayProgressRing(completedToday: completedToday, activeCount: itemCount)
         }
     }
 
