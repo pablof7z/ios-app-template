@@ -25,7 +25,7 @@ struct HomeView: View {
     @AppStorage(HomeStorageKey.sourceFilter) private var sourceFilterRaw: String = SourceFilter.all.rawValue
     @AppStorage(HomeStorageKey.todayFilter)  var todayFilterRaw: String = TodayFilter.all.rawValue
 
-    private var currentSort: ItemSort {
+    var currentSort: ItemSort {
         ItemSort(rawValue: sortOrder) ?? .dateAddedDesc
     }
 
@@ -37,7 +37,7 @@ struct HomeView: View {
         TodayFilter(rawValue: todayFilterRaw) ?? .all
     }
 
-    private var isSearching: Bool { !searchText.isEmpty }
+    var isSearching: Bool { !searchText.isEmpty }
 
     private var sortedActiveItems: [Item] {
         switch currentSort {
@@ -63,7 +63,7 @@ struct HomeView: View {
         }
     }
 
-    private var filteredActiveItems: [Item] {
+    var filteredActiveItems: [Item] {
         var items = sortedActiveItems
 
         // Today filter — show only items due or reminding today
@@ -246,14 +246,29 @@ struct HomeView: View {
 
     @ViewBuilder
     private var activeItemsSection: some View {
-        Section {
-            ForEach(filteredActiveItems) { item in
-                itemRow(for: item)
+        if showOverdueSection {
+            overdueSection
+            Section {
+                ForEach(nonOverdueItems) { item in
+                    itemRow(for: item)
+                }
+            } header: {
+                if !overdueItems.isEmpty {
+                    Text("Upcoming")
+                        .font(AppTheme.Typography.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } else {
+            Section {
+                ForEach(filteredActiveItems) { item in
+                    itemRow(for: item)
+                }
             }
         }
     }
 
-    private func itemRow(for item: Item) -> some View {
+    func itemRow(for item: Item) -> some View {
         let isCompleting = completingIDs.contains(item.id)
         return Button {
             guard !isEditing else { return }
