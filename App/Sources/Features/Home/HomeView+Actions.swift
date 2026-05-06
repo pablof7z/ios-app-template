@@ -28,4 +28,14 @@ extension HomeView {
         composeInitialTitle = title
         showCompose = true
     }
+
+    /// Consumes a pending item ID delivered via Handoff continuation.
+    /// Opens the edit sheet for the matching item, or silently no-ops when
+    /// the item is not present on this device yet (e.g. iCloud hasn't synced).
+    func consumePendingEditID() {
+        guard let id = pendingEditItemID else { return }
+        pendingEditItemID = nil
+        guard let item = store.state.items.first(where: { $0.id == id && !$0.deleted }) else { return }
+        editingItem = item
+    }
 }

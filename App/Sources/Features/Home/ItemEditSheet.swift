@@ -55,6 +55,16 @@ struct ItemEditSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .userActivity(HandoffActivityType.editItem) { activity in
+            // Donate a Handoff activity so the user can continue editing
+            // this item on another nearby device (iPad, Mac, etc.).
+            activity.title = item.title
+            activity.isEligibleForHandoff = true
+            activity.userInfo = [
+                HandoffUserInfoKey.itemID: item.id.uuidString,
+                HandoffUserInfoKey.itemTitle: item.title,
+            ]
+        }
         .onAppear {
             title = item.title
             details = item.details

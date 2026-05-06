@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum ProductivityStatsLayout {
+    /// Point size of the empty-state hero icon (chart.bar.xaxis).
+    static let emptyStateIconSize: CGFloat = 64
+}
+
 // MARK: - Productivity Stats View
 
 /// Shows a summary of item-completion activity: totals, streak, and source breakdown.
@@ -34,7 +41,7 @@ struct ProductivityStatsView: View {
     private var emptyState: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 64, weight: .light))
+                .font(.system(size: ProductivityStatsLayout.emptyStateIconSize, weight: .light))
                 .foregroundStyle(.tertiary)
             VStack(spacing: AppTheme.Spacing.xs) {
                 Text("No completions yet")

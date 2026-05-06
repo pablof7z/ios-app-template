@@ -22,6 +22,8 @@ struct RootView: View {
     @State private var showFeedback = false
     @State private var lastShakeTime: Date = .distantPast
     @State private var pendingNewItemTitle: String?
+    /// Item ID received from a Handoff continuation; HomeView opens the edit sheet.
+    @State private var pendingEditItemID: UUID?
 
     var body: some View {
         tabBar
@@ -51,6 +53,7 @@ struct RootView: View {
             ) { note in
                 if let url = note.object as? URL { handleDeepLink(url) }
             }
+            .onContinueUserActivity(HandoffActivityType.editItem, perform: handleHandoff)
     }
 
     private var tabBar: some View {
@@ -67,7 +70,12 @@ struct RootView: View {
     private func tabContent(for tab: RootTab) -> some View {
         switch tab {
         case .home:
-            NavigationStack { HomeView(pendingNewItemTitle: $pendingNewItemTitle) }
+            NavigationStack {
+                HomeView(
+                    pendingNewItemTitle: $pendingNewItemTitle,
+                    pendingEditItemID: $pendingEditItemID
+                )
+            }
         case .settings:
             NavigationStack { SettingsView() }
         }
@@ -104,6 +112,20 @@ struct RootView: View {
             feedbackWorkflow.phase = .composing
             showFeedback = true
         }
+    }
+
+    /// Handles a Handoff continuation for ``HandoffActivityType/editItem``.
+    /// Switches to the Home tab and sets `pendingEditItemID` so `HomeView`
+    /// can open the edit sheet for the matching item.
+    ///
+    /// If the item doesn't exist on this device (e.g. iCloud hasn't synced yet),
+    /// `HomeView` will fall through silently — no crash, just no sheet.
+    private func handleHandoff(_ activity: NSUserActivity) {
+        guard let idString = activity.userInfo?[HandoffUserInfoKey.itemID] as? String,
+              let itemID = UUID(uuidString: idString)
+        else { return }
+        selectedTab = .home
+        pendingEditItemID = itemID
     }
 
     private func captureScreenshot() -> UIImage? {

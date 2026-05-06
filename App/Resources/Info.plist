@@ -61,6 +61,10 @@
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).view-overdue</string>
 		</dict>
 	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.pablofernandez.apptemplate.editItem</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchScreen</key>

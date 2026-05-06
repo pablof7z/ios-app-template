@@ -10,6 +10,8 @@ private enum HomeLayout {
 struct HomeView: View {
     @Environment(AppStateStore.self) var store
     @Binding var pendingNewItemTitle: String?
+    /// Item ID set by a Handoff continuation; consumed on appear to open the edit sheet.
+    @Binding var pendingEditItemID: UUID?
 
     @State var showCompose = false
     @State var composeInitialTitle: String = ""
@@ -149,8 +151,12 @@ struct HomeView: View {
         .sheet(item: $editingItem) { item in
             ItemEditSheet(item: item, sourceID: item.id, namespace: rowNamespace)
         }
-        .onAppear { consumePendingTitle() }
+        .onAppear {
+            consumePendingTitle()
+            consumePendingEditID()
+        }
         .onChange(of: pendingNewItemTitle) { consumePendingTitle() }
+        .onChange(of: pendingEditItemID)   { consumePendingEditID() }
         .onChange(of: sortOrder)        { Haptics.selection() }
         .onChange(of: sourceFilterRaw)  { Haptics.selection() }
         .onChange(of: todayFilterRaw)   { Haptics.selection() }
