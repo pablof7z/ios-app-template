@@ -120,16 +120,51 @@ enum SpotlightIndexer {
     private static func makeSearchable(from item: Item) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: UTType.text)
         attrs.title = item.title
-        attrs.contentDescription = item.requestedByDisplayName.map { "From \($0)" }
+        attrs.contentDescription = itemDescription(for: item)
         attrs.contentCreationDate = item.createdAt
         attrs.contentModificationDate = item.updatedAt
-        attrs.keywords = ["task", "todo", "item"]
+        attrs.keywords = itemKeywords(for: item)
 
         return CSSearchableItem(
             uniqueIdentifier: itemIdentifier(item.id),
             domainIdentifier: Domain.items.rawValue,
             attributeSet: attrs
         )
+    }
+
+    /// Builds a human-readable Spotlight snippet for an item.
+    ///
+    /// Combines the requester name (when present), priority flag, reminder
+    /// date, and source so users can identify items from Spotlight results
+    /// without opening the app.
+    private static func itemDescription(for item: Item) -> String {
+        var parts: [String] = []
+        if let name = item.requestedByDisplayName { parts.append("From \(name)") }
+        if item.isPriority { parts.append("Starred") }
+        if let reminder = item.reminderAt {
+            let formatted = reminder.formatted(date: .abbreviated, time: .shortened)
+            parts.append("Reminder: \(formatted)")
+        }
+        switch item.source {
+        case .agent: parts.append("Added by agent")
+        case .voice: parts.append("Added by voice")
+        case .manual: break
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Builds a keyword list that lets Spotlight match source, priority,
+    /// and reminder metadata — not just the item title.
+    private static func itemKeywords(for item: Item) -> [String] {
+        var keywords = ["task", "todo", "item"]
+        switch item.source {
+        case .agent: keywords.append(contentsOf: ["agent", "ai"])
+        case .voice: keywords.append("voice")
+        case .manual: break
+        }
+        if item.isPriority { keywords.append(contentsOf: ["priority", "starred"]) }
+        if item.reminderAt != nil { keywords.append("reminder") }
+        return keywords
     }
 
     private static func makeSearchable(from note: Note) -> CSSearchableItem {
@@ -143,12 +178,23 @@ enum SpotlightIndexer {
         attrs.title = firstLine
         attrs.contentDescription = note.text
         attrs.contentCreationDate = note.createdAt
-        attrs.keywords = ["note", "journal", note.kind.rawValue]
+        attrs.keywords = noteKeywords(for: note)
 
         return CSSearchableItem(
             uniqueIdentifier: noteIdentifier(note.id),
             domainIdentifier: Domain.notes.rawValue,
             attributeSet: attrs
         )
+    }
+
+    /// Builds keywords for a note, surfacing its kind alongside the base terms.
+    private static func noteKeywords(for note: Note) -> [String] {
+        var keywords = ["note", "journal", note.kind.rawValue]
+        switch note.kind {
+        case .reflection: keywords.append("reflection")
+        case .systemEvent: keywords.append(contentsOf: ["system", "event", "log"])
+        case .free: break
+        }
+        return keywords
     }
 }
