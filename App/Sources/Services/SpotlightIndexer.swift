@@ -1,6 +1,9 @@
 @preconcurrency import CoreSpotlight
 import Foundation
+import os.log
 import UniformTypeIdentifiers
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "SpotlightIndexer")
 
 /// Indexes user-visible domain objects into iOS Spotlight so they can be
 /// surfaced from system search and from Siri. Tapping a result deep-links
@@ -85,14 +88,20 @@ enum SpotlightIndexer {
 
         let index = CSSearchableIndex.default()
 
-        index.deleteSearchableItems(withDomainIdentifiers: [Domain.items.rawValue]) { _ in
+        index.deleteSearchableItems(withDomainIdentifiers: [Domain.items.rawValue]) { error in
+            if let error { logger.error("Failed to delete items domain: \(error, privacy: .public)") }
             guard !items.isEmpty else { return }
-            index.indexSearchableItems(items) { _ in }
+            index.indexSearchableItems(items) { error in
+                if let error { logger.error("Failed to index items: \(error, privacy: .public)") }
+            }
         }
 
-        index.deleteSearchableItems(withDomainIdentifiers: [Domain.notes.rawValue]) { _ in
+        index.deleteSearchableItems(withDomainIdentifiers: [Domain.notes.rawValue]) { error in
+            if let error { logger.error("Failed to delete notes domain: \(error, privacy: .public)") }
             guard !notes.isEmpty else { return }
-            index.indexSearchableItems(notes) { _ in }
+            index.indexSearchableItems(notes) { error in
+                if let error { logger.error("Failed to index notes: \(error, privacy: .public)") }
+            }
         }
     }
 
@@ -101,7 +110,9 @@ enum SpotlightIndexer {
     static func clearAll() {
         CSSearchableIndex.default().deleteSearchableItems(
             withDomainIdentifiers: Domain.allCases.map(\.rawValue)
-        ) { _ in }
+        ) { error in
+            if let error { logger.error("Failed to clear Spotlight index: \(error, privacy: .public)") }
+        }
     }
 
     // MARK: - Builders

@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "OpenRouterCredentialStore")
 
 enum OpenRouterCredentialStore {
     private static let service = "\(Bundle.main.bundleIdentifier ?? "AppTemplate").openrouter"
@@ -19,7 +22,12 @@ enum OpenRouterCredentialStore {
     }
 
     static func hasAPIKey() -> Bool {
-        ((try? apiKey()) ?? nil) != nil
+        do {
+            return try apiKey() != nil
+        } catch {
+            logger.error("OpenRouterCredentialStore.hasAPIKey failed: \(error, privacy: .public)")
+            return false
+        }
     }
 
     static func deleteAPIKey() throws {
