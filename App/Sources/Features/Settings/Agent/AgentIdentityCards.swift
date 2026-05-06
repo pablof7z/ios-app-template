@@ -30,7 +30,7 @@ struct AgentRelayCard: View {
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 .padding(10)
-                .background(Color(.quaternarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color(.quaternarySystemFill), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
 
             Text("Your agent connects here to send and receive Nostr messages.")
                 .font(.caption2)
@@ -104,7 +104,7 @@ struct AgentKeyManagementCard: View {
                     .textInputAutocapitalization(.never)
                     .font(.callout.monospaced())
                     .padding(10)
-                    .background(Color(.quaternarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color(.quaternarySystemFill), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
 
                 Button("Import") {
                     onImport()

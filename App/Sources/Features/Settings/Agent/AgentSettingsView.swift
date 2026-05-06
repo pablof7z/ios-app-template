@@ -3,6 +3,7 @@ import SwiftUI
 struct AgentSettingsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var settings: Settings = Settings()
+    @State private var hasOpenRouterKey: Bool = false
     @State private var hasNostrKey: Bool = false
 
     var body: some View {
@@ -22,6 +23,7 @@ struct AgentSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             settings = store.state.settings
+            hasOpenRouterKey = OpenRouterCredentialStore.hasAPIKey()
             hasNostrKey = NostrCredentialStore.hasPrivateKey()
         }
         .onChange(of: settings) { _, new in
@@ -35,6 +37,7 @@ struct AgentSettingsView: View {
     private var setupSection: some View {
         Section {
             AgentSetupStatusCard(
+                hasOpenRouterKey: hasOpenRouterKey,
                 hasNostrKey: hasNostrKey,
                 nostrEnabled: settings.nostrEnabled
             )

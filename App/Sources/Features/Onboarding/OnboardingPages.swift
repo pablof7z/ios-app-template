@@ -7,6 +7,8 @@ private enum OnboardingLayout {
     static let pageIconPadding: CGFloat = 28
     static let pageIconStroke: CGFloat = 0.3
     static let fieldVerticalPadding: CGFloat = 14
+    /// Corner radius for the welcome sparkle medallion and its glass overlay.
+    static let medallionCornerRadius: CGFloat = 36
 }
 
 // MARK: - Welcome
@@ -44,7 +46,7 @@ struct OnboardingWelcomePage: View {
 
     private var sparkleMedallion: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
+            RoundedRectangle(cornerRadius: OnboardingLayout.medallionCornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -56,9 +58,9 @@ struct OnboardingWelcomePage: View {
                     )
                 )
                 .frame(width: 148, height: 148)
-                .glassEffect(.regular, in: .rect(cornerRadius: 36))
+                .glassEffect(.regular, in: .rect(cornerRadius: OnboardingLayout.medallionCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 36, style: .continuous)
+                    RoundedRectangle(cornerRadius: OnboardingLayout.medallionCornerRadius, style: .continuous)
                         .strokeBorder(.white.opacity(0.35), lineWidth: 1)
                 )
                 .appShadow(AppTheme.Shadow.lifted)

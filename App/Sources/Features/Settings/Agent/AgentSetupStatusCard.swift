@@ -33,27 +33,36 @@ private enum SetupCardLayout {
 // MARK: - AgentSetupStatusCard
 
 /// A status card shown at the top of AgentSettingsView that guides the user
-/// through the two Nostr setup steps: generate identity, then enable networking.
-/// When both steps are done it shows a calm "Agent is reachable" confirmation.
+/// through three setup steps: connect an LLM, generate identity, then enable
+/// Nostr networking. When all steps are done it shows a calm "Agent is ready"
+/// confirmation that accurately reflects the agent's ability to respond.
 struct AgentSetupStatusCard: View {
+    let hasOpenRouterKey: Bool
     let hasNostrKey: Bool
     let nostrEnabled: Bool
 
     // MARK: - Derived state
 
-    private var allDone: Bool { hasNostrKey && nostrEnabled }
+    private var allDone: Bool { hasOpenRouterKey && hasNostrKey && nostrEnabled }
 
     private var steps: [SetupStep] {
         [
             SetupStep(
                 id: 0,
+                icon: "key.viewfinder",
+                title: "Connect AI (OpenRouter)",
+                description: "Add an OpenRouter key so the agent can respond.",
+                isDone: hasOpenRouterKey
+            ),
+            SetupStep(
+                id: 1,
                 icon: "key.fill",
                 title: "Generate identity",
                 description: "Create a Nostr key pair for your agent.",
                 isDone: hasNostrKey
             ),
             SetupStep(
-                id: 1,
+                id: 2,
                 icon: "antenna.radiowaves.left.and.right",
                 title: "Enable Nostr networking",
                 description: "Let other agents find and message yours.",
@@ -80,6 +89,7 @@ struct AgentSetupStatusCard: View {
                 : .regular.tint(Color.indigo.opacity(0.08)),
             in: .rect(cornerRadius: SetupCardLayout.cardCornerRadius)
         )
+        .animation(AppTheme.Animation.spring, value: hasOpenRouterKey)
         .animation(AppTheme.Animation.spring, value: hasNostrKey)
         .animation(AppTheme.Animation.spring, value: nostrEnabled)
     }
@@ -93,14 +103,14 @@ struct AgentSetupStatusCard: View {
                 .foregroundStyle(allDone ? Color.green : Color.indigo)
                 .contentTransition(.symbolEffect(.replace))
 
-            Text(allDone ? "Agent is reachable" : "Set up your agent")
+            Text(allDone ? "Agent is ready" : "Set up your agent")
                 .font(AppTheme.Typography.headline)
                 .contentTransition(.opacity)
 
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(allDone ? "Agent is reachable" : "Set up your agent — \(doneCount) of \(steps.count) steps complete")
+        .accessibilityLabel(allDone ? "Agent is ready" : "Set up your agent — \(doneCount) of \(steps.count) steps complete")
     }
 
     private var stepList: some View {
@@ -160,6 +170,9 @@ struct AgentSetupStatusCard: View {
     private var doneCount: Int { steps.filter(\.isDone).count }
 
     private var nextStepHint: String {
+        if !hasOpenRouterKey {
+            return "Add an OpenRouter key in Settings \u{2192} AI \u{2192} Language Models."
+        }
         if !hasNostrKey {
             return "Tap Identity below to generate a key pair."
         }

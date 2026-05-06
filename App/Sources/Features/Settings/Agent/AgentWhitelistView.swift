@@ -182,7 +182,7 @@ private struct PendingApprovalRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(approval.displayName ?? "Unknown")
-                        .font(.headline)
+                        .font(AppTheme.Typography.headline)
 
                     Button {
                         UIPasteboard.general.string = approval.pubkeyHex
@@ -209,7 +209,7 @@ private struct PendingApprovalRow: View {
                     .buttonStyle(.plain)
 
                     Text(approval.receivedAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.tertiary)
                 }
 
@@ -269,7 +269,7 @@ private struct AllowedRow: View {
                 if isCopied {
                     Label("Copied", systemImage: "checkmark")
                         .labelStyle(.titleAndIcon)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .transition(.opacity)
                 }

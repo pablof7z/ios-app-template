@@ -84,7 +84,7 @@ private struct FriendListRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(friend.displayName)
-                    .font(.headline)
+                    .font(AppTheme.Typography.headline)
 
                 Text(friend.shortIdentifier)
                     .font(.caption.monospaced())
@@ -92,7 +92,7 @@ private struct FriendListRow: View {
 
                 if let about = friend.about, !about.isEmpty {
                     Text(about)
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.tertiary)
                         .lineLimit(2)
                 }
@@ -101,7 +101,7 @@ private struct FriendListRow: View {
             Spacer(minLength: 8)
 
             Text(friend.addedAt.formatted(date: .abbreviated, time: .omitted))
-                .font(.caption)
+                .font(AppTheme.Typography.caption)
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 2)
