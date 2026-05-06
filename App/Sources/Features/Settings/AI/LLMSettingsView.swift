@@ -137,12 +137,7 @@ struct LLMSettingsView: View {
     /// Returns the stored human-readable name when available, falling back to
     /// the path-stripped model ID slug for backward compatibility.
     private func displayName(modelID: String, modelName: String) -> String {
-        let name = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !name.isEmpty { return name }
-        let id = modelID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !id.isEmpty else { return "Not set" }
-        if let idx = id.lastIndex(of: "/") { return String(id[id.index(after: idx)...]) }
-        return id
+        Settings.modelDisplayName(modelID: modelID, modelName: modelName)
     }
 
     /// Backfills stored model names from the catalog for existing installs

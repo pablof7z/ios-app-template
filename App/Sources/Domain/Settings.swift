@@ -133,6 +133,24 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
     }
 
+    // MARK: - Display helpers
+
+    /// Returns a human-readable display name for an OpenRouter model.
+    ///
+    /// Preference order:
+    /// 1. `modelName` when non-empty (persisted human-readable name from catalog).
+    /// 2. Slug after the last `/` in `modelID` (e.g. "gpt-4o" from "openai/gpt-4o").
+    /// 3. `modelID` verbatim when it contains no `/`.
+    /// 4. "Not set" when `modelID` is empty.
+    static func modelDisplayName(modelID: String, modelName: String = "") -> String {
+        let name = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty { return name }
+        let id = modelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else { return "Not set" }
+        if let idx = id.lastIndex(of: "/") { return String(id[id.index(after: idx)...]) }
+        return id
+    }
+
     mutating func markOpenRouterManual(connectedAt: Date = Date()) {
         openRouterCredentialSource = .manual
         openRouterBYOKKeyID = nil

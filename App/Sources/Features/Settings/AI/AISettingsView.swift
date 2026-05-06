@@ -53,12 +53,8 @@ struct AISettingsView: View {
     private var settings: Settings { store.state.settings }
 
     private var agentModelShortName: String? {
-        let name = settings.llmModelName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !name.isEmpty { return name }
-        let id = settings.llmModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !id.isEmpty else { return nil }
-        if let idx = id.lastIndex(of: "/") { return String(id[id.index(after: idx)...]) }
-        return id
+        let name = Settings.modelDisplayName(modelID: settings.llmModel, modelName: settings.llmModelName)
+        return name == "Not set" ? nil : name
     }
 
     private var openRouterStatus: String {

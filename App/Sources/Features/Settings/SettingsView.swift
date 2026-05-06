@@ -137,12 +137,10 @@ struct SettingsView: View {
     }
 
     private var currentModelShortName: String {
-        let model = store.state.settings.llmModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !model.isEmpty else { return "Not set" }
-        if let slashIndex = model.lastIndex(of: "/") {
-            return String(model[model.index(after: slashIndex)...])
-        }
-        return model
+        Settings.modelDisplayName(
+            modelID: store.state.settings.llmModel,
+            modelName: store.state.settings.llmModelName
+        )
     }
 
     private var appVersionFooter: String {
