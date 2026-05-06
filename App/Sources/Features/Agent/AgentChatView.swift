@@ -1,5 +1,32 @@
 import SwiftUI
 
+// MARK: - Layout constants
+
+private enum AgentChatLayout {
+    /// Minimum elapsed time (seconds) between two messages before a time separator is shown.
+    static let timeSeparatorThreshold: TimeInterval = 15 * 60
+    /// Point size of the jump-to-bottom chevron button.
+    static let jumpButtonSize: CGFloat = 30
+    /// Point size of the icon inside the resume-session banner's dismiss button.
+    static let bannerCloseIconSize: CGFloat = 11
+    /// Tap-target dimension of the resume-session banner dismiss button.
+    static let bannerCloseFrameSize: CGFloat = 22
+    /// Point size of the icon inside the resume-session banner.
+    static let bannerIconSize: CGFloat = 14
+    /// Horizontal padding inside the input text field glass pill.
+    static let inputFieldPaddingH: CGFloat = 14
+    /// Vertical padding inside the input text field glass pill.
+    static let inputFieldPaddingV: CGFloat = 10
+    /// Corner radius of the input text field glass pill.
+    static let inputFieldCornerRadius: CGFloat = 22
+    /// Diameter of the send button.
+    static let sendButtonSize: CGFloat = 38
+    /// Point size of the send-button arrow icon.
+    static let sendButtonIconSize: CGFloat = 17
+    /// Corner radius for suggestion chips and tool-batch pills in the welcome state.
+    static let chipCornerRadius: CGFloat = 14
+}
+
 /// Full-screen chat interface for the AI agent, presented as a sheet.
 struct AgentChatView: View {
     @Environment(AppStateStore.self) private var store
@@ -104,7 +131,7 @@ struct AgentChatView: View {
     private var resumeBanner: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: AgentChatLayout.bannerIconSize, weight: .semibold))
                 .foregroundStyle(.indigo)
                 .accessibilityHidden(true)
             Text("Continuing from your previous session")
@@ -115,15 +142,15 @@ struct AgentChatView: View {
                 withAnimation(AppTheme.Animation.spring) { bannerDismissed = true }
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: AgentChatLayout.bannerCloseIconSize, weight: .bold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 22, height: 22)
+                    .frame(width: AgentChatLayout.bannerCloseFrameSize, height: AgentChatLayout.bannerCloseFrameSize)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Dismiss banner")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, AgentChatLayout.inputFieldPaddingH)
+        .padding(.vertical, AgentChatLayout.inputFieldPaddingV)
         .glassEffect(.regular.tint(.indigo.opacity(0.10)), in: .rect(cornerRadius: 12))
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.sm)
@@ -150,7 +177,7 @@ struct AgentChatView: View {
                         }
                     } label: {
                         Image(systemName: "chevron.down.circle.fill")
-                            .font(.system(size: 30))
+                            .font(.system(size: AgentChatLayout.jumpButtonSize))
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(Color.indigo)
                     }
@@ -217,7 +244,7 @@ struct AgentChatView: View {
         guard let prev else { return true }
         switch prev.role {
         case .user, .assistant:
-            return msg.timestamp.timeIntervalSince(prev.timestamp) >= 15 * 60
+            return msg.timestamp.timeIntervalSince(prev.timestamp) >= AgentChatLayout.timeSeparatorThreshold
         case .toolBatch, .error:
             return false
         }
@@ -280,12 +307,12 @@ struct AgentChatView: View {
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, AgentChatLayout.inputFieldPaddingH)
+            .padding(.vertical, AgentChatLayout.inputFieldPaddingV)
             .frame(maxWidth: .infinity, alignment: .leading)
             .glassEffect(
                 .regular.tint(.indigo.opacity(0.08)).interactive(),
-                in: .rect(cornerRadius: 14)
+                in: .rect(cornerRadius: AgentChatLayout.chipCornerRadius)
             )
         }
         .buttonStyle(.plain)
@@ -351,18 +378,18 @@ struct AgentChatView: View {
                 .textFieldStyle(.plain)
                 .focused($inputFocused)
                 .lineLimit(1...5)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .glassEffect(.regular, in: .rect(cornerRadius: 22))
+                .padding(.horizontal, AgentChatLayout.inputFieldPaddingH)
+                .padding(.vertical, AgentChatLayout.inputFieldPaddingV)
+                .glassEffect(.regular, in: .rect(cornerRadius: AgentChatLayout.inputFieldCornerRadius))
                 .disabled(showSettingsHint)
 
             Button {
                 sendCurrentDraft()
             } label: {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: AgentChatLayout.sendButtonIconSize, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
+                    .frame(width: AgentChatLayout.sendButtonSize, height: AgentChatLayout.sendButtonSize)
                     .background(AppTheme.Gradients.agentAccent, in: .circle)
                     .opacity(canSend(session: session) ? 1.0 : 0.4)
             }

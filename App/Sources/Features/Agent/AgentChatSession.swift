@@ -1,5 +1,17 @@
 import Foundation
 import Observation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "AgentChatSession")
+
+// MARK: - Network constants
+
+private enum AgentNetworkConstants {
+    /// OpenRouter chat-completions endpoint.
+    static let openRouterURL = URL(string: "https://openrouter.ai/api/v1/chat/completions")!
+    /// Network timeout for each agent turn.
+    static let requestTimeout: TimeInterval = 60
+}
 
 struct ChatMessage: Identifiable, Equatable, Codable {
     enum Role: Equatable {
@@ -236,14 +248,11 @@ final class AgentChatSession {
         apiKey: String,
         model: String
     ) async throws -> AgentResult {
-        guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
-            throw AgentError.invalidURL
-        }
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: AgentNetworkConstants.openRouterURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 60
+        request.timeoutInterval = AgentNetworkConstants.requestTimeout
 
         let body: [String: Any] = ["model": model, "messages": messages, "tools": tools]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -296,13 +305,11 @@ struct AgentResult: @unchecked Sendable {
 enum AgentError: LocalizedError {
     case httpError(String)
     case malformedResponse
-    case invalidURL
 
     var errorDescription: String? {
         switch self {
         case .httpError(let body): "HTTP error: \(body)"
         case .malformedResponse: "Malformed response from API"
-        case .invalidURL: "Invalid API endpoint URL"
         }
     }
 }

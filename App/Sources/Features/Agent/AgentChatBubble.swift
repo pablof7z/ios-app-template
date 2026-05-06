@@ -8,6 +8,28 @@ private enum Layout {
     static let bubbleCornerRadius: CGFloat = 18
     static let bubblePaddingH: CGFloat = 14
     static let bubblePaddingV: CGFloat = 10
+    /// Corner radius for tool-batch and suggestion chip glass pills.
+    static let pillCornerRadius: CGFloat = 14
+    /// Horizontal padding inside tool-batch pill.
+    static let batchPaddingH: CGFloat = 12
+    /// Vertical padding inside tool-batch pill.
+    static let batchPaddingV: CGFloat = 8
+    /// Icon size (point size) for the tool-batch wand icon.
+    static let batchIconSize: CGFloat = 13
+    /// Leading indent of the tool-batch row (aligns with assistant bubble text).
+    static let batchLeadingInset: CGFloat = 44
+    /// Trailing inset of the tool-batch row.
+    static let batchTrailingInset: CGFloat = 24
+    /// Dot size in the typing indicator.
+    static let typingDotSize: CGFloat = 7
+    /// Spacing between typing indicator dots.
+    static let typingDotSpacing: CGFloat = 6
+    /// Corner radius for the typing indicator glass pill.
+    static let typingCornerRadius: CGFloat = 18
+    /// Horizontal padding inside the typing indicator pill.
+    static let typingPaddingH: CGFloat = 14
+    /// Vertical padding inside the typing indicator pill.
+    static let typingPaddingV: CGFloat = 12
 }
 
 // MARK: - Avatar
@@ -107,7 +129,7 @@ struct AgentChatBubble: View {
         } label: {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: "wand.and.stars")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: Layout.batchIconSize, weight: .semibold))
                     .foregroundStyle(.indigo)
                     .accessibilityHidden(true)
                 Text(count == 1 ? "Agent ran 1 action" : "Agent ran \(count) actions")
@@ -119,16 +141,16 @@ struct AgentChatBubble: View {
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Layout.batchPaddingH)
+            .padding(.vertical, Layout.batchPaddingV)
             .glassEffect(
                 .regular.tint(.indigo.opacity(0.10)).interactive(),
-                in: .rect(cornerRadius: 14)
+                in: .rect(cornerRadius: Layout.pillCornerRadius)
             )
         }
         .buttonStyle(.plain)
-        .padding(.leading, 44)
-        .padding(.trailing, 24)
+        .padding(.leading, Layout.batchLeadingInset)
+        .padding(.trailing, Layout.batchTrailingInset)
     }
 
     private var errorBubble: some View {
@@ -207,19 +229,19 @@ struct AgentTypingIndicator: View {
             AgentAvatarView()
                 .symbolEffect(.pulse, options: .repeating)
 
-            HStack(spacing: 6) {
+            HStack(spacing: Layout.typingDotSpacing) {
                 ForEach(0..<3, id: \.self) { i in
                     Circle()
                         .fill(.secondary)
-                        .frame(width: 7, height: 7)
+                        .frame(width: Layout.typingDotSize, height: Layout.typingDotSize)
                         .opacity(phase == i ? 1.0 : 0.35)
                         .scaleEffect(phase == i ? 1.15 : 0.9)
                         .animation(.easeInOut(duration: 0.3), value: phase)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .padding(.horizontal, Layout.typingPaddingH)
+            .padding(.vertical, Layout.typingPaddingV)
+            .glassEffect(.regular, in: .rect(cornerRadius: Layout.typingCornerRadius))
             .task {
                 while !Task.isCancelled {
                     try? await Task.sleep(nanoseconds: 350_000_000)
