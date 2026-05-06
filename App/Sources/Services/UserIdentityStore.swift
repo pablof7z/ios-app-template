@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "UserIdentityStore")
 
 /// The human user's Nostr identity — entirely separate from the agent's identity.
 /// Manages its own keychain slot and published key state.
@@ -23,12 +26,15 @@ final class UserIdentityStore {
     // MARK: - Lifecycle
 
     func start() {
-        guard let hex = try? KeychainStore.readString(service: Self.service, account: Self.account),
-              !hex.isEmpty,
-              let pair = try? NostrKeyPair(privateKeyHex: hex)
-        else { return }
-        keyPair = pair
-        publicKeyHex = pair.publicKeyHex
+        do {
+            guard let hex = try KeychainStore.readString(service: Self.service, account: Self.account),
+                  !hex.isEmpty else { return }
+            let pair = try NostrKeyPair(privateKeyHex: hex)
+            keyPair = pair
+            publicKeyHex = pair.publicKeyHex
+        } catch {
+            logger.error("UserIdentityStore.start failed to load key: \(error, privacy: .public)")
+        }
     }
 
     // MARK: - nsec import
@@ -65,7 +71,11 @@ final class UserIdentityStore {
     // MARK: - Sign out
 
     func clearIdentity() {
-        try? KeychainStore.deleteString(service: Self.service, account: Self.account)
+        do {
+            try KeychainStore.deleteString(service: Self.service, account: Self.account)
+        } catch {
+            logger.error("UserIdentityStore.clearIdentity failed: \(error, privacy: .public)")
+        }
         keyPair = nil
         publicKeyHex = nil
     }

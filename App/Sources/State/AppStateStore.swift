@@ -100,6 +100,14 @@ final class AppStateStore {
         NotificationService.cancel(for: id)
     }
 
+    /// Clears the stored reminder date on an item without changing its status.
+    /// Call this after cancelling a pending notification outside the normal edit flow.
+    func clearReminderDate(for id: UUID) {
+        guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
+        state.items[idx].reminderAt = nil
+        state.items[idx].updatedAt = Date()
+    }
+
     func toggleItemPriority(_ id: UUID) {
         guard let idx = state.items.firstIndex(where: { $0.id == id }) else { return }
         state.items[idx].isPriority.toggle()

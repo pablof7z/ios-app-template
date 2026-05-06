@@ -56,6 +56,17 @@ struct SettingsView: View {
                     badge: store.pendingNostrApprovals.count
                 )
             }
+
+            NavigationLink {
+                NotificationSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "bell.badge",
+                    tint: .red,
+                    title: "Notifications",
+                    value: itemsWithReminders > 0 ? "\(itemsWithReminders) scheduled" : nil
+                )
+            }
         }
     }
 
@@ -99,6 +110,10 @@ struct SettingsView: View {
     }
 
     // MARK: - Derived values
+
+    private var itemsWithReminders: Int {
+        store.state.items.filter { !$0.deleted && $0.status == .pending && $0.reminderAt != nil }.count
+    }
 
     private var exportSummary: String {
         let total = DataExport.stats(for: store.state).totalRecords

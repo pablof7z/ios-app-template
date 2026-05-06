@@ -1,5 +1,8 @@
 import UIKit
 import UserNotifications
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "BadgeManager")
 
 @MainActor
 enum BadgeManager {
@@ -10,13 +13,25 @@ enum BadgeManager {
     static func sync(pendingCount: Int) async {
         let settings = await center.notificationSettings()
         if settings.authorizationStatus == .notDetermined {
-            try? await center.requestAuthorization(options: [.badge])
+            do {
+                try await center.requestAuthorization(options: [.badge])
+            } catch {
+                logger.error("requestAuthorization failed: \(error, privacy: .public)")
+            }
         }
-        try? await center.setBadgeCount(pendingCount)
+        do {
+            try await center.setBadgeCount(pendingCount)
+        } catch {
+            logger.error("setBadgeCount(\(pendingCount)) failed: \(error, privacy: .public)")
+        }
     }
 
     /// Clears the badge (sets to 0).
     static func clear() async {
-        try? await center.setBadgeCount(0)
+        do {
+            try await center.setBadgeCount(0)
+        } catch {
+            logger.error("setBadgeCount(0) failed: \(error, privacy: .public)")
+        }
     }
 }

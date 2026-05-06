@@ -1,8 +1,22 @@
 import AuthenticationServices
 import CryptoKit
 import Foundation
+import os.log
 import Security
 import UIKit
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "BYOKConnectService")
+
+// MARK: - Constants
+
+private enum BYOKConstants {
+    /// Byte length for the OAuth state parameter (PKCE).
+    static let stateByteCount: Int = 32
+    /// Byte length for the PKCE code verifier.
+    static let codeVerifierByteCount: Int = 64
+    /// Network timeout for token exchange requests.
+    static let tokenRequestTimeout: TimeInterval = 60
+}
 
 @MainActor
 final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContextProviding {
@@ -57,8 +71,8 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
     }
 
     private func makeAuthorization(provider: String, scope: String) throws -> BYOKPendingAuthorization {
-        let state = try Self.randomBase64URL(byteCount: 32)
-        let codeVerifier = try Self.randomBase64URL(byteCount: 64)
+        let state = try Self.randomBase64URL(byteCount: BYOKConstants.stateByteCount)
+        let codeVerifier = try Self.randomBase64URL(byteCount: BYOKConstants.codeVerifierByteCount)
         let codeChallenge = Self.sha256Base64URL(codeVerifier)
         let redirectURI = "\(redirectScheme)://\(redirectHost)"
 
@@ -148,7 +162,7 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
         var request = URLRequest(url: tokenURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 60
+        request.timeoutInterval = BYOKConstants.tokenRequestTimeout
 
         let body = BYOKTokenRequest(
             code: code,
