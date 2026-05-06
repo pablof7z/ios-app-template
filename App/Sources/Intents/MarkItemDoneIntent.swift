@@ -1,5 +1,8 @@
 import AppIntents
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "MarkItemDoneIntent")
 
 /// Marks an existing pending item as done. The user picks an item from a
 /// Shortcuts picker (powered by `ItemEntityQuery.suggestedEntities`) or
@@ -27,7 +30,7 @@ struct MarkItemDoneIntent: AppIntent {
         do {
             state = try Persistence.load()
         } catch {
-            FileHandle.standardError.write(Data("MarkItemDoneIntent: load failed: \(error)\n".utf8))
+            logger.error("MarkItemDoneIntent: load failed: \(error, privacy: .public)")
             return .result(dialog: "I couldn't read your data. Open the app once and try again.")
         }
         guard let idx = state.items.firstIndex(where: { $0.id == target.id }) else {

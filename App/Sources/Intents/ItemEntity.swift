@@ -1,5 +1,8 @@
 import AppIntents
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "ItemEntityQuery")
 
 /// Surfaces `Item` to AppIntents. Conforming `Item` itself would force its
 /// pure `Sendable` value type to import `AppIntents`; instead we wrap it in a
@@ -45,7 +48,7 @@ struct ItemEntityQuery: EntityQuery, Sendable {
         do {
             return try Persistence.load()
         } catch {
-            FileHandle.standardError.write(Data("ItemEntityQuery: load failed: \(error)\n".utf8))
+            logger.error("ItemEntityQuery: load failed: \(error, privacy: .public)")
             return AppState()
         }
     }

@@ -1,5 +1,8 @@
 import AVFoundation
+import os.log
 import SwiftUI
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "QRCodeScannerView")
 
 // MARK: - SwiftUI wrapper
 
@@ -44,9 +47,21 @@ final class QRCaptureView: UIView {
     override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
 
     func start() {
-        guard let device = AVCaptureDevice.default(for: .video),
-              let input = try? AVCaptureDeviceInput(device: device),
-              session.canAddInput(input) else { return }
+        guard let device = AVCaptureDevice.default(for: .video) else {
+            logger.error("QRCodeScannerView: no video capture device available")
+            return
+        }
+        let input: AVCaptureDeviceInput
+        do {
+            input = try AVCaptureDeviceInput(device: device)
+        } catch {
+            logger.error("QRCodeScannerView: failed to create capture input: \(error, privacy: .public)")
+            return
+        }
+        guard session.canAddInput(input) else {
+            logger.error("QRCodeScannerView: session cannot add video input")
+            return
+        }
 
         session.addInput(input)
 

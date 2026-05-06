@@ -1,5 +1,8 @@
 import AppIntents
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "AddItemIntent")
 
 /// Adds a new item to the user's list. Exposed to Siri, the Shortcuts app, and
 /// the Action Button via `AppTemplateShortcuts`.
@@ -47,7 +50,7 @@ struct AddItemIntent: AppIntent {
         do {
             state = try Persistence.load()
         } catch {
-            FileHandle.standardError.write(Data("AddItemIntent: load failed: \(error)\n".utf8))
+            logger.error("AddItemIntent: load failed: \(error, privacy: .public)")
             return .result(dialog: "I couldn't read your data. Open the app once and try again.")
         }
         var nextState = state
@@ -75,7 +78,7 @@ struct PendingItemCountIntent: AppIntent {
         do {
             state = try Persistence.load()
         } catch {
-            FileHandle.standardError.write(Data("PendingItemCountIntent: load failed: \(error)\n".utf8))
+            logger.error("PendingItemCountIntent: load failed: \(error, privacy: .public)")
             state = AppState()
         }
         let count = state.items.filter { !$0.deleted && $0.status == .pending }.count

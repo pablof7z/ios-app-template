@@ -1,5 +1,8 @@
+import os.log
 import SwiftUI
 import UIKit
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "AppTemplate", category: "AgentMemoriesView")
 
 // MARK: - Date bucket
 
@@ -15,9 +18,9 @@ private enum MemoryDateBucket: String, CaseIterable {
     static func bucket(for date: Date, now: Date, calendar: Calendar) -> MemoryDateBucket {
         if calendar.isDateInToday(date) { return .today }
         if calendar.isDateInYesterday(date) { return .yesterday }
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now)!
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
         if date >= weekAgo { return .thisWeek }
-        let monthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+        let monthAgo = calendar.date(byAdding: .month, value: -1, to: now) ?? now
         if date >= monthAgo { return .thisMonth }
         return .earlier
     }
