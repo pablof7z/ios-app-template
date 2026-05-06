@@ -84,7 +84,36 @@ struct HomeView: View {
                 case (nil, nil):       return $0.createdAt > $1.createdAt
                 }
             }
+        case .smart:
+            return store.activeItems.sorted { smartScore($0) > smartScore($1) }
         }
+    }
+
+    /// Computes a composite urgency score for an item using `SmartSortWeights`.
+    ///
+    /// Priority > overdue > due soon > recurring > recency. Age decay is applied
+    /// so very old items with no other signals gradually fall below fresh ones.
+    private func smartScore(_ item: Item) -> Double {
+        var score: Double = 0
+        let now = Date()
+        let w = SmartSortWeights.self
+
+        if item.isPriority { score += w.priorityBoost }
+
+        if let due = item.dueDate {
+            if due < now {
+                score += w.overdueBoost
+            } else if due.timeIntervalSinceNow < w.secondsPerDay {
+                score += w.dueSoonBoost
+            }
+        }
+
+        if item.recurrence != .none { score += w.recurrenceBoost }
+
+        let ageDays = min(now.timeIntervalSince(item.createdAt) / w.secondsPerDay, w.maxAgeDays)
+        score -= ageDays * w.ageDecayPerDay
+
+        return score
     }
 
     /// Drag-to-reorder is only active when there are no competing sort signals

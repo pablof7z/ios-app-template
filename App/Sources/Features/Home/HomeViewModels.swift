@@ -7,6 +7,7 @@ enum ItemSort: String, CaseIterable, Identifiable {
     case dateAddedAsc  = "dateAddedAsc"
     case titleAZ       = "titleAZ"
     case dueDateAsc    = "dueDateAsc"
+    case smart         = "smart"
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum ItemSort: String, CaseIterable, Identifiable {
         case .dateAddedAsc:  return "Oldest First"
         case .titleAZ:       return "Title A–Z"
         case .dueDateAsc:    return "Due Date"
+        case .smart:         return "Smart"
         }
     }
 
@@ -25,8 +27,36 @@ enum ItemSort: String, CaseIterable, Identifiable {
         case .dateAddedAsc:  return "arrow.up.circle"
         case .titleAZ:       return "textformat.abc"
         case .dueDateAsc:    return "calendar"
+        case .smart:         return "sparkles"
         }
     }
+}
+
+// MARK: - Smart Sort
+
+/// Weights used by the "Smart" sort option to produce a single urgency score.
+///
+/// Higher weight → item ranks earlier (higher priority). All weights are
+/// additive and non-negative so the formula is easy to reason about:
+///
+///   score = priorityBoost + overdueBoost + dueSoonBoost + recurrenceBoost - ageDecay
+///
+/// The final `.smart` sort in `HomeView.sortedActiveItems` sorts descending by score.
+enum SmartSortWeights {
+    /// Flat bonus for starred (priority) items.
+    static let priorityBoost: Double    = 100
+    /// Flat bonus when the item's due date is in the past.
+    static let overdueBoost: Double     = 80
+    /// Flat bonus when the item is due within the next 24 hours.
+    static let dueSoonBoost: Double     = 40
+    /// Flat bonus for recurring items — they represent ongoing commitments.
+    static let recurrenceBoost: Double  = 20
+    /// Decay applied per day of age, capped at `maxAgeDays` to avoid burying new items.
+    static let ageDecayPerDay: Double   = 1
+    /// Maximum number of days of decay applied (prevents ancient items falling to the bottom forever).
+    static let maxAgeDays: Double       = 30
+    /// Number of seconds in one calendar day — used to convert `timeIntervalSince` to days.
+    static let secondsPerDay: Double    = 86_400
 }
 
 // MARK: - Source Filter
