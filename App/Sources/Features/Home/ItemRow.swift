@@ -30,6 +30,12 @@ struct ItemRow: View {
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(.teal)
                 }
+                if let due = item.dueDate {
+                    let dl = DueDateLabel.from(due)
+                    Label(dl.text, systemImage: "calendar")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(dl.color)
+                }
                 if let reminder = item.reminderAt {
                     let rel = ReminderLabel.from(reminder)
                     Label(rel.text, systemImage: "bell.fill")
@@ -62,6 +68,31 @@ struct ItemRow: View {
                 .foregroundStyle(.secondary)
         case .manual:
             EmptyView()
+        }
+    }
+}
+
+// MARK: - Due Date Label
+
+/// Formats a day-granular due date for display in ItemRow.
+/// Colors: red = overdue, amber = due today or tomorrow, secondary = future.
+struct DueDateLabel {
+    let text: String
+    let color: Color
+
+    static func from(_ date: Date) -> DueDateLabel {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let dueDay = cal.startOfDay(for: date)
+
+        if dueDay < today {
+            return DueDateLabel(text: "Overdue · \(date.formatted(date: .abbreviated, time: .omitted))", color: .red)
+        } else if cal.isDateInToday(date) {
+            return DueDateLabel(text: "Due today", color: .orange)
+        } else if cal.isDateInTomorrow(date) {
+            return DueDateLabel(text: "Due tomorrow", color: .orange)
+        } else {
+            return DueDateLabel(text: "Due \(date.formatted(date: .abbreviated, time: .omitted))", color: .secondary)
         }
     }
 }

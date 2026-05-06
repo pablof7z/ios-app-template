@@ -103,6 +103,11 @@ final class AppStateStore {
                 )
             }
         }
+        // Advance the due date by the same period so the recurred copy inherits the deadline.
+        if let base = original.dueDate,
+           let advanced = original.recurrence.nextDate(after: base) {
+            next.dueDate = Calendar.current.startOfDay(for: advanced)
+        }
         state.items.append(next)
     }
 

@@ -1,13 +1,7 @@
 import SwiftUI
 
-// MARK: - Layout constants
-
-private enum ComposeDefaults {
-    /// Default offset applied to the current time when the reminder picker first appears.
-    static let reminderOffset: TimeInterval = 3_600
-    /// Point size of the row icon in the recurrence and details rows.
-    static let rowIconSize: CGFloat = 16
-}
+// Layout constants live in ItemSheetLayout (HomeViewModels.swift) and are
+// shared with ItemEditSheet to keep icon sizes and reminder defaults in sync.
 
 struct ItemComposeSheet: View {
     @Environment(AppStateStore.self) private var store
@@ -19,7 +13,9 @@ struct ItemComposeSheet: View {
     @State private var details: String = ""
     @State private var isPriority: Bool = false
     @State private var recurrence: Recurrence = .none
-    @State private var reminderDate: Date = Date().addingTimeInterval(ComposeDefaults.reminderOffset)
+    @State private var dueDateEnabled: Bool = false
+    @State private var dueDate: Date = Calendar.current.startOfDay(for: Date())
+    @State private var reminderDate: Date = Date().addingTimeInterval(ItemSheetLayout.defaultReminderOffset)
     @State private var reminderEnabled: Bool = false
     @State private var notificationDenied: Bool = false
     @FocusState private var isFocused: Bool
@@ -62,6 +58,7 @@ struct ItemComposeSheet: View {
             detailsField
             priorityRow
             recurrenceRow
+            dueDateRow
             reminderRow
             if notificationDenied {
                 deniedBanner
@@ -69,6 +66,7 @@ struct ItemComposeSheet: View {
             Spacer(minLength: 0)
         }
         .padding(AppTheme.Spacing.md)
+        .animation(AppTheme.Animation.spring, value: dueDateEnabled)
         .animation(AppTheme.Animation.spring, value: reminderEnabled)
         .animation(AppTheme.Animation.spring, value: notificationDenied)
     }
@@ -76,7 +74,7 @@ struct ItemComposeSheet: View {
     private var titleField: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 22, weight: .regular))
+                .font(.system(size: ItemSheetLayout.checkmarkSize, weight: .regular))
                 .foregroundStyle(.green)
             TextField("What needs doing?", text: $title)
                 .font(AppTheme.Typography.body)
@@ -91,7 +89,7 @@ struct ItemComposeSheet: View {
     private var detailsField: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             Image(systemName: "text.alignleft")
-                .font(.system(size: ComposeDefaults.rowIconSize, weight: .regular))
+                .font(.system(size: ItemSheetLayout.rowIconSize, weight: .regular))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
             TextField(
@@ -122,7 +120,7 @@ struct ItemComposeSheet: View {
     private var recurrenceRow: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: Recurrence.daily.systemImage)
-                .font(.system(size: ComposeDefaults.rowIconSize, weight: .regular))
+                .font(.system(size: ItemSheetLayout.rowIconSize, weight: .regular))
                 .foregroundStyle(recurrence != .none ? Color.teal : .secondary)
             Picker("Repeats", selection: $recurrence) {
                 ForEach(Recurrence.allCases, id: \.self) { period in
@@ -136,6 +134,33 @@ struct ItemComposeSheet: View {
         }
         .padding(AppTheme.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var dueDateRow: some View {
+        VStack(spacing: AppTheme.Spacing.sm) {
+            Toggle(isOn: $dueDateEnabled) {
+                Label("Due date", systemImage: "calendar")
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(dueDateEnabled ? .pink : .secondary)
+            }
+            .tint(.pink)
+            .padding(AppTheme.Spacing.md)
+            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+
+            if dueDateEnabled {
+                DatePicker(
+                    "Due date",
+                    selection: $dueDate,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .padding(AppTheme.Spacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
     }
 
     private var reminderRow: some View {
@@ -192,10 +217,11 @@ struct ItemComposeSheet: View {
 
         var item = store.addItem(title: trimmed, source: .manual)
         let trimmedDetails = details.trimmingCharacters(in: .whitespacesAndNewlines)
-        if isPriority || !trimmedDetails.isEmpty || recurrence != .none {
+        if isPriority || !trimmedDetails.isEmpty || recurrence != .none || dueDateEnabled {
             item.isPriority = isPriority
             item.details = trimmedDetails
             item.recurrence = recurrence
+            item.dueDate = dueDateEnabled ? Calendar.current.startOfDay(for: dueDate) : nil
             store.updateItem(item)
         }
 

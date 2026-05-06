@@ -38,6 +38,16 @@ struct HomeView: View {
             return store.activeItems.sorted { $0.createdAt < $1.createdAt }
         case .titleAZ:
             return store.activeItems.sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
+        case .dueDateAsc:
+            // Items with a due date sort first (earliest first); items without due date sort last.
+            return store.activeItems.sorted {
+                switch ($0.dueDate, $1.dueDate) {
+                case let (lhs?, rhs?): return lhs < rhs
+                case (_?, nil):        return true
+                case (nil, _?):        return false
+                case (nil, nil):       return $0.createdAt > $1.createdAt
+                }
+            }
         }
     }
 

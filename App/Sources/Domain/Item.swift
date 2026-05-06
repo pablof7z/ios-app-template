@@ -88,6 +88,9 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     var isPriority: Bool
     /// If non-`.none`, completing this item spawns a new pending copy advanced by the period.
     var recurrence: Recurrence
+    /// Optional hard deadline (day-granular). Shown on ItemRow in amber when due today,
+    /// red when overdue. Distinct from `reminderAt` which is a notification trigger.
+    var dueDate: Date?
 
     init(title: String, source: ItemSource = .manual) {
         self.id = UUID()
@@ -100,12 +103,13 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         self.deleted = false
         self.isPriority = false
         self.recurrence = .none
+        self.dueDate = nil
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, title, details, status, source, createdAt, updatedAt, deleted
         case requestedByFriendID, requestedByDisplayName
-        case reminderAt, isPriority, recurrence
+        case reminderAt, isPriority, recurrence, dueDate
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding
@@ -125,6 +129,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         reminderAt = try c.decodeIfPresent(Date.self, forKey: .reminderAt)
         isPriority = try c.decodeIfPresent(Bool.self, forKey: .isPriority) ?? false
         recurrence = try c.decodeIfPresent(Recurrence.self, forKey: .recurrence) ?? .none
+        dueDate = try c.decodeIfPresent(Date.self, forKey: .dueDate)
     }
 }
 
@@ -140,6 +145,10 @@ extension Item {
         }
         if recurrence != .none {
             parts.append("Repeats: \(recurrence.label)")
+        }
+        if let date = dueDate {
+            let formatted = date.formatted(.dateTime.month(.wide).day().year())
+            parts.append("Due: \(formatted)")
         }
         if let date = reminderAt {
             let formatted = date.formatted(.dateTime.month(.wide).day().year().hour().minute())
