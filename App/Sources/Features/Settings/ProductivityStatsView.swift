@@ -334,13 +334,7 @@ private struct CompletionStats {
             voice:  done.filter { $0.source == .voice }.count
         )
 
-        // Build set of unique days that had at least one completion.
-        let days: Set<String> = Set(done.map { item in
-            let d = cal.startOfDay(for: item.updatedAt)
-            return "\(cal.component(.year, from: d))-\(cal.component(.dayOfYear, from: d))"
-        })
-
-        // Sort unique completion days descending.
+        // Unique completion days (one per calendar day) sorted most-recent first.
         let sortedDays = done
             .map { cal.startOfDay(for: $0.updatedAt) }
             .uniqued()
@@ -375,8 +369,6 @@ private struct CompletionStats {
             prev = day
         }
         longestStreak = longest
-
-        _ = days // suppress unused warning; used above for uniqueness check via sortedDays
     }
 }
 
