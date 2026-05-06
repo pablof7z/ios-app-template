@@ -16,6 +16,7 @@ struct ItemEditSheet: View {
     var namespace: Namespace.ID? = nil
 
     @State private var title: String = ""
+    @State private var details: String = ""
     @State private var isPriority: Bool = false
     @State private var reminderEnabled: Bool = false
     @State private var reminderDate: Date = Date().addingTimeInterval(EditDefaults.reminderOffset)
@@ -43,10 +44,11 @@ struct ItemEditSheet: View {
             }
             .applyZoomTransition(sourceID: sourceID, namespace: namespace)
         }
-        .presentationDetents([.height(reminderEnabled ? 360 : 260), .medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onAppear {
             title = item.title
+            details = item.details
             isPriority = item.isPriority
             reminderEnabled = item.reminderAt != nil
             reminderDate = item.reminderAt ?? Date().addingTimeInterval(EditDefaults.reminderOffset)
@@ -59,6 +61,7 @@ struct ItemEditSheet: View {
     private var editor: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             titleField
+            detailsField
             priorityRow
             reminderRow
             if notificationDenied {
@@ -81,6 +84,26 @@ struct ItemEditSheet: View {
                 .focused($isFocused)
                 .submitLabel(.done)
                 .onSubmit { Task { await save() } }
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var detailsField: some View {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+            Image(systemName: "text.alignleft")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(.secondary)
+                .padding(.top, 2)
+            TextField(
+                "Add details…",
+                text: $details,
+                axis: .vertical
+            )
+            .font(AppTheme.Typography.callout)
+            .foregroundStyle(.primary)
+            .lineLimit(3...8)
+            .accessibilityLabel("Item details")
         }
         .padding(AppTheme.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
@@ -145,10 +168,11 @@ struct ItemEditSheet: View {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         let titleChanged = trimmed != item.title
+        let detailsChanged = details != item.details
         let priorityChanged = isPriority != item.isPriority
         let reminderChanged = reminderEnabled != (item.reminderAt != nil)
             || (reminderEnabled && reminderDate != item.reminderAt)
-        return titleChanged || priorityChanged || reminderChanged
+        return titleChanged || detailsChanged || priorityChanged || reminderChanged
     }
 
     private func save() async {
@@ -157,6 +181,7 @@ struct ItemEditSheet: View {
 
         var updated = item
         updated.title = trimmed
+        updated.details = details
         updated.isPriority = isPriority
 
         // Handle reminder transitions

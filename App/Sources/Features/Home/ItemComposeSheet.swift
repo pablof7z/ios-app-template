@@ -14,6 +14,7 @@ struct ItemComposeSheet: View {
     var initialTitle: String = ""
 
     @State private var title: String = ""
+    @State private var details: String = ""
     @State private var isPriority: Bool = false
     @State private var reminderDate: Date = Date().addingTimeInterval(ComposeDefaults.reminderOffset)
     @State private var reminderEnabled: Bool = false
@@ -42,7 +43,7 @@ struct ItemComposeSheet: View {
                 }
             }
         }
-        .presentationDetents([.height(reminderEnabled ? 360 : 260), .medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onAppear {
             if !initialTitle.isEmpty { title = initialTitle }
@@ -55,6 +56,7 @@ struct ItemComposeSheet: View {
     private var editor: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             titleField
+            detailsField
             priorityRow
             reminderRow
             if notificationDenied {
@@ -77,6 +79,26 @@ struct ItemComposeSheet: View {
                 .focused($isFocused)
                 .submitLabel(.done)
                 .onSubmit { Task { await save() } }
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+    }
+
+    private var detailsField: some View {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+            Image(systemName: "text.alignleft")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(.secondary)
+                .padding(.top, 2)
+            TextField(
+                "Add details…",
+                text: $details,
+                axis: .vertical
+            )
+            .font(AppTheme.Typography.callout)
+            .foregroundStyle(.primary)
+            .lineLimit(3...8)
+            .accessibilityLabel("Item details")
         }
         .padding(AppTheme.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
@@ -146,8 +168,10 @@ struct ItemComposeSheet: View {
         guard !trimmed.isEmpty else { return }
 
         var item = store.addItem(title: trimmed, source: .manual)
-        if isPriority {
-            item.isPriority = true
+        let trimmedDetails = details.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isPriority || !trimmedDetails.isEmpty {
+            item.isPriority = isPriority
+            item.details = trimmedDetails
             store.updateItem(item)
         }
 

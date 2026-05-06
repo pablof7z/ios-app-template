@@ -134,11 +134,13 @@ enum SpotlightIndexer {
 
     /// Builds a human-readable Spotlight snippet for an item.
     ///
-    /// Combines the requester name (when present), priority flag, reminder
-    /// date, and source so users can identify items from Spotlight results
-    /// without opening the app.
+    /// Leads with the item's own `details` text when present, then appends
+    /// the requester name (when present), priority flag, reminder date, and
+    /// source so users can identify items from Spotlight results without
+    /// opening the app.
     private static func itemDescription(for item: Item) -> String {
         var parts: [String] = []
+        if !item.details.isEmpty { parts.append(item.details) }
         if let name = item.requestedByDisplayName { parts.append("From \(name)") }
         if item.isPriority { parts.append("Starred") }
         if let reminder = item.reminderAt {

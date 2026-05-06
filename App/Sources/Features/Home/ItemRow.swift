@@ -19,6 +19,12 @@ struct ItemRow: View {
                 Text(item.title)
                     .font(AppTheme.Typography.body)
                     .lineLimit(2)
+                if !item.details.isEmpty {
+                    Text(item.details)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
                 if let reminder = item.reminderAt {
                     let rel = ReminderLabel.from(reminder)
                     Label(rel.text, systemImage: "bell.fill")

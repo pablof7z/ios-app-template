@@ -46,6 +46,9 @@ enum ItemSource: String, Codable, Hashable, Sendable {
 struct Item: Codable, Identifiable, Hashable, Sendable {
     var id: UUID
     var title: String
+    /// Optional multi-line description or extra context for this item.
+    /// Distinct from the top-level `Note` type which is a free-form journal entry.
+    var details: String
     var status: ItemStatus
     var source: ItemSource
     var createdAt: Date
@@ -59,6 +62,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     init(title: String, source: ItemSource = .manual) {
         self.id = UUID()
         self.title = title
+        self.details = ""
         self.status = .pending
         self.source = source
         self.createdAt = Date()
@@ -68,7 +72,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, status, source, createdAt, updatedAt, deleted
+        case id, title, details, status, source, createdAt, updatedAt, deleted
         case requestedByFriendID, requestedByDisplayName
         case reminderAt, isPriority
     }
@@ -79,6 +83,7 @@ struct Item: Codable, Identifiable, Hashable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        details = try c.decodeIfPresent(String.self, forKey: .details) ?? ""
         status = try c.decodeIfPresent(ItemStatus.self, forKey: .status) ?? .pending
         source = try c.decodeIfPresent(ItemSource.self, forKey: .source) ?? .manual
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
