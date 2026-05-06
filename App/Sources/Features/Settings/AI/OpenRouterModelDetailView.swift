@@ -5,6 +5,8 @@ import SwiftUI
 struct OpenRouterModelDetailView: View {
     var model: OpenRouterModelOption
     @Binding var selectedModelID: String
+    /// Persisted human-readable name for the selected model, updated alongside the ID.
+    @Binding var selectedModelName: String
     /// Human-readable role label (e.g. "Agent", "Memory Compilation").
     /// Used in the select button so users know which role they are configuring.
     var role: String = "Model"
@@ -121,6 +123,7 @@ struct OpenRouterModelDetailView: View {
         let alreadySelected = selectedModelID == model.id
         return Button {
             selectedModelID = model.id
+            selectedModelName = model.name
             dismiss()
         } label: {
             Label(

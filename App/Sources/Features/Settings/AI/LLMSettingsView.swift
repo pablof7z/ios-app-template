@@ -20,16 +20,19 @@ struct LLMSettingsView: View {
         }
         .navigationTitle("Language Models")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await catalog.loadIfNeeded() }
+        .task {
+            await catalog.loadIfNeeded()
+            backfillModelNames()
+        }
         .sheet(isPresented: $agentSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, role: "Agent")
+                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $memorySelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, role: "Memory Compilation")
+                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation")
             }
             .presentationDragIndicator(.visible)
         }
@@ -43,7 +46,8 @@ struct LLMSettingsView: View {
                 icon: "brain.head.profile",
                 tint: .orange,
                 role: "Agent",
-                modelID: store.state.settings.llmModel
+                modelID: store.state.settings.llmModel,
+                modelName: store.state.settings.llmModelName
             ) {
                 agentSelectorPresented = true
             }
@@ -53,7 +57,8 @@ struct LLMSettingsView: View {
                 icon: "memories",
                 tint: .purple,
                 role: "Memory Compilation",
-                modelID: store.state.settings.memoryCompilationModel
+                modelID: store.state.settings.memoryCompilationModel,
+                modelName: store.state.settings.memoryCompilationModelName
             ) {
                 memorySelectorPresented = true
             }
@@ -82,17 +87,18 @@ struct LLMSettingsView: View {
 
     // MARK: - Row helper
 
-    private func modelRow(icon: String, tint: Color, role: String, modelID: String, onTap: @escaping () -> Void) -> some View {
-        Button(action: onTap) {
+    private func modelRow(icon: String, tint: Color, role: String, modelID: String, modelName: String, onTap: @escaping () -> Void) -> some View {
+        let displayName = displayName(modelID: modelID, modelName: modelName)
+        return Button(action: onTap) {
             SettingsRow(
                 icon: icon,
                 tint: tint,
                 title: role,
-                subtitle: shortName(modelID)
+                subtitle: displayName
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(role), \(shortName(modelID))")
+        .accessibilityLabel("\(role), \(displayName)")
         .accessibilityHint("Opens model selector")
     }
 
@@ -105,6 +111,13 @@ struct LLMSettingsView: View {
         )
     }
 
+    private var agentModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.llmModelName },
+            set: { v in var s = store.state.settings; s.llmModelName = v; store.updateSettings(s) }
+        )
+    }
+
     private var memoryModelBinding: Binding<String> {
         Binding(
             get: { store.state.settings.memoryCompilationModel },
@@ -112,13 +125,40 @@ struct LLMSettingsView: View {
         )
     }
 
+    private var memoryModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.memoryCompilationModelName },
+            set: { v in var s = store.state.settings; s.memoryCompilationModelName = v; store.updateSettings(s) }
+        )
+    }
+
     // MARK: - Helpers
 
-    private func shortName(_ modelID: String) -> String {
-        let m = modelID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !m.isEmpty else { return "Not set" }
-        if let idx = m.lastIndex(of: "/") { return String(m[m.index(after: idx)...]) }
-        return m
+    /// Returns the stored human-readable name when available, falling back to
+    /// the path-stripped model ID slug for backward compatibility.
+    private func displayName(modelID: String, modelName: String) -> String {
+        let name = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty { return name }
+        let id = modelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else { return "Not set" }
+        if let idx = id.lastIndex(of: "/") { return String(id[id.index(after: idx)...]) }
+        return id
+    }
+
+    /// Backfills stored model names from the catalog for existing installs
+    /// that have a model ID but no persisted name.
+    private func backfillModelNames() {
+        var s = store.state.settings
+        var changed = false
+        if s.llmModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.llmModel }) {
+            s.llmModelName = match.name
+            changed = true
+        }
+        if s.memoryCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.memoryCompilationModel }) {
+            s.memoryCompilationModelName = match.name
+            changed = true
+        }
+        if changed { store.updateSettings(s) }
     }
 
     private var connectionStatus: String {

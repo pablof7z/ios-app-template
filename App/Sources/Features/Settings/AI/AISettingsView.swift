@@ -53,10 +53,12 @@ struct AISettingsView: View {
     private var settings: Settings { store.state.settings }
 
     private var agentModelShortName: String? {
-        let model = settings.llmModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !model.isEmpty else { return nil }
-        if let idx = model.lastIndex(of: "/") { return String(model[model.index(after: idx)...]) }
-        return model
+        let name = settings.llmModelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty { return name }
+        let id = settings.llmModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else { return nil }
+        if let idx = id.lastIndex(of: "/") { return String(id[id.index(after: idx)...]) }
+        return id
     }
 
     private var openRouterStatus: String {

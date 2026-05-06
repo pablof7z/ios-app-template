@@ -10,6 +10,8 @@ private enum SelectorLayout {
 
 struct OpenRouterModelSelectorView: View {
     @Binding var selectedModelID: String
+    /// Persisted human-readable name for the selected model, updated on every selection.
+    @Binding var selectedModelName: String
     /// Human-readable role label forwarded to the detail view (e.g. "Agent", "Memory Compilation").
     var role: String = "Model"
     @Environment(\.dismiss) private var dismiss
@@ -39,7 +41,7 @@ struct OpenRouterModelSelectorView: View {
             await viewModel.loadIfNeeded()
         }
         .navigationDestination(for: OpenRouterModelOption.self) { model in
-            OpenRouterModelDetailView(model: model, selectedModelID: $selectedModelID, role: role)
+            OpenRouterModelDetailView(model: model, selectedModelID: $selectedModelID, selectedModelName: $selectedModelName, role: role)
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -160,6 +162,7 @@ struct OpenRouterModelSelectorView: View {
                 let trimmed = manualModelID.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return }
                 selectedModelID = trimmed
+                selectedModelName = ""
                 dismiss()
             } label: {
                 Label("Use custom ID", systemImage: "checkmark.circle")

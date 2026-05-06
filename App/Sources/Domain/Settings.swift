@@ -22,7 +22,9 @@ struct Settings: Codable, Hashable, Sendable {
 
     // AI / LLM
     var llmModel: String = Defaults.llmModel
+    var llmModelName: String = ""
     var memoryCompilationModel: String = Defaults.llmModel
+    var memoryCompilationModelName: String = ""
 
     // OpenRouter credentials (secret stored in Keychain; only metadata here)
     var openRouterCredentialSource: OpenRouterCredentialSource = .none
@@ -57,7 +59,7 @@ struct Settings: Codable, Hashable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case llmModel, memoryCompilationModel
+        case llmModel, llmModelName, memoryCompilationModel, memoryCompilationModelName
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
@@ -73,7 +75,9 @@ struct Settings: Codable, Hashable, Sendable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         llmModel = try c.decodeIfPresent(String.self, forKey: .llmModel) ?? Defaults.llmModel
+        llmModelName = try c.decodeIfPresent(String.self, forKey: .llmModelName) ?? ""
         memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? Defaults.llmModel
+        memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? ""
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
@@ -105,7 +109,9 @@ struct Settings: Codable, Hashable, Sendable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(llmModel, forKey: .llmModel)
+        try c.encode(llmModelName, forKey: .llmModelName)
         try c.encode(memoryCompilationModel, forKey: .memoryCompilationModel)
+        try c.encode(memoryCompilationModelName, forKey: .memoryCompilationModelName)
         try c.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
         try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
         try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
