@@ -33,7 +33,7 @@ struct OpenRouterModelRow: View {
                 if !badges.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(badges.prefix(4), id: \.self) { badge in
-                            ModelBadge(text: badge)
+                            ModelBadge(kind: badge)
                         }
                     }
                 }
@@ -58,14 +58,14 @@ struct OpenRouterModelRow: View {
         .padding(.vertical, 4)
     }
 
-    private var badges: [String] {
-        var result: [String] = []
-        result.append(model.isCompatible ? "JSON" : "No JSON")
-        if model.supportsTools { result.append("Tools") }
-        if model.supportsReasoning { result.append("Reasoning") }
-        if model.inputModalities.contains("image") { result.append("Vision") }
-        if model.openWeights { result.append("Open") }
-        if model.isFree { result.append("Free") }
+    private var badges: [ModelBadgeKind] {
+        var result: [ModelBadgeKind] = []
+        if !model.isCompatible { result.append(.noJSON) }
+        if model.supportsTools { result.append(.tools) }
+        if model.supportsReasoning { result.append(.reasoning) }
+        if model.inputModalities.contains("image") { result.append(.vision) }
+        if model.openWeights { result.append(.openWeights) }
+        if model.isFree { result.append(.free) }
         return result
     }
 }

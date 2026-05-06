@@ -62,33 +62,47 @@ struct AgentWhitelistView: View {
     private var pendingSection: some View {
         Section("Pending Approval") {
             ForEach(pendingApprovals) { approval in
-                PendingApprovalRow(approval: approval)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button {
-                            store.allowNostrPubkey(approval.pubkeyHex)
-                            Haptics.success()
-                        } label: {
-                            Label("Allow", systemImage: "checkmark.circle.fill")
-                        }
-                        .tint(.green)
+                PendingApprovalRow(
+                    approval: approval,
+                    onAllow: {
+                        store.allowNostrPubkey(approval.pubkeyHex)
+                        Haptics.success()
+                    },
+                    onBlock: {
+                        store.blockNostrPubkey(approval.pubkeyHex)
+                        Haptics.selection()
+                    },
+                    onDismiss: {
+                        store.dismissNostrPendingApproval(approval.id)
+                        Haptics.selection()
+                    }
+                )
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button {
+                        store.allowNostrPubkey(approval.pubkeyHex)
+                        Haptics.success()
+                    } label: {
+                        Label("Allow", systemImage: "checkmark.circle.fill")
+                    }
+                    .tint(.green)
 
-                        Button {
-                            store.blockNostrPubkey(approval.pubkeyHex)
-                            Haptics.selection()
-                        } label: {
-                            Label("Block", systemImage: "nosign")
-                        }
-                        .tint(.red)
+                    Button {
+                        store.blockNostrPubkey(approval.pubkeyHex)
+                        Haptics.selection()
+                    } label: {
+                        Label("Block", systemImage: "nosign")
                     }
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            store.dismissNostrPendingApproval(approval.id)
-                            Haptics.selection()
-                        } label: {
-                            Label("Dismiss", systemImage: "xmark")
-                        }
-                        .tint(.gray)
+                    .tint(.red)
+                }
+                .swipeActions(edge: .leading) {
+                    Button {
+                        store.dismissNostrPendingApproval(approval.id)
+                        Haptics.selection()
+                    } label: {
+                        Label("Dismiss", systemImage: "xmark")
                     }
+                    .tint(.gray)
+                }
             }
         }
     }
@@ -146,34 +160,90 @@ struct AgentWhitelistView: View {
 
 private struct PendingApprovalRow: View {
     let approval: NostrPendingApproval
+    let onAllow: () -> Void
+    let onBlock: () -> Void
+    let onDismiss: () -> Void
+
+    @State private var pubkeyCopied = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
-            ZStack {
-                Circle().fill(LinearGradient(
-                    colors: [.orange.opacity(0.3), .orange.opacity(0.1)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                ))
-                Image(systemName: "person.fill")
-                    .foregroundStyle(.orange)
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+            HStack(alignment: .center, spacing: AppTheme.Spacing.sm) {
+                ZStack {
+                    Circle().fill(LinearGradient(
+                        colors: [.orange.opacity(0.3), .orange.opacity(0.1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
+                    Image(systemName: "person.fill")
+                        .foregroundStyle(.orange)
+                }
+                .frame(width: 36, height: 36)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(approval.displayName ?? "Unknown")
+                        .font(.headline)
+
+                    Button {
+                        UIPasteboard.general.string = approval.pubkeyHex
+                        Haptics.selection()
+                        pubkeyCopied = true
+                        Task {
+                            try? await Task.sleep(for: .seconds(1.5))
+                            await MainActor.run { pubkeyCopied = false }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(approval.shortPubkey)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                            if pubkeyCopied {
+                                Image(systemName: "checkmark")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .transition(.opacity.combined(with: .scale))
+                            }
+                        }
+                        .animation(AppTheme.Animation.springFast, value: pubkeyCopied)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(approval.receivedAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
+                Spacer(minLength: 0)
             }
-            .frame(width: 36, height: 36)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(approval.displayName ?? "Unknown")
-                    .font(.headline)
+            // Inline action buttons — swipe actions are also available
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Button(action: onAllow) {
+                    Label("Allow", systemImage: "checkmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
 
-                Text(approval.shortPubkey)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
+                Button(action: onBlock) {
+                    Label("Block", systemImage: "nosign")
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
 
-                Text(approval.receivedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                Button(action: onDismiss) {
+                    Label("Dismiss", systemImage: "xmark")
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(.secondary)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 }
 
