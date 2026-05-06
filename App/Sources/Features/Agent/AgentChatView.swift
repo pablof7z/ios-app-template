@@ -42,6 +42,7 @@ struct AgentChatView: View {
     @State private var didSendInSession = false
     @State private var showClearConfirm = false
     @State private var scrolledMessageID: AnyHashable? = nil
+    @State private var transcriptURL: URL?
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -68,6 +69,12 @@ struct AgentChatView: View {
         )) { batch in
             AgentActivitySheet(batchID: batch.id)
         }
+        .sheet(item: Binding(
+            get: { transcriptURL.map(IdentifiedURL.init) },
+            set: { transcriptURL = $0?.url }
+        )) { identified in
+            ShareSheet(items: [identified.url])
+        }
     }
 
     @ToolbarContentBuilder
@@ -75,8 +82,8 @@ struct AgentChatView: View {
         ToolbarItem(placement: .cancellationAction) {
             Button("Done") { dismiss() }
         }
-        ToolbarItem(placement: .primaryAction) {
-            if let session, !session.messages.isEmpty {
+        if let session, !session.messages.isEmpty {
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     Haptics.selection()
                     showClearConfirm = true
@@ -87,7 +94,23 @@ struct AgentChatView: View {
                 .buttonBorderShape(.circle)
                 .accessibilityLabel("Clear conversation")
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    exportTranscript(messages: session.messages)
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .accessibilityLabel("Export transcript")
+            }
         }
+    }
+
+    private func exportTranscript(messages: [ChatMessage]) {
+        guard let url = AgentChatTranscriptExport.write(messages) else { return }
+        Haptics.success()
+        transcriptURL = url
     }
 
     @ViewBuilder
@@ -236,5 +259,10 @@ struct AgentChatView: View {
 
 private struct IdentifiedBatch: Identifiable {
     let id: UUID
+}
+
+private struct IdentifiedURL: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }
 
