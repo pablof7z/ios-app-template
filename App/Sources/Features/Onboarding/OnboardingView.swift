@@ -256,15 +256,6 @@ struct OnboardingView: View {
     // MARK: - Background
 
     private var backgroundGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.05, green: 0.04, blue: 0.20),
-                Color(red: 0.18, green: 0.10, blue: 0.42),
-                Color(red: 0.10, green: 0.32, blue: 0.66),
-                Color(red: 0.04, green: 0.55, blue: 0.74)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        AppTheme.Gradients.onboardingNebula
     }
 }

@@ -100,6 +100,40 @@ enum AppTheme {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+
+        /// Deep-navy-to-teal nebula used as the full-screen onboarding background.
+        static let onboardingNebula = LinearGradient(
+            colors: [
+                Color(red: 0.05, green: 0.04, blue: 0.20),
+                Color(red: 0.18, green: 0.10, blue: 0.42),
+                Color(red: 0.10, green: 0.32, blue: 0.66),
+                Color(red: 0.04, green: 0.55, blue: 0.74)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        /// White-to-ice-blue shimmer for the welcome sparkle icon.
+        static let onboardingSparkle = LinearGradient(
+            colors: [.white, Color(red: 0.85, green: 0.92, blue: 1.0)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+
+        /// White-to-mint shimmer for the completion checkmark icon.
+        static let onboardingSuccess = LinearGradient(
+            colors: [.white, Color(red: 0.7, green: 1.0, blue: 0.85)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    // MARK: - Semantic tints
+
+    /// One-off semantic color tokens that don't belong to a third-party brand.
+    enum Tint {
+        /// Soft red used for inline error messages on dark backgrounds.
+        static let errorOnDark = SwiftUI.Color(red: 1.0, green: 0.7, blue: 0.7)
     }
 
     // MARK: - Shadows

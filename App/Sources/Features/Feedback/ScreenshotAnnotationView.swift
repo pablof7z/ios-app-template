@@ -143,6 +143,11 @@ struct ScreenshotAnnotationView: View {
                     .buttonStyle(.plain)
                     .scaleEffect(strokeColor == color ? Layout.swatchSelectedScale : 1.0)
                     .animation(AppTheme.Animation.springFast, value: strokeColor == color)
+                    .accessibilityLabel(
+                        strokeColor == color
+                            ? "Drawing color selected"
+                            : "Select drawing color"
+                    )
                 }
 
                 Rectangle()
@@ -174,6 +179,7 @@ struct ScreenshotAnnotationView: View {
                 }
                 .buttonStyle(.glass)
                 .disabled(strokes.isEmpty)
+                .accessibilityLabel("Undo last stroke")
 
                 // Clear
                 Button {
@@ -186,6 +192,7 @@ struct ScreenshotAnnotationView: View {
                 }
                 .buttonStyle(.glass)
                 .disabled(strokes.isEmpty && currentStroke == nil)
+                .accessibilityLabel("Clear all drawing")
             }
             .padding(.horizontal, Layout.toolbarPaddingH)
             .padding(.vertical, Layout.toolbarPaddingV)

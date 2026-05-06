@@ -65,13 +65,7 @@ struct OnboardingWelcomePage: View {
 
             Image(systemName: "sparkles")
                 .font(.system(size: 76, weight: .semibold))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.white, Color(red: 0.85, green: 0.92, blue: 1.0)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .foregroundStyle(AppTheme.Gradients.onboardingSparkle)
                 .symbolEffect(.bounce, options: .repeat(3), value: sparkleTrigger)
                 .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)
         }
@@ -136,7 +130,7 @@ struct OnboardingAISetupPage: View {
             if let errorMessage {
                 Text(errorMessage)
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Color(red: 1.0, green: 0.7, blue: 0.7))
+                    .foregroundStyle(AppTheme.Tint.errorOnDark)
                     .multilineTextAlignment(.center)
                     .transition(.opacity)
             }
@@ -326,13 +320,7 @@ struct OnboardingReadyPage: View {
 
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 100, weight: .bold))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.white, Color(red: 0.7, green: 1.0, blue: 0.85)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .foregroundStyle(AppTheme.Gradients.onboardingSuccess)
                 .symbolEffect(.bounce, options: .repeat(3), value: bounceTrigger)
                 .shadow(color: .white.opacity(0.5), radius: 12, x: 0, y: 0)
         }
